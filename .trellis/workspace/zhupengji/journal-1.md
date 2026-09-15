@@ -71,3 +71,36 @@ Split overlay into independent key/mouse slots with separate dwell timers; verti
 ### Next Steps
 
 - None - task complete
+
+
+## Session 3: Mouse schematic top-half crop
+
+**Date**: 2026-09-15
+**Task**: Mouse schematic top-half crop
+**Branch**: `main`
+
+### Summary
+
+Cropped MouseSchematic to a compact pebble mouse-head; L/R/wheel press fills with HUD textColor instead of stroke highlight.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `10fdf28` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
