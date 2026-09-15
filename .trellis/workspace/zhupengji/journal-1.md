@@ -188,3 +188,44 @@ Shipped en/zh UI; archived key-filter, drag-hud-position, i18n; deferred log-exp
 ### Next Steps
 
 - None - task complete
+
+
+## Session 6: HUD key/mouse layout presets
+
+**Date**: 2026-09-15
+**Task**: HUD key/mouse layout presets
+**Branch**: `main`
+
+### Summary
+
+Fixed overlay key/mouse fighting with four persisted layout presets in Settings (default key-left-mouse-right).
+
+### Main Changes
+
+### Done
+- Settings: keyMouseLayout select (4 presets), en/zh i18n
+- Overlay: stable key→mouse DOM + CSS flex-direction/order; solo chips collapse
+- Spec: type-safety.md note for keyMouseLayout
+- Archived 09-15-hud-km-layout
+
+### Testing
+- [OK] npm run check; cargo test (23)
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b6973e8` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
