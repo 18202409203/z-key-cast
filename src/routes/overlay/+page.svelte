@@ -2,6 +2,7 @@
   import { listen } from "@tauri-apps/api/event";
   import { fade } from "svelte/transition";
   import { onMount } from "svelte";
+  import KeyboardMap from "$lib/KeyboardMap.svelte";
   import {
     EVENT_CHANNEL,
     HOOK_STATUS_CHANNEL,
@@ -29,6 +30,20 @@
   let active = $state<ActiveHud | null>(null);
   let style = $state<HudStyleSettings>({ ...DEFAULT_HUD_STYLE });
   let idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const activeKeyIds = $derived.by(() => {
+    const ids = new Set<string>();
+    if (active?.kind === "chip" && active.chip.kind === "key") {
+      for (const card of hudCards(active.chip)) {
+        ids.add(card.id);
+      }
+    }
+    return ids;
+  });
+
+  const chipBackground = $derived(
+    hudBackgroundCss(style.backgroundColor, style.backgroundOpacity),
+  );
 
   function clearIdleTimer() {
     if (idleTimer !== null) {
@@ -75,6 +90,12 @@
     if (active.kind === "message") return active.text;
     return formatHudLabel(active.chip);
   }
+
+  const showKeyboardMap = $derived(
+    style.keyboardDisplayMode === "keyboard" &&
+      active?.kind === "chip" &&
+      active.chip.kind === "key",
+  );
 
   onMount(() => {
     let cancelled = false;
@@ -133,14 +154,20 @@
 
 <div class="hud" aria-live="polite">
   {#if active}
-    {#if style.keyboardDisplayMode === "key-card"}
+    {#if showKeyboardMap}
+      <div transition:fade={{ duration: 200 }}>
+        <KeyboardMap
+          activeIds={activeKeyIds}
+          textColor={style.textColor}
+          backgroundCss={chipBackground}
+          fontSizePx={style.fontSizePx}
+        />
+      </div>
+    {:else if style.keyboardDisplayMode === "key-card"}
       <div
         class="card-row"
         style:--chip-fg={style.textColor}
-        style:--chip-bg={hudBackgroundCss(
-          style.backgroundColor,
-          style.backgroundOpacity,
-        )}
+        style:--chip-bg={chipBackground}
         style:--chip-size={`${style.fontSizePx}px`}
         transition:fade={{ duration: 200 }}
       >
@@ -153,10 +180,7 @@
         class="chip"
         style:font-size={`${style.fontSizePx}px`}
         style:color={style.textColor}
-        style:background={hudBackgroundCss(
-          style.backgroundColor,
-          style.backgroundOpacity,
-        )}
+        style:background={chipBackground}
         transition:fade={{ duration: 200 }}
       >
         {textForActive()}
@@ -182,7 +206,7 @@
     box-sizing: border-box;
     width: 100%;
     height: 100%;
-    padding: 16px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;

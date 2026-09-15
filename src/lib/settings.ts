@@ -7,7 +7,7 @@ export type CaptureSettings = {
   captureMouse: boolean;
 };
 
-export type KeyboardDisplayMode = "text" | "key-card";
+export type KeyboardDisplayMode = "text" | "key-card" | "keyboard";
 
 export type HudStyleSettings = {
   fontSizePx: number;
@@ -29,7 +29,7 @@ export const DEFAULT_HUD_STYLE: HudStyleSettings = {
 };
 
 function isKeyboardDisplayMode(value: unknown): value is KeyboardDisplayMode {
-  return value === "text" || value === "key-card";
+  return value === "text" || value === "key-card" || value === "keyboard";
 }
 
 export function isHudStyleSettings(value: unknown): value is HudStyleSettings {

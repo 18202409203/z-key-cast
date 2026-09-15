@@ -145,7 +145,7 @@ void listen(EVENT_CHANNEL, (event) => {
 - **Commands**: `get_hud_style_settings` / `set_hud_style_settings` (persist in same `settings.json` as capture; never wipe sibling fields)
 - **Overlay**: load on mount + `listen`; chip idle timer uses `dwellMs`; defaults match MVP (`dwellMs=1000`)
 - **Clamp**: font 10–48, dwell 200–5000, opacity 0–1, colors `#rgb`/`#rrggbb`
-- **`keyboardDisplayMode`**: `text` (default) | `key-card`; overlay renders one string vs per-key cards from `hudCards(chip)` using `KeyRef.id`/`label`
+- **`keyboardDisplayMode`**: `text` (default) | `key-card` | `keyboard`; overlay renders string / per-key cards / full layout highlight from `HudChip` ids (`KeyboardMap` + `keyboard-layout.ts`)
 
 ### Mods encoding
 

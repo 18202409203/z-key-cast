@@ -166,7 +166,7 @@
 
   function onKeyboardDisplayModeChange(event: Event) {
     const value = (event.currentTarget as HTMLSelectElement).value;
-    if (value !== "text" && value !== "key-card") return;
+    if (value !== "text" && value !== "key-card" && value !== "keyboard") return;
     patchHud({ keyboardDisplayMode: value as KeyboardDisplayMode });
   }
 
@@ -338,6 +338,7 @@
             >
               <option value="text">Text</option>
               <option value="key-card">Key cards</option>
+              <option value="keyboard">Full keyboard</option>
             </select>
           </div>
           <div class="field">

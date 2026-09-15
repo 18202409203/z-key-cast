@@ -28,7 +28,7 @@ See also: [Tauri Cast Events](../tauri/cast-events.md).
 - Do not trust `listen<T>(...)` generics alone — they are compile-time only
 - Call capture / HUD style APIs only through `$lib/settings.ts`; do not inline invoke command names in routes
 - Keep `HUD_STYLE_CHANNEL` (`cast://hud-style`) in `$lib/settings.ts` aligned with Rust `settings::HUD_STYLE_CHANNEL`
-- Key-card rendering uses `hudCards()` from `$lib/cast.ts` (stable `id` order); do not invent labels in the overlay
+- Key-card / full-keyboard rendering uses `hudCards()` + layout `id`s from `$lib/cast.ts` / `$lib/keyboard-layout.ts`; do not invent labels in the overlay
 
 ---
 

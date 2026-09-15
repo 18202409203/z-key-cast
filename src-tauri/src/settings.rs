@@ -25,6 +25,7 @@ fn hud_lock() -> &'static Mutex<HudStyleSettings> {
 pub enum KeyboardDisplayMode {
     Text,
     KeyCard,
+    Keyboard,
 }
 
 impl Default for KeyboardDisplayMode {
