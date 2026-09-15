@@ -11,9 +11,13 @@
     summarizeHudChip,
   } from "$lib/cast";
   import {
+    DEFAULT_HUD_STYLE,
     getCaptureSettings,
+    getHudStyleSettings,
     setCaptureSettings,
+    setHudStyleSettings,
     type CaptureSettings,
+    type HudStyleSettings,
   } from "$lib/settings";
 
   type MainTab = "settings" | "log" | "about";
@@ -40,6 +44,9 @@
   let captureMouse = $state(true);
   let captureReady = $state(false);
   let captureSaving = $state(false);
+  let hudStyle = $state<HudStyleSettings>({ ...DEFAULT_HUD_STYLE });
+  let hudReady = $state(false);
+  let hudSaving = $state(false);
   let appName = $state(FALLBACK_APP_NAME);
   let appVersion = $state(FALLBACK_APP_VERSION);
 
@@ -104,6 +111,55 @@
       { captureKeyboard, captureMouse: checked },
       previous,
     );
+  }
+
+  async function persistHud(
+    next: HudStyleSettings,
+    previous: HudStyleSettings,
+  ) {
+    hudStyle = next;
+    hudSaving = true;
+    try {
+      hudStyle = await setHudStyleSettings(next);
+    } catch (err) {
+      hudStyle = previous;
+      appendLog(`hud style save failed: ${String(err)}`);
+    } finally {
+      hudSaving = false;
+    }
+  }
+
+  function patchHud(partial: Partial<HudStyleSettings>) {
+    const previous = { ...hudStyle };
+    void persistHud({ ...hudStyle, ...partial }, previous);
+  }
+
+  function onFontSizeChange(event: Event) {
+    const value = Number((event.currentTarget as HTMLInputElement).value);
+    if (!Number.isFinite(value)) return;
+    patchHud({ fontSizePx: value });
+  }
+
+  function onTextColorChange(event: Event) {
+    patchHud({ textColor: (event.currentTarget as HTMLInputElement).value });
+  }
+
+  function onBackgroundColorChange(event: Event) {
+    patchHud({
+      backgroundColor: (event.currentTarget as HTMLInputElement).value,
+    });
+  }
+
+  function onBackgroundOpacityChange(event: Event) {
+    const value = Number((event.currentTarget as HTMLInputElement).value);
+    if (!Number.isFinite(value)) return;
+    patchHud({ backgroundOpacity: value });
+  }
+
+  function onDwellMsChange(event: Event) {
+    const value = Number((event.currentTarget as HTMLInputElement).value);
+    if (!Number.isFinite(value)) return;
+    patchHud({ dwellMs: value });
   }
 
   function selectTab(tab: MainTab) {
@@ -171,6 +227,17 @@
         }
       } finally {
         if (!cancelled) captureReady = true;
+      }
+
+      try {
+        const style = await getHudStyleSettings();
+        if (!cancelled) hudStyle = style;
+      } catch (err) {
+        if (!cancelled) {
+          appendLog(`hud style load failed: ${String(err)}`);
+        }
+      } finally {
+        if (!cancelled) hudReady = true;
       }
 
       const unlistenStatus = await listen(HOOK_STATUS_CHANNEL, (event) => {
@@ -245,6 +312,64 @@
               <option>Top right</option>
               <option>Top left</option>
             </select>
+          </label>
+        </section>
+
+        <section>
+          <h2>HUD appearance</h2>
+          <label>
+            Font size ({hudStyle.fontSizePx}px)
+            <input
+              type="range"
+              min="10"
+              max="48"
+              step="1"
+              value={hudStyle.fontSizePx}
+              disabled={!hudReady || hudSaving}
+              onchange={onFontSizeChange}
+            />
+          </label>
+          <label>
+            Text color
+            <input
+              type="color"
+              value={hudStyle.textColor}
+              disabled={!hudReady || hudSaving}
+              onchange={onTextColorChange}
+            />
+          </label>
+          <label>
+            Background color
+            <input
+              type="color"
+              value={hudStyle.backgroundColor}
+              disabled={!hudReady || hudSaving}
+              onchange={onBackgroundColorChange}
+            />
+          </label>
+          <label>
+            Background opacity ({hudStyle.backgroundOpacity.toFixed(2)})
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={hudStyle.backgroundOpacity}
+              disabled={!hudReady || hudSaving}
+              onchange={onBackgroundOpacityChange}
+            />
+          </label>
+          <label>
+            Dwell (ms)
+            <input
+              type="number"
+              min="200"
+              max="5000"
+              step="50"
+              value={hudStyle.dwellMs}
+              disabled={!hudReady || hudSaving}
+              onchange={onDwellMsChange}
+            />
           </label>
         </section>
 
@@ -445,6 +570,33 @@
     background: #0f172a;
     color: #e2e8f0;
     padding: 10px 12px;
+  }
+
+  input[type="number"],
+  input[type="color"],
+  input[type="range"] {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  input[type="number"] {
+    border: 1px solid #334155;
+    border-radius: 10px;
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 10px 12px;
+  }
+
+  input[type="color"] {
+    height: 40px;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    background: #0f172a;
+    padding: 4px;
+  }
+
+  input[type="range"] {
+    accent-color: #38bdf8;
   }
 
   .muted {

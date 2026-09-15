@@ -7,3 +7,13 @@ commands.allow = ["get_capture_settings"]
 identifier = "allow-set-capture-settings"
 description = "Allows updating keyboard/mouse capture toggles"
 commands.allow = ["set_capture_settings"]
+
+[[permission]]
+identifier = "allow-get-hud-style-settings"
+description = "Allows reading HUD appearance and dwell settings"
+commands.allow = ["get_hud_style_settings"]
+
+[[permission]]
+identifier = "allow-set-hud-style-settings"
+description = "Allows updating HUD appearance and dwell settings"
+commands.allow = ["set_hud_style_settings"]

@@ -139,6 +139,13 @@ void listen(EVENT_CHANNEL, (event) => {
 - **Why**: Reducer must keep seeing raw downs so held-mod state stays correct while one side is off
 - **Forbidden**: Skipping `reduce` when a toggle is off; filtering only on the frontend (overlay would still show chips)
 
+### HUD style settings
+
+- **Channel**: `cast://hud-style` → `HudStyleSettings` (`fontSizePx`, `textColor`, `backgroundColor`, `backgroundOpacity`, `dwellMs`)
+- **Commands**: `get_hud_style_settings` / `set_hud_style_settings` (persist in same `settings.json` as capture; never wipe sibling fields)
+- **Overlay**: load on mount + `listen`; chip idle timer uses `dwellMs`; defaults match MVP (`dwellMs=1000`)
+- **Clamp**: font 10–48, dwell 200–5000, opacity 0–1, colors `#rgb`/`#rrggbb`
+
 ### Mods encoding
 
 - **Decision**: `KeyRef` with left/right `id` and HUD-friendly `label` symbols

@@ -14,7 +14,7 @@ This layer owns Rust-side modules under `src-tauri/` and the wire contracts shar
 
 | Guide | Description | Status |
 |-------|-------------|--------|
-| [Cast Events](./cast-events.md) | `HudChip` / `HookStatus` payloads, channels, capture toggles, platform cfg boundary | Filled |
+| [Cast Events](./cast-events.md) | `HudChip` / `HookStatus` / HUD style channel, capture toggles, platform cfg | Filled |
 
 ---
 
@@ -22,7 +22,7 @@ This layer owns Rust-side modules under `src-tauri/` and the wire contracts shar
 
 - [ ] Read [Cast Events](./cast-events.md) before changing emit payloads, channel names, or capture toggles
 - [ ] Keep TypeScript `$lib/cast.ts` aligned with Rust `input/event.rs`
-- [ ] Keep `$lib/settings.ts` aligned with Rust `settings.rs` (`CaptureSettings` camelCase)
+- [ ] Keep `$lib/settings.ts` aligned with Rust `settings.rs` (capture + `HudStyleSettings`)
 - [ ] Do not implement Windows/Linux hooks without a dedicated task
 
 ---
@@ -34,4 +34,5 @@ This layer owns Rust-side modules under `src-tauri/` and the wire contracts shar
 - [ ] Key autorepeat / spam filtering happens before `cast://event` emit
 - [ ] Chip reducer: bare mods no emit; primary/mouse down only
 - [ ] Capture toggles filter **after** reduce via `allows_chip`, not by skipping reduce
-- [ ] `get_capture_settings` / `set_capture_settings` ACL permissions present in capabilities
+- [ ] Capture / HUD style commands have ACL permissions; saves preserve sibling `settings.json` fields
+- [ ] `cast://hud-style` hot-updates overlay dwell + chip CSS without restart

@@ -1,1 +1,6 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "May add hud-style channel next to cast events"}
+{"file": ".trellis/spec/tauri/index.md", "reason": "Tauri settings checklist"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Settings + overlay UI"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "settings.ts contract"}
+{"file": ".trellis/tasks/09-15-custom-hud-styles/prd.md", "reason": "Style + dwell AC"}
+{"file": ".trellis/tasks/09-15-custom-hud-styles/design.md", "reason": "AppSettings shape and hot emit"}

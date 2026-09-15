@@ -9,10 +9,17 @@
     isHookStatus,
     isHudChip,
   } from "$lib/cast";
-
-  const IDLE_MS = 1000;
+  import {
+    DEFAULT_HUD_STYLE,
+    HUD_STYLE_CHANNEL,
+    getHudStyleSettings,
+    hudBackgroundCss,
+    isHudStyleSettings,
+    type HudStyleSettings,
+  } from "$lib/settings";
 
   let chipLabel = $state<string | null>(null);
+  let style = $state<HudStyleSettings>({ ...DEFAULT_HUD_STYLE });
   let idleTimer: ReturnType<typeof setTimeout> | null = null;
 
   function clearIdleTimer() {
@@ -22,13 +29,21 @@
     }
   }
 
+  function applyStyle(next: HudStyleSettings) {
+    style = next;
+    if (chipLabel !== null) {
+      // Restart dwell with the new duration while a chip is visible.
+      showChip(chipLabel);
+    }
+  }
+
   function showChip(label: string) {
     chipLabel = label;
     clearIdleTimer();
     idleTimer = setTimeout(() => {
       chipLabel = null;
       idleTimer = null;
-    }, IDLE_MS);
+    }, style.dwellMs);
   }
 
   onMount(() => {
@@ -36,6 +51,23 @@
     const unsubs: Array<() => void> = [];
 
     void (async () => {
+      try {
+        const loaded = await getHudStyleSettings();
+        if (!cancelled) applyStyle(loaded);
+      } catch {
+        // Keep defaults when invoke is unavailable (browser-only).
+      }
+
+      const unlistenStyle = await listen(HUD_STYLE_CHANNEL, (event) => {
+        if (!isHudStyleSettings(event.payload)) return;
+        applyStyle(event.payload);
+      });
+      if (cancelled) {
+        unlistenStyle();
+        return;
+      }
+      unsubs.push(unlistenStyle);
+
       const unlistenEvent = await listen(EVENT_CHANNEL, (event) => {
         if (!isHudChip(event.payload)) return;
         showChip(formatHudLabel(event.payload));
@@ -71,7 +103,18 @@
 
 <div class="hud" aria-live="polite">
   {#if chipLabel}
-    <div class="chip" transition:fade={{ duration: 200 }}>{chipLabel}</div>
+    <div
+      class="chip"
+      style:font-size={`${style.fontSizePx}px`}
+      style:color={style.textColor}
+      style:background={hudBackgroundCss(
+        style.backgroundColor,
+        style.backgroundOpacity,
+      )}
+      transition:fade={{ duration: 200 }}
+    >
+      {chipLabel}
+    </div>
   {/if}
 </div>
 
@@ -106,9 +149,6 @@
     max-width: 100%;
     padding: 10px 14px;
     border-radius: 12px;
-    background: rgba(15, 23, 42, 0.82);
-    color: #f8fafc;
-    font-size: 15px;
     font-weight: 600;
     letter-spacing: 0.02em;
     backdrop-filter: blur(10px);

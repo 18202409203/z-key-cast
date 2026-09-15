@@ -12,6 +12,8 @@
     "core:window:allow-current-monitor",
     "opener:default",
     "allow-get-capture-settings",
-    "allow-set-capture-settings"
+    "allow-set-capture-settings",
+    "allow-get-hud-style-settings",
+    "allow-set-hud-style-settings"
   ]
 }
