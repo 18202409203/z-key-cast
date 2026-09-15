@@ -305,8 +305,8 @@
         <section>
           <h2>Display</h2>
           <div class="field">
-            <label for="setting-corner">Corner</label>
-            <select id="setting-corner" disabled>
+            <span class="field-label" id="setting-corner-label">Corner</span>
+            <select id="setting-corner" aria-labelledby="setting-corner-label" disabled>
               <option selected>Bottom right</option>
               <option>Bottom left</option>
               <option>Top right</option>
@@ -318,7 +318,9 @@
         <section>
           <h2>HUD appearance</h2>
           <div class="field">
-            <label for="hud-font-size">Font size ({hudStyle.fontSizePx}px)</label>
+            <span class="field-label" id="hud-font-size-label"
+              >Font size ({hudStyle.fontSizePx}px)</span
+            >
             <input
               id="hud-font-size"
               type="range"
@@ -327,32 +329,35 @@
               step="1"
               value={hudStyle.fontSizePx}
               disabled={!hudReady || hudSaving}
+              aria-labelledby="hud-font-size-label"
               onchange={onFontSizeChange}
             />
           </div>
           <div class="field">
-            <label for="hud-text-color">Text color</label>
+            <span class="field-label" id="hud-text-color-label">Text color</span>
             <input
               id="hud-text-color"
               type="color"
               value={hudStyle.textColor}
               disabled={!hudReady || hudSaving}
+              aria-labelledby="hud-text-color-label"
               onchange={onTextColorChange}
             />
           </div>
           <div class="field">
-            <label for="hud-bg-color">Background color</label>
+            <span class="field-label" id="hud-bg-color-label">Background color</span>
             <input
               id="hud-bg-color"
               type="color"
               value={hudStyle.backgroundColor}
               disabled={!hudReady || hudSaving}
+              aria-labelledby="hud-bg-color-label"
               onchange={onBackgroundColorChange}
             />
           </div>
           <div class="field">
-            <label for="hud-bg-opacity"
-              >Background opacity ({hudStyle.backgroundOpacity.toFixed(2)})</label
+            <span class="field-label" id="hud-bg-opacity-label"
+              >Background opacity ({hudStyle.backgroundOpacity.toFixed(2)})</span
             >
             <input
               id="hud-bg-opacity"
@@ -362,11 +367,12 @@
               step="0.01"
               value={hudStyle.backgroundOpacity}
               disabled={!hudReady || hudSaving}
+              aria-labelledby="hud-bg-opacity-label"
               onchange={onBackgroundOpacityChange}
             />
           </div>
           <div class="field">
-            <label for="hud-dwell-ms">Dwell (ms)</label>
+            <span class="field-label" id="hud-dwell-ms-label">Dwell (ms)</span>
             <input
               id="hud-dwell-ms"
               type="number"
@@ -375,6 +381,7 @@
               step="50"
               value={hudStyle.dwellMs}
               disabled={!hudReady || hudSaving}
+              aria-labelledby="hud-dwell-ms-label"
               onchange={onDwellMsChange}
             />
           </div>
@@ -569,7 +576,8 @@
     font-size: 14px;
   }
 
-  .field > label {
+  .field > label,
+  .field-label {
     color: #e2e8f0;
   }
 
