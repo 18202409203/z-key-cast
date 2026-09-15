@@ -7,12 +7,16 @@ export type CaptureSettings = {
   captureMouse: boolean;
 };
 
+export type KeyboardDisplayMode = "text" | "key-card";
+
 export type HudStyleSettings = {
   fontSizePx: number;
   textColor: string;
   backgroundColor: string;
   backgroundOpacity: number;
   dwellMs: number;
+  /** Omitted in older settings → treat as `"text"`. */
+  keyboardDisplayMode?: KeyboardDisplayMode;
 };
 
 export const DEFAULT_HUD_STYLE: HudStyleSettings = {
@@ -21,18 +25,42 @@ export const DEFAULT_HUD_STYLE: HudStyleSettings = {
   backgroundColor: "#0f172a",
   backgroundOpacity: 0.82,
   dwellMs: 1000,
+  keyboardDisplayMode: "text",
 };
+
+function isKeyboardDisplayMode(value: unknown): value is KeyboardDisplayMode {
+  return value === "text" || value === "key-card";
+}
 
 export function isHudStyleSettings(value: unknown): value is HudStyleSettings {
   if (!value || typeof value !== "object") return false;
   const s = value as Record<string, unknown>;
-  return (
-    typeof s.fontSizePx === "number" &&
-    typeof s.textColor === "string" &&
-    typeof s.backgroundColor === "string" &&
-    typeof s.backgroundOpacity === "number" &&
-    typeof s.dwellMs === "number"
-  );
+  if (
+    typeof s.fontSizePx !== "number" ||
+    typeof s.textColor !== "string" ||
+    typeof s.backgroundColor !== "string" ||
+    typeof s.backgroundOpacity !== "number" ||
+    typeof s.dwellMs !== "number"
+  ) {
+    return false;
+  }
+  if (
+    s.keyboardDisplayMode !== undefined &&
+    !isKeyboardDisplayMode(s.keyboardDisplayMode)
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/** Fill defaults for fields omitted by older settings.json / emits. */
+export function normalizeHudStyleSettings(
+  value: HudStyleSettings,
+): HudStyleSettings & { keyboardDisplayMode: KeyboardDisplayMode } {
+  return {
+    ...value,
+    keyboardDisplayMode: value.keyboardDisplayMode ?? "text",
+  };
 }
 
 /** Convert `#rgb` / `#rrggbb` + opacity into `rgba(...)` for the chip background. */

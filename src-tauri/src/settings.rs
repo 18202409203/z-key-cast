@@ -20,6 +20,19 @@ fn hud_lock() -> &'static Mutex<HudStyleSettings> {
     HUD.get_or_init(|| Mutex::new(HudStyleSettings::default()))
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum KeyboardDisplayMode {
+    Text,
+    KeyCard,
+}
+
+impl Default for KeyboardDisplayMode {
+    fn default() -> Self {
+        Self::Text
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct HudStyleSettings {
@@ -28,6 +41,8 @@ pub struct HudStyleSettings {
     pub background_color: String,
     pub background_opacity: f64,
     pub dwell_ms: u32,
+    #[serde(default)]
+    pub keyboard_display_mode: KeyboardDisplayMode,
 }
 
 impl Default for HudStyleSettings {
@@ -38,6 +53,7 @@ impl Default for HudStyleSettings {
             background_color: "#0f172a".into(),
             background_opacity: 0.82,
             dwell_ms: 1000,
+            keyboard_display_mode: KeyboardDisplayMode::Text,
         }
     }
 }
@@ -281,6 +297,7 @@ mod tests {
             background_color: "#0f172a".into(),
             background_opacity: 2.0,
             dwell_ms: 10,
+            keyboard_display_mode: KeyboardDisplayMode::Text,
         }
         .clamp();
         assert_eq!(clamped.font_size_px, 10);

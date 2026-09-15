@@ -67,6 +67,16 @@ export function formatHudLabel(chip: HudChip): string {
   return `Mouse · ${button}`;
 }
 
+/** Stable ordered cards for key-card mode (mods then primary; mouse → one card). */
+export function hudCards(chip: HudChip): KeyRef[] {
+  if (chip.kind === "key") {
+    return [...chip.mods, chip.key];
+  }
+  const label =
+    chip.button === "left" ? "Left" : chip.button === "right" ? "Right" : "Middle";
+  return [{ id: `Mouse${label}`, label }];
+}
+
 export function summarizeHudChip(chip: HudChip): string {
   if (chip.kind === "key") {
     const modIds = chip.mods.map((m) => m.id).join(",");

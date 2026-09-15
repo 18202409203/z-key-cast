@@ -14,10 +14,12 @@
     DEFAULT_HUD_STYLE,
     getCaptureSettings,
     getHudStyleSettings,
+    normalizeHudStyleSettings,
     setCaptureSettings,
     setHudStyleSettings,
     type CaptureSettings,
     type HudStyleSettings,
+    type KeyboardDisplayMode,
   } from "$lib/settings";
 
   type MainTab = "settings" | "log" | "about";
@@ -162,6 +164,12 @@
     patchHud({ dwellMs: value });
   }
 
+  function onKeyboardDisplayModeChange(event: Event) {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    if (value !== "text" && value !== "key-card") return;
+    patchHud({ keyboardDisplayMode: value as KeyboardDisplayMode });
+  }
+
   function selectTab(tab: MainTab) {
     activeTab = tab;
   }
@@ -231,7 +239,7 @@
 
       try {
         const style = await getHudStyleSettings();
-        if (!cancelled) hudStyle = style;
+        if (!cancelled) hudStyle = normalizeHudStyleSettings(style);
       } catch (err) {
         if (!cancelled) {
           appendLog(`hud style load failed: ${String(err)}`);
@@ -317,6 +325,21 @@
 
         <section>
           <h2>HUD appearance</h2>
+          <div class="field">
+            <span class="field-label" id="hud-keyboard-mode-label"
+              >Keyboard display</span
+            >
+            <select
+              id="hud-keyboard-mode"
+              value={hudStyle.keyboardDisplayMode}
+              disabled={!hudReady || hudSaving}
+              aria-labelledby="hud-keyboard-mode-label"
+              onchange={onKeyboardDisplayModeChange}
+            >
+              <option value="text">Text</option>
+              <option value="key-card">Key cards</option>
+            </select>
+          </div>
           <div class="field">
             <span class="field-label" id="hud-font-size-label"
               >Font size ({hudStyle.fontSizePx}px)</span
