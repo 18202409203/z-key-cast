@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "Verify coexist vs cast-events contracts"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Quality bar for overlay change"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Type-safe dual-slot routing"}

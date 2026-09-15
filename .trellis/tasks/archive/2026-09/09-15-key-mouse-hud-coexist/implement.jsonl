@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "Overlay chip emit + dwell wording to update"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Overlay state patterns"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "HudChip / display mode typing"}
+{"file": "design/index.md", "reason": "Product HUD single-chip clause to revise"}
