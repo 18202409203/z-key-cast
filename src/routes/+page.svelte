@@ -304,22 +304,23 @@
       >
         <section>
           <h2>Display</h2>
-          <label>
-            Corner
-            <select disabled>
+          <div class="field">
+            <label for="setting-corner">Corner</label>
+            <select id="setting-corner" disabled>
               <option selected>Bottom right</option>
               <option>Bottom left</option>
               <option>Top right</option>
               <option>Top left</option>
             </select>
-          </label>
+          </div>
         </section>
 
         <section>
           <h2>HUD appearance</h2>
-          <label>
-            Font size ({hudStyle.fontSizePx}px)
+          <div class="field">
+            <label for="hud-font-size">Font size ({hudStyle.fontSizePx}px)</label>
             <input
+              id="hud-font-size"
               type="range"
               min="10"
               max="48"
@@ -328,28 +329,33 @@
               disabled={!hudReady || hudSaving}
               onchange={onFontSizeChange}
             />
-          </label>
-          <label>
-            Text color
+          </div>
+          <div class="field">
+            <label for="hud-text-color">Text color</label>
             <input
+              id="hud-text-color"
               type="color"
               value={hudStyle.textColor}
               disabled={!hudReady || hudSaving}
               onchange={onTextColorChange}
             />
-          </label>
-          <label>
-            Background color
+          </div>
+          <div class="field">
+            <label for="hud-bg-color">Background color</label>
             <input
+              id="hud-bg-color"
               type="color"
               value={hudStyle.backgroundColor}
               disabled={!hudReady || hudSaving}
               onchange={onBackgroundColorChange}
             />
-          </label>
-          <label>
-            Background opacity ({hudStyle.backgroundOpacity.toFixed(2)})
+          </div>
+          <div class="field">
+            <label for="hud-bg-opacity"
+              >Background opacity ({hudStyle.backgroundOpacity.toFixed(2)})</label
+            >
             <input
+              id="hud-bg-opacity"
               type="range"
               min="0"
               max="1"
@@ -358,10 +364,11 @@
               disabled={!hudReady || hudSaving}
               onchange={onBackgroundOpacityChange}
             />
-          </label>
-          <label>
-            Dwell (ms)
+          </div>
+          <div class="field">
+            <label for="hud-dwell-ms">Dwell (ms)</label>
             <input
+              id="hud-dwell-ms"
               type="number"
               min="200"
               max="5000"
@@ -370,7 +377,7 @@
               disabled={!hudReady || hudSaving}
               onchange={onDwellMsChange}
             />
-          </label>
+          </div>
         </section>
 
         <section>
@@ -385,24 +392,26 @@
               Waiting for hook status…
             {/if}
           </p>
-          <label class="toggle">
+          <div class="field field-toggle">
             <input
+              id="capture-keyboard"
               type="checkbox"
               checked={captureKeyboard}
               disabled={!captureReady || captureSaving}
               onchange={onCaptureKeyboardChange}
             />
-            <span>Listen to keyboard</span>
-          </label>
-          <label class="toggle">
+            <label for="capture-keyboard">Listen to keyboard</label>
+          </div>
+          <div class="field field-toggle">
             <input
+              id="capture-mouse"
               type="checkbox"
               checked={captureMouse}
               disabled={!captureReady || captureSaving}
               onchange={onCaptureMouseChange}
             />
-            <span>Listen to mouse</span>
-          </label>
+            <label for="capture-mouse">Listen to mouse</label>
+          </div>
         </section>
       </div>
     {:else if activeTab === "log"}
@@ -451,6 +460,7 @@
   :global(html, body) {
     margin: 0;
     height: 100%;
+    width: 100%;
     overflow: hidden;
     background:
       radial-gradient(circle at 12% 18%, rgba(56, 189, 248, 0.18), transparent 42%),
@@ -463,11 +473,14 @@
   .shell {
     box-sizing: border-box;
     height: 100%;
+    width: 100%;
+    max-width: 100%;
     padding: 20px 20px 24px;
     display: flex;
     flex-direction: column;
     gap: 16px;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: hidden;
   }
 
   .top {
@@ -517,6 +530,7 @@
 
   .panels {
     flex: 1;
+    min-width: 0;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -525,16 +539,19 @@
 
   .panel {
     flex: 1;
+    min-width: 0;
     min-height: 0;
     display: flex;
     flex-direction: column;
     gap: 24px;
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .settings-panel section {
     display: grid;
     gap: 12px;
+    min-width: 0;
   }
 
   h2 {
@@ -545,40 +562,40 @@
     color: #64748b;
   }
 
-  label {
+  .field {
     display: grid;
     gap: 8px;
+    min-width: 0;
     font-size: 14px;
   }
 
-  label.toggle {
+  .field > label {
+    color: #e2e8f0;
+  }
+
+  .field-toggle {
     grid-template-columns: auto 1fr;
     align-items: center;
     gap: 10px;
   }
 
-  label.toggle input {
+  .field-toggle input {
     width: 16px;
     height: 16px;
     accent-color: #38bdf8;
   }
 
-  select {
-    width: 100%;
-    border: 1px solid #334155;
-    border-radius: 10px;
-    background: #0f172a;
-    color: #e2e8f0;
-    padding: 10px 12px;
-  }
-
+  select,
   input[type="number"],
   input[type="color"],
   input[type="range"] {
-    width: 100%;
     box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
+  select,
   input[type="number"] {
     border: 1px solid #334155;
     border-radius: 10px;
