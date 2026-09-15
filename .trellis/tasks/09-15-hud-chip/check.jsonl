@@ -1,0 +1,8 @@
+{"file": "design/index.md", "reason": "HudChip product contract and HUD conventions"}
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "cast://event HudChip wire rules"}
+{"file": ".trellis/spec/tauri/index.md", "reason": "Tauri quality checklist"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend quality checklist"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Payload guard / format helpers"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Rust↔TS event consistency"}
+{"file": ".trellis/tasks/09-15-hud-chip/prd.md", "reason": "AC1–AC8 acceptance"}
+{"file": ".trellis/tasks/09-15-hud-chip/design.md", "reason": "Reducer and fade design"}

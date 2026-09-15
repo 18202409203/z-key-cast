@@ -1,0 +1,8 @@
+{"file": "design/index.md", "reason": "Current CastEvent/HUD conventions to replace with HudChip"}
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "Existing cast://event contract and channel rules"}
+{"file": ".trellis/spec/tauri/index.md", "reason": "Tauri layer pre-dev checklist"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Overlay/Svelte conventions for HUD listen path"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Rust emit → TS listen payload consistency"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Reuse cast.ts guards; avoid parallel event shapes"}
+{"file": ".trellis/tasks/09-15-hud-chip/design.md", "reason": "HudChip shape, reducer rules, fade ownership"}
+{"file": ".trellis/tasks/archive/2026-09/09-15-rust-input-hooks/design.md", "reason": "Existing input module layout and channels"}
