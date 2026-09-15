@@ -13,19 +13,28 @@
     summarizeHudChip,
   } from "$lib/cast";
   import {
+    DEFAULT_HUD_POSITION,
     DEFAULT_HUD_STYLE,
     HUD_COLOR_PRESETS,
     armIgnoreKeyCapture,
     cancelIgnoreKeyCapture,
     colorsFromHudPreset,
+    cornerSelectValue,
+    endHudPlaceMode,
     getCaptureSettings,
+    getHudPositionSettings,
     getHudStyleSettings,
+    isHudCorner,
+    isHudPositionSettings,
     matchHudColorPreset,
     normalizeHudStyleSettings,
     setCaptureSettings,
+    setHudPositionSettings,
     setHudStyleSettings,
+    startHudPlaceMode,
     type CaptureSettings,
     type HudColorPresetId,
+    type HudPositionSettings,
     type HudStyleSettings,
     type KeyboardDisplayMode,
     type MouseDisplayMode,
@@ -69,6 +78,10 @@
   let hudStyle = $state<HudStyleSettings>({ ...DEFAULT_HUD_STYLE });
   let hudReady = $state(false);
   let hudSaving = $state(false);
+  let hudPosition = $state<HudPositionSettings>({ ...DEFAULT_HUD_POSITION });
+  let positionReady = $state(false);
+  let positionSaving = $state(false);
+  let placeModeActive = $state(false);
   let appName = $state(FALLBACK_APP_NAME);
   let appVersion = $state(FALLBACK_APP_VERSION);
 
@@ -270,6 +283,63 @@
     patchHud(colorsFromHudPreset(value as HudColorPresetId));
   }
 
+  async function persistPosition(
+    next: HudPositionSettings,
+    previous: HudPositionSettings,
+  ) {
+    hudPosition = next;
+    positionSaving = true;
+    try {
+      const saved = await setHudPositionSettings(next);
+      hudPosition = isHudPositionSettings(saved)
+        ? saved
+        : { ...DEFAULT_HUD_POSITION };
+    } catch (err) {
+      hudPosition = previous;
+      appendLog(`hud position save failed: ${String(err)}`);
+    } finally {
+      positionSaving = false;
+    }
+  }
+
+  function onCornerChange(event: Event) {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    if (value === "custom" || !isHudCorner(value)) return;
+    const previous =
+      hudPosition.mode === "custom"
+        ? { mode: "custom" as const, x: hudPosition.x, y: hudPosition.y }
+        : { mode: "corner" as const, corner: hudPosition.corner };
+    void persistPosition({ mode: "corner", corner: value }, previous);
+  }
+
+  async function onTogglePlaceMode() {
+    if (placeModeActive) {
+      positionSaving = true;
+      try {
+        const saved = await endHudPlaceMode();
+        hudPosition = isHudPositionSettings(saved)
+          ? saved
+          : { ...DEFAULT_HUD_POSITION };
+        placeModeActive = false;
+      } catch (err) {
+        appendLog(`end place mode failed: ${String(err)}`);
+      } finally {
+        positionSaving = false;
+      }
+      return;
+    }
+
+    positionSaving = true;
+    try {
+      await startHudPlaceMode();
+      placeModeActive = true;
+    } catch (err) {
+      appendLog(`start place mode failed: ${String(err)}`);
+    } finally {
+      positionSaving = false;
+    }
+  }
+
   function selectTab(tab: MainTab) {
     activeTab = tab;
   }
@@ -345,6 +415,21 @@
         }
       } finally {
         if (!cancelled) hudReady = true;
+      }
+
+      try {
+        const position = await getHudPositionSettings();
+        if (!cancelled) {
+          hudPosition = isHudPositionSettings(position)
+            ? position
+            : { ...DEFAULT_HUD_POSITION };
+        }
+      } catch (err) {
+        if (!cancelled) {
+          appendLog(`hud position load failed: ${String(err)}`);
+        }
+      } finally {
+        if (!cancelled) positionReady = true;
       }
 
       try {
@@ -447,12 +532,37 @@
           <h2>Display</h2>
           <div class="field">
             <span class="field-label" id="setting-corner-label">Corner</span>
-            <select id="setting-corner" aria-labelledby="setting-corner-label" disabled>
-              <option selected>Bottom right</option>
-              <option>Bottom left</option>
-              <option>Top right</option>
-              <option>Top left</option>
+            <select
+              id="setting-corner"
+              value={cornerSelectValue(hudPosition)}
+              disabled={!positionReady || positionSaving}
+              aria-labelledby="setting-corner-label"
+              onchange={onCornerChange}
+            >
+              <option value="br">Bottom right</option>
+              <option value="bl">Bottom left</option>
+              <option value="tr">Top right</option>
+              <option value="tl">Top left</option>
+              <option value="custom" disabled={hudPosition.mode !== "custom"}
+                >Custom</option
+              >
             </select>
+          </div>
+          <div class="field">
+            <span class="field-label" id="setting-place-label">HUD position</span>
+            <button
+              type="button"
+              class="clear"
+              id="setting-place"
+              disabled={!positionReady || positionSaving}
+              aria-labelledby="setting-place-label"
+              onclick={() => void onTogglePlaceMode()}
+            >
+              {placeModeActive ? "Done" : "Move HUD"}
+            </button>
+            {#if placeModeActive}
+              <p class="muted">Drag the overlay, then press Done.</p>
+            {/if}
           </div>
         </section>
 

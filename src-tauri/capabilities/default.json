@@ -10,12 +10,17 @@
     "core:window:allow-outer-size",
     "core:window:allow-set-position",
     "core:window:allow-current-monitor",
+    "core:window:allow-start-dragging",
     "opener:default",
     "allow-get-capture-settings",
     "allow-set-capture-settings",
     "allow-arm-ignore-key-capture",
     "allow-cancel-ignore-key-capture",
     "allow-get-hud-style-settings",
-    "allow-set-hud-style-settings"
+    "allow-set-hud-style-settings",
+    "allow-get-hud-position-settings",
+    "allow-set-hud-position-settings",
+    "allow-start-hud-place-mode",
+    "allow-end-hud-place-mode"
   ]
 }

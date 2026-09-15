@@ -1,5 +1,6 @@
 <script lang="ts">
   import { listen } from "@tauri-apps/api/event";
+  import { getCurrentWindow } from "@tauri-apps/api/window";
   import { fade } from "svelte/transition";
   import { onMount } from "svelte";
   import KeyboardMap from "$lib/KeyboardMap.svelte";
@@ -19,9 +20,11 @@
   } from "$lib/cast";
   import {
     DEFAULT_HUD_STYLE,
+    HUD_PLACE_MODE_CHANNEL,
     HUD_STYLE_CHANNEL,
     getHudStyleSettings,
     hudBackgroundCss,
+    isHudPlaceModePayload,
     isHudStyleSettings,
     normalizeHudStyleSettings,
     type HudStyleSettings,
@@ -34,6 +37,7 @@
   let mouseSlot = $state<MouseChip | null>(null);
   let statusText = $state<string | null>(null);
   let style = $state<HudStyleSettings>({ ...DEFAULT_HUD_STYLE });
+  let placeMode = $state(false);
   let keyIdleTimer: ReturnType<typeof setTimeout> | null = null;
   let mouseIdleTimer: ReturnType<typeof setTimeout> | null = null;
   let statusIdleTimer: ReturnType<typeof setTimeout> | null = null;
@@ -159,6 +163,17 @@
     return mouseSlot ? formatHudLabel(mouseSlot) : "";
   }
 
+  async function onPlacePointerDown(event: PointerEvent) {
+    if (!placeMode) return;
+    if (event.button !== 0) return;
+    event.preventDefault();
+    try {
+      await getCurrentWindow().startDragging();
+    } catch {
+      // Ignore when not running under Tauri.
+    }
+  }
+
   onMount(() => {
     let cancelled = false;
     const unsubs: Array<() => void> = [];
@@ -180,6 +195,16 @@
         return;
       }
       unsubs.push(unlistenStyle);
+
+      const unlistenPlace = await listen(HUD_PLACE_MODE_CHANNEL, (event) => {
+        if (!isHudPlaceModePayload(event.payload)) return;
+        placeMode = event.payload.active;
+      });
+      if (cancelled) {
+        unlistenPlace();
+        return;
+      }
+      unsubs.push(unlistenPlace);
 
       const unlistenEvent = await listen(EVENT_CHANNEL, (event) => {
         if (!isHudChip(event.payload)) return;
@@ -214,7 +239,20 @@
   });
 </script>
 
-<div class="hud" aria-live="polite">
+<div
+  class="hud"
+  class:placing={placeMode}
+  role="application"
+  aria-label={placeMode ? "HUD place mode — drag to move" : "Key cast HUD"}
+  aria-live="polite"
+  onpointerdown={onPlacePointerDown}
+>
+  {#if placeMode}
+    <div class="place-affordance" transition:fade={{ duration: 150 }}>
+      Drag to move · Done in Settings
+    </div>
+  {/if}
+
   {#if statusText}
     <div
       class="chip"
@@ -315,6 +353,31 @@
     gap: 10px;
     pointer-events: none;
     font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  }
+
+  .hud.placing {
+    pointer-events: auto;
+    cursor: grab;
+    border: 1px dashed rgba(56, 189, 248, 0.7);
+    background: rgba(15, 23, 42, 0.18);
+  }
+
+  .hud.placing:active {
+    cursor: grabbing;
+  }
+
+  .place-affordance {
+    align-self: stretch;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #e2e8f0;
+    background: rgba(15, 23, 42, 0.82);
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    text-align: center;
+    user-select: none;
   }
 
   .chip {

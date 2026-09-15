@@ -5,6 +5,7 @@ import {
 } from "$lib/key-legends";
 
 export const HUD_STYLE_CHANNEL = "cast://hud-style";
+export const HUD_PLACE_MODE_CHANNEL = "cast://hud-place-mode";
 
 export type CaptureSettings = {
   captureKeyboard: boolean;
@@ -15,6 +16,16 @@ export type CaptureSettings = {
 
 export type KeyboardDisplayMode = "text" | "key-card" | "keyboard";
 export type MouseDisplayMode = "text" | "schematic";
+
+export type HudCorner = "br" | "bl" | "tr" | "tl";
+
+export type HudPositionSettings =
+  | { mode: "corner"; corner: HudCorner }
+  | { mode: "custom"; x: number; y: number };
+
+export type HudPlaceModePayload = {
+  active: boolean;
+};
 
 export type HudStyleSettings = {
   fontSizePx: number;
@@ -39,6 +50,11 @@ export const DEFAULT_HUD_STYLE: HudStyleSettings = {
   keyboardDisplayMode: "text",
   keyboardLegendLayout: "auto",
   mouseDisplayMode: "text",
+};
+
+export const DEFAULT_HUD_POSITION: HudPositionSettings = {
+  mode: "corner",
+  corner: "br",
 };
 
 /** Quick color themes for text, key-card, and full-keyboard modes. */
@@ -224,4 +240,51 @@ export async function setHudStyleSettings(
   settings: HudStyleSettings,
 ): Promise<HudStyleSettings> {
   return invoke<HudStyleSettings>("set_hud_style_settings", { settings });
+}
+
+export function isHudCorner(value: unknown): value is HudCorner {
+  return value === "br" || value === "bl" || value === "tr" || value === "tl";
+}
+
+export function isHudPositionSettings(
+  value: unknown,
+): value is HudPositionSettings {
+  if (!value || typeof value !== "object") return false;
+  const s = value as Record<string, unknown>;
+  if (s.mode === "corner") return isHudCorner(s.corner);
+  if (s.mode === "custom") {
+    return typeof s.x === "number" && typeof s.y === "number";
+  }
+  return false;
+}
+
+export function isHudPlaceModePayload(
+  value: unknown,
+): value is HudPlaceModePayload {
+  if (!value || typeof value !== "object") return false;
+  return typeof (value as Record<string, unknown>).active === "boolean";
+}
+
+export function cornerSelectValue(position: HudPositionSettings): string {
+  return position.mode === "custom" ? "custom" : position.corner;
+}
+
+export async function getHudPositionSettings(): Promise<HudPositionSettings> {
+  const raw = await invoke<HudPositionSettings>("get_hud_position_settings");
+  return isHudPositionSettings(raw) ? raw : { ...DEFAULT_HUD_POSITION };
+}
+
+export async function setHudPositionSettings(
+  settings: HudPositionSettings,
+): Promise<HudPositionSettings> {
+  return invoke<HudPositionSettings>("set_hud_position_settings", { settings });
+}
+
+export async function startHudPlaceMode(): Promise<void> {
+  await invoke("start_hud_place_mode");
+}
+
+export async function endHudPlaceMode(): Promise<HudPositionSettings> {
+  const raw = await invoke<HudPositionSettings>("end_hud_place_mode");
+  return isHudPositionSettings(raw) ? raw : { ...DEFAULT_HUD_POSITION };
 }

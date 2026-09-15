@@ -171,6 +171,16 @@ void listen(EVENT_CHANNEL, (event) => {
 - **`mouseDisplayMode`**: `text` | `schematic` (independent; schematic is a cropped pebble mouse-head with no palm stub; pressed L/M/R uses HUD `textColor` solid fill on `MouseSchematic`, not stroke-only highlight)
 - **`keyboardLegendLayout`**: `auto` (OS guess) | `mac-us` | `win-us` — dual-glyph legends from `$lib/key-legends.ts` (US ANSI `!`/`1` etc.); key-card + full keyboard consume the resolved layout
 
+### HUD position settings
+
+- **Persist**: `hudPosition` in `settings.json` as
+  `{ mode: "corner", corner: "br"|"bl"|"tr"|"tl" }` **or** `{ mode: "custom", x, y }` (physical pixels)
+- **Default**: `{ mode: "corner", corner: "br" }` when missing
+- **Commands**: `get_hud_position_settings` / `set_hud_position_settings` (apply immediately); `start_hud_place_mode` / `end_hud_place_mode` (toggle overlay `ignore_cursor_events`; Done persists `custom` from `outer_position`)
+- **Channel**: `cast://hud-place-mode` → `{ active: boolean }` for overlay drag chrome + `startDragging`
+- **Margins** (corner): ~24× / 48y CSS-px × monitor scale (same as prior hardcoded BR)
+- **Exit safety**: closing Settings / app quit while placing calls `abandon_hud_place_mode` (restore click-through, clear flag, snap back to persisted position — no custom persist without Done)
+
 ### Mods encoding
 
 - **Decision**: `KeyRef` with left/right `id` and HUD-friendly `label` symbols

@@ -27,3 +27,23 @@ commands.allow = ["get_hud_style_settings"]
 identifier = "allow-set-hud-style-settings"
 description = "Allows updating HUD appearance and dwell settings"
 commands.allow = ["set_hud_style_settings"]
+
+[[permission]]
+identifier = "allow-get-hud-position-settings"
+description = "Allows reading HUD overlay position settings"
+commands.allow = ["get_hud_position_settings"]
+
+[[permission]]
+identifier = "allow-set-hud-position-settings"
+description = "Allows updating HUD overlay position settings"
+commands.allow = ["set_hud_position_settings"]
+
+[[permission]]
+identifier = "allow-start-hud-place-mode"
+description = "Allows entering HUD drag-to-place mode"
+commands.allow = ["start_hud_place_mode"]
+
+[[permission]]
+identifier = "allow-end-hud-place-mode"
+description = "Allows exiting HUD drag-to-place mode and persisting custom position"
+commands.allow = ["end_hud_place_mode"]
