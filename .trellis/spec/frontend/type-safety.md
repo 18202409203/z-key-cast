@@ -29,7 +29,7 @@ See also: [Tauri Cast Events](../tauri/cast-events.md).
 - Call capture / HUD style APIs only through `$lib/settings.ts`; do not inline invoke command names in routes
 - Keep `HUD_STYLE_CHANNEL` (`cast://hud-style`) in `$lib/settings.ts` aligned with Rust `settings::HUD_STYLE_CHANNEL`
 - Key-card / full-keyboard rendering uses `hudCards()` + layout `id`s from `$lib/cast.ts` / `$lib/keyboard-layout.ts`; do not invent labels in the overlay
-- Key-card Mac style: `$lib/KeyCard.svelte` + `toKeyCardVisual()` (light keycaps; modifiers use symbol + caption; dual legends from `$lib/key-legends.ts`). HUD color settings do not recolor keycaps by default
+- Key-card / full-keyboard / text all use HUD `textColor` + `backgroundColor`/`backgroundOpacity` (presets Black/White or custom)
 - Legend layout preference: `keyboardLegendLayout` `auto|mac-us|win-us` (OS guess when auto)
 
 ---

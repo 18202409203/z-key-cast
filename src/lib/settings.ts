@@ -35,6 +35,70 @@ export const DEFAULT_HUD_STYLE: HudStyleSettings = {
   keyboardLegendLayout: "auto",
 };
 
+/** Quick color themes for text, key-card, and full-keyboard modes. */
+export type HudColorPresetId = "dark" | "light";
+
+export type HudColorPreset = {
+  id: HudColorPresetId;
+  label: string;
+  textColor: string;
+  backgroundColor: string;
+  backgroundOpacity: number;
+};
+
+export const HUD_COLOR_PRESETS: HudColorPreset[] = [
+  {
+    id: "dark",
+    label: "Black (white on black)",
+    textColor: "#f8fafc",
+    backgroundColor: "#0f172a",
+    backgroundOpacity: 0.9,
+  },
+  {
+    id: "light",
+    label: "White (black on white)",
+    textColor: "#18181b",
+    backgroundColor: "#f4f4f5",
+    backgroundOpacity: 0.96,
+  },
+];
+
+function normHex(color: string): string {
+  return color.trim().toLowerCase();
+}
+
+export function matchHudColorPreset(
+  style: Pick<
+    HudStyleSettings,
+    "textColor" | "backgroundColor" | "backgroundOpacity"
+  >,
+): HudColorPresetId | "custom" {
+  for (const preset of HUD_COLOR_PRESETS) {
+    if (
+      normHex(style.textColor) === normHex(preset.textColor) &&
+      normHex(style.backgroundColor) === normHex(preset.backgroundColor) &&
+      Math.abs(style.backgroundOpacity - preset.backgroundOpacity) < 0.02
+    ) {
+      return preset.id;
+    }
+  }
+  return "custom";
+}
+
+export function colorsFromHudPreset(
+  id: HudColorPresetId,
+): Pick<
+  HudStyleSettings,
+  "textColor" | "backgroundColor" | "backgroundOpacity"
+> {
+  const preset = HUD_COLOR_PRESETS.find((p) => p.id === id) ?? HUD_COLOR_PRESETS[0]!;
+  return {
+    textColor: preset.textColor,
+    backgroundColor: preset.backgroundColor,
+    backgroundOpacity: preset.backgroundOpacity,
+  };
+}
+
 function isKeyboardDisplayMode(value: unknown): value is KeyboardDisplayMode {
   return value === "text" || value === "key-card" || value === "keyboard";
 }

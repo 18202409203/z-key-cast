@@ -99,9 +99,9 @@
     max-width: 100%;
     padding: 10px;
     border-radius: 14px;
-    background: rgba(2, 6, 23, 0.55);
+    background: color-mix(in srgb, var(--kb-bg) 42%, transparent);
     backdrop-filter: blur(12px);
-    box-shadow: 0 12px 36px rgba(2, 6, 23, 0.4);
+    box-shadow: 0 12px 36px color-mix(in srgb, #000 35%, transparent);
   }
 
   .main {
@@ -134,9 +134,9 @@
     height: calc(var(--kb-unit) * 1.55);
     padding: 0 2px;
     border-radius: 6px;
-    border: 1px solid rgba(248, 250, 252, 0.1);
-    background: rgba(15, 23, 42, 0.72);
-    color: #94a3b8;
+    border: 1px solid color-mix(in srgb, var(--kb-fg) 16%, transparent);
+    background: color-mix(in srgb, var(--kb-bg) 58%, transparent);
+    color: color-mix(in srgb, var(--kb-fg) 55%, transparent);
     font-weight: 600;
     letter-spacing: 0.02em;
     line-height: 1;
@@ -172,7 +172,7 @@
   .key.active {
     background: var(--kb-bg);
     color: var(--kb-fg);
-    border-color: rgba(248, 250, 252, 0.28);
-    box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.35);
+    border-color: color-mix(in srgb, var(--kb-fg) 35%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--kb-fg) 28%, transparent);
   }
 </style>

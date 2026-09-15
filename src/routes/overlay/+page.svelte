@@ -181,6 +181,8 @@
           <KeyCard
             visual={toKeyCardVisual(card, legendLayout)}
             fontSizePx={style.fontSizePx}
+            textColor={style.textColor}
+            backgroundCss={chipBackground}
           />
         {/each}
       </div>

@@ -12,12 +12,16 @@
   } from "$lib/cast";
   import {
     DEFAULT_HUD_STYLE,
+    HUD_COLOR_PRESETS,
+    colorsFromHudPreset,
     getCaptureSettings,
     getHudStyleSettings,
+    matchHudColorPreset,
     normalizeHudStyleSettings,
     setCaptureSettings,
     setHudStyleSettings,
     type CaptureSettings,
+    type HudColorPresetId,
     type HudStyleSettings,
     type KeyboardDisplayMode,
   } from "$lib/settings";
@@ -175,6 +179,13 @@
     const value = (event.currentTarget as HTMLSelectElement).value;
     if (value !== "auto" && value !== "mac-us" && value !== "win-us") return;
     patchHud({ keyboardLegendLayout: value as KeyboardLegendPreference });
+  }
+
+  function onColorPresetChange(event: Event) {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    if (value === "custom") return;
+    if (value !== "dark" && value !== "light") return;
+    patchHud(colorsFromHudPreset(value as HudColorPresetId));
   }
 
   function selectTab(tab: MainTab) {
@@ -379,6 +390,21 @@
               aria-labelledby="hud-font-size-label"
               onchange={onFontSizeChange}
             />
+          </div>
+          <div class="field">
+            <span class="field-label" id="hud-color-preset-label">Color preset</span>
+            <select
+              id="hud-color-preset"
+              value={matchHudColorPreset(hudStyle)}
+              disabled={!hudReady || hudSaving}
+              aria-labelledby="hud-color-preset-label"
+              onchange={onColorPresetChange}
+            >
+              {#each HUD_COLOR_PRESETS as preset (preset.id)}
+                <option value={preset.id}>{preset.label}</option>
+              {/each}
+              <option value="custom">Custom</option>
+            </select>
           </div>
           <div class="field">
             <span class="field-label" id="hud-text-color-label">Text color</span>

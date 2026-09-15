@@ -3,11 +3,12 @@
 
   type Props = {
     visual: KeyCardVisual;
-    /** Scales the Mac keycap size from HUD fontSize setting. */
     fontSizePx: number;
+    textColor: string;
+    backgroundCss: string;
   };
 
-  let { visual, fontSizePx }: Props = $props();
+  let { visual, fontSizePx, textColor, backgroundCss }: Props = $props();
 
   const unit = $derived(Math.max(18, Math.min(34, fontSizePx * 1.35)));
 </script>
@@ -19,6 +20,8 @@
     class:symbol-only={!visual.symbol}
     data-key-id={visual.id}
     style:--cap-unit={`${unit}px`}
+    style:--cap-fg={textColor}
+    style:--cap-bg={backgroundCss}
   >
     {#if visual.symbol}
       <span class="symbol">{visual.symbol}</span>
@@ -30,6 +33,8 @@
     class="cap character dual"
     data-key-id={visual.id}
     style:--cap-unit={`${unit}px`}
+    style:--cap-fg={textColor}
+    style:--cap-bg={backgroundCss}
   >
     <span class="shift">{visual.shift}</span>
     <span class="main">{visual.main}</span>
@@ -39,6 +44,8 @@
     class="cap character"
     data-key-id={visual.id}
     style:--cap-unit={`${unit}px`}
+    style:--cap-fg={textColor}
+    style:--cap-bg={backgroundCss}
   >
     <span class="glyph">{visual.main}</span>
   </div>
@@ -49,14 +56,13 @@
     box-sizing: border-box;
     position: relative;
     display: flex;
-    background: #f4f4f5;
-    color: #3f3f46;
-    border: 1px solid #d4d4d8;
+    background: var(--cap-bg);
+    color: var(--cap-fg);
+    border: 1px solid color-mix(in srgb, var(--cap-fg) 22%, transparent);
     border-radius: calc(var(--cap-unit) * 0.28);
     box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.9) inset,
-      0 2px 4px rgba(24, 24, 27, 0.18),
-      0 1px 0 rgba(24, 24, 27, 0.06);
+      0 1px 0 color-mix(in srgb, #fff 35%, transparent) inset,
+      0 2px 6px color-mix(in srgb, #000 22%, transparent);
     font-family:
       "SF Pro Text",
       "IBM Plex Sans",
@@ -88,7 +94,7 @@
     font-size: calc(var(--cap-unit) * 0.48);
     font-weight: 500;
     line-height: 1;
-    color: #52525b;
+    color: color-mix(in srgb, var(--cap-fg) 72%, transparent);
   }
 
   .caption {
@@ -97,7 +103,6 @@
     line-height: 1;
     letter-spacing: 0.01em;
     text-transform: lowercase;
-    color: #3f3f46;
   }
 
   .character {
@@ -119,7 +124,7 @@
     font-size: calc(var(--cap-unit) * 0.42);
     font-weight: 500;
     line-height: 1;
-    color: #52525b;
+    color: color-mix(in srgb, var(--cap-fg) 72%, transparent);
   }
 
   .main {
