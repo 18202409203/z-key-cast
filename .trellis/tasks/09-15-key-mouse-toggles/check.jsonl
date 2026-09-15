@@ -1,1 +1,4 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "Emit filter must stay consistent with HudChip"}
+{"file": ".trellis/spec/tauri/index.md", "reason": "Tauri settings/commands quality"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Settings UI quality"}
+{"file": ".trellis/tasks/09-15-key-mouse-toggles/prd.md", "reason": "AC for independent toggles"}

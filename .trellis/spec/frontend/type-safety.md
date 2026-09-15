@@ -15,6 +15,7 @@ TypeScript (strict via SvelteKit) for the webviews. Shared wire types for Tauri 
 | Kind | Location |
 |------|----------|
 | Cast / hook wire types | `src/lib/cast.ts` (mirror Rust `src-tauri/src/input/event.rs`) |
+| Capture settings invoke API | `src/lib/settings.ts` (mirror Rust `src-tauri/src/settings.rs`) |
 | Route-local UI state | Colocated in `+page.svelte` |
 
 See also: [Tauri Cast Events](../tauri/cast-events.md).
@@ -25,6 +26,7 @@ See also: [Tauri Cast Events](../tauri/cast-events.md).
 
 - Decode Tauri event payloads with `isHudChip` / `isHookStatus` before use
 - Do not trust `listen<T>(...)` generics alone — they are compile-time only
+- Call capture toggles only through `$lib/settings.ts` (`getCaptureSettings` / `setCaptureSettings`); do not inline invoke command names in routes
 
 ---
 

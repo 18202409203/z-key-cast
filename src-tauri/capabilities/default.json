@@ -10,6 +10,8 @@
     "core:window:allow-outer-size",
     "core:window:allow-set-position",
     "core:window:allow-current-monitor",
-    "opener:default"
+    "opener:default",
+    "allow-get-capture-settings",
+    "allow-set-capture-settings"
   ]
 }

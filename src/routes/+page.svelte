@@ -9,6 +9,11 @@
     summarizeHookStatus,
     summarizeHudChip,
   } from "$lib/cast";
+  import {
+    getCaptureSettings,
+    setCaptureSettings,
+    type CaptureSettings,
+  } from "$lib/settings";
 
   const MAX_LOG_LINES = 100;
   const STICK_BOTTOM_PX = 48;
@@ -17,6 +22,10 @@
   let hookOk = $state<boolean | null>(null);
   let logEl = $state<HTMLDivElement | null>(null);
   let stickToBottom = $state(true);
+  let captureKeyboard = $state(true);
+  let captureMouse = $state(true);
+  let captureReady = $state(false);
+  let captureSaving = $state(false);
 
   function isNearBottom(el: HTMLDivElement) {
     return el.scrollHeight - el.scrollTop - el.clientHeight <= STICK_BOTTOM_PX;
@@ -37,6 +46,50 @@
     stickToBottom = true;
   }
 
+  async function persistCapture(
+    next: CaptureSettings,
+    previous: CaptureSettings,
+  ) {
+    captureKeyboard = next.captureKeyboard;
+    captureMouse = next.captureMouse;
+    captureSaving = true;
+    try {
+      const saved = await setCaptureSettings(next);
+      captureKeyboard = saved.captureKeyboard;
+      captureMouse = saved.captureMouse;
+    } catch (err) {
+      captureKeyboard = previous.captureKeyboard;
+      captureMouse = previous.captureMouse;
+      appendLog(`settings save failed: ${String(err)}`);
+    } finally {
+      captureSaving = false;
+    }
+  }
+
+  function onCaptureKeyboardChange(event: Event) {
+    const checked = (event.currentTarget as HTMLInputElement).checked;
+    const previous = {
+      captureKeyboard,
+      captureMouse,
+    };
+    void persistCapture(
+      { captureKeyboard: checked, captureMouse },
+      previous,
+    );
+  }
+
+  function onCaptureMouseChange(event: Event) {
+    const checked = (event.currentTarget as HTMLInputElement).checked;
+    const previous = {
+      captureKeyboard,
+      captureMouse,
+    };
+    void persistCapture(
+      { captureKeyboard, captureMouse: checked },
+      previous,
+    );
+  }
+
   $effect(() => {
     logLines;
     if (!stickToBottom || !logEl) return;
@@ -50,6 +103,19 @@
     const unsubs: Array<() => void> = [];
 
     void (async () => {
+      try {
+        const settings = await getCaptureSettings();
+        if (cancelled) return;
+        captureKeyboard = settings.captureKeyboard;
+        captureMouse = settings.captureMouse;
+      } catch (err) {
+        if (!cancelled) {
+          appendLog(`settings load failed: ${String(err)}`);
+        }
+      } finally {
+        if (!cancelled) captureReady = true;
+      }
+
       const unlistenStatus = await listen(HOOK_STATUS_CHANNEL, (event) => {
         if (!isHookStatus(event.payload)) return;
         hookOk = event.payload.ok;
@@ -114,6 +180,24 @@
         Waiting for hook status…
       {/if}
     </p>
+    <label class="toggle">
+      <input
+        type="checkbox"
+        checked={captureKeyboard}
+        disabled={!captureReady || captureSaving}
+        onchange={onCaptureKeyboardChange}
+      />
+      <span>Listen to keyboard</span>
+    </label>
+    <label class="toggle">
+      <input
+        type="checkbox"
+        checked={captureMouse}
+        disabled={!captureReady || captureSaving}
+        onchange={onCaptureMouseChange}
+      />
+      <span>Listen to mouse</span>
+    </label>
   </section>
 
   <section class="log-section">
@@ -200,6 +284,18 @@
     display: grid;
     gap: 8px;
     font-size: 14px;
+  }
+
+  label.toggle {
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 10px;
+  }
+
+  label.toggle input {
+    width: 16px;
+    height: 16px;
+    accent-color: #38bdf8;
   }
 
   select {

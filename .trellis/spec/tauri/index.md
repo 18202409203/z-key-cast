@@ -14,14 +14,15 @@ This layer owns Rust-side modules under `src-tauri/` and the wire contracts shar
 
 | Guide | Description | Status |
 |-------|-------------|--------|
-| [Cast Events](./cast-events.md) | `HudChip` / `HookStatus` payloads, channels, platform cfg boundary | Filled |
+| [Cast Events](./cast-events.md) | `HudChip` / `HookStatus` payloads, channels, capture toggles, platform cfg boundary | Filled |
 
 ---
 
 ## Pre-Development Checklist
 
-- [ ] Read [Cast Events](./cast-events.md) before changing emit payloads or channel names
+- [ ] Read [Cast Events](./cast-events.md) before changing emit payloads, channel names, or capture toggles
 - [ ] Keep TypeScript `$lib/cast.ts` aligned with Rust `input/event.rs`
+- [ ] Keep `$lib/settings.ts` aligned with Rust `settings.rs` (`CaptureSettings` camelCase)
 - [ ] Do not implement Windows/Linux hooks without a dedicated task
 
 ---
@@ -32,3 +33,5 @@ This layer owns Rust-side modules under `src-tauri/` and the wire contracts shar
 - [ ] Non-macOS path is an explicit stub (`unsupported_platform`), not a fake hook
 - [ ] Key autorepeat / spam filtering happens before `cast://event` emit
 - [ ] Chip reducer: bare mods no emit; primary/mouse down only
+- [ ] Capture toggles filter **after** reduce via `allows_chip`, not by skipping reduce
+- [ ] `get_capture_settings` / `set_capture_settings` ACL permissions present in capabilities

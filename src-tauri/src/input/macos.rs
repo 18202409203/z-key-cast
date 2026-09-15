@@ -14,6 +14,7 @@ use super::event::{
     HookStatus, KeyRef, MouseButton, Phase, RawInput, EVENT_CHANNEL, HOOK_STATUS_CHANNEL,
 };
 use super::filter::EventFilter;
+use crate::settings;
 
 /// Start the hook on a dedicated thread so CFRunLoop does not block Tauri's main thread.
 pub fn start(app: AppHandle) {
@@ -73,7 +74,10 @@ fn run_tap(app: AppHandle) -> Result<(), HookStatus> {
                         .map(|mut r| r.reduce(&raw))
                         .unwrap_or(None);
                     if let Some(chip) = chip {
-                        let _ = app_for_cb.emit(EVENT_CHANNEL, &chip);
+                        // Filter after reduce so held-mod state stays correct while a side is off.
+                        if settings::allows_chip(&chip) {
+                            let _ = app_for_cb.emit(EVENT_CHANNEL, &chip);
+                        }
                     }
                 }
             }

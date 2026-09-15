@@ -1,4 +1,5 @@
 mod input;
+mod settings;
 
 use tauri::{Manager, PhysicalPosition};
 
@@ -6,7 +7,13 @@ use tauri::{Manager, PhysicalPosition};
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .invoke_handler(tauri::generate_handler![
+            settings::get_capture_settings,
+            settings::set_capture_settings,
+        ])
         .setup(|app| {
+            settings::load(app.handle());
+
             if let Some(overlay) = app.get_webview_window("overlay") {
                 // Click-through so the HUD never steals pointer input from the desktop.
                 let _ = overlay.set_ignore_cursor_events(true);

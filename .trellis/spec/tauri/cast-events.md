@@ -67,7 +67,24 @@ export function formatHudLabel(chip: HudChip): string;
 | Modifier-only down/up | Update held-mod state; **no** `HudChip` emit |
 | Left/right same-mod FlagsChanged (shared flag bit) | Phase via `modifier_transition(flag_on, was_held)` so releasing one side while the other stays held clears only that `KeyRef` |
 | Key / mouse up | No emit |
+| `captureKeyboard == false` | After reduce, drop `HudChip::Key` before emit (held-mod state still updates) |
+| `captureMouse == false` | After reduce, drop `HudChip::Mouse` before emit |
 | Frontend receives unknown payload | `isHudChip` / `isHookStatus` reject; ignore |
+
+### Capture settings commands
+
+| Command | Args | Returns | Notes |
+|---------|------|---------|-------|
+| `get_capture_settings` | — | `CaptureSettings` | Reads process atomics (loaded from `app_config_dir/settings.json` at setup) |
+| `set_capture_settings` | `{ settings: CaptureSettings }` | `CaptureSettings` | Apply atomics **then** persist; on disk failure revert atomics and return `Err` |
+
+```ts
+type CaptureSettings = { captureKeyboard: boolean; captureMouse: boolean }; // both default true
+```
+
+- Owners: Rust `src-tauri/src/settings.rs`; TS `$lib/settings.ts`
+- Hot path: `settings::allows_chip(&chip)` in macOS tap **after** `ChipReducer::reduce`, **before** `emit(EVENT_CHANNEL)`
+- Forbidden: gating reduce/filter on toggles (would desync held mods while a side is off)
 
 ### 5. Good / Base / Bad Cases
 
@@ -77,9 +94,9 @@ export function formatHudLabel(chip: HudChip): string;
 
 ### 6. Tests Required
 
-- `cargo check` (+ `cargo test -p z-key-cast` for chip reducer unit tests when available)
-- `pnpm check` (guards + listeners typecheck)
-- Manual: denied Accessibility → main log shows failed hook-status; grant → single HUD chip for key/mouse; bare mods silent; idle ~1s fade; hold key → no repeat spam
+- `cargo check` (+ `cargo test -p z-key-cast` for chip reducer + `settings::allows_chip` unit tests)
+- `pnpm check` (guards + listeners + `$lib/settings` typecheck)
+- Manual: denied Accessibility → main log shows failed hook-status; grant → single HUD chip for key/mouse; bare mods silent; idle ~1s fade; hold key → no repeat spam; toggle keyboard/mouse independently → only that side’s chips stop/resume without restart
 
 ### 7. Wrong vs Correct
 
@@ -114,7 +131,13 @@ void listen(EVENT_CHANNEL, (event) => {
 ### Chip reduce scope
 
 - **Decision**: Primary/mouse down → one chip; drop ups; bare mods update state only
-- **Out of scope**: Multi-chip history, display skins, key/mouse toggles (follow-up tasks)
+- **Out of scope**: Multi-chip history, display skins
+
+### Capture toggles (filter after reduce)
+
+- **Decision**: Independent `captureKeyboard` / `captureMouse` atomics; filter with `allows_chip` only at emit
+- **Why**: Reducer must keep seeing raw downs so held-mod state stays correct while one side is off
+- **Forbidden**: Skipping `reduce` when a toggle is off; filtering only on the frontend (overlay would still show chips)
 
 ### Mods encoding
 
