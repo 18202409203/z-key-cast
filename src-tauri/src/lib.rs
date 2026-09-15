@@ -10,6 +10,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             settings::get_capture_settings,
             settings::set_capture_settings,
+            settings::arm_ignore_key_capture,
+            settings::cancel_ignore_key_capture,
             settings::get_hud_style_settings,
             settings::set_hud_style_settings,
         ])

@@ -16,6 +16,7 @@ export type HookStatus = {
 
 export const EVENT_CHANNEL = "cast://event";
 export const HOOK_STATUS_CHANNEL = "cast://hook-status";
+export const IGNORE_KEY_CAPTURED_CHANNEL = "cast://ignore-key-captured";
 
 function isKeyRef(value: unknown): value is KeyRef {
   if (!value || typeof value !== "object") return false;
@@ -54,6 +55,11 @@ export function isHookStatus(value: unknown): value is HookStatus {
   if (typeof status.ok !== "boolean") return false;
   if (status.reason !== undefined && typeof status.reason !== "string") return false;
   return true;
+}
+
+/** Payload for `cast://ignore-key-captured` (next key/mod down while armed). */
+export function isIgnoreKeyCaptured(value: unknown): value is KeyRef {
+  return isKeyRef(value);
 }
 
 export function formatHudLabel(chip: HudChip): string {

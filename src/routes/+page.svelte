@@ -5,14 +5,18 @@
   import {
     EVENT_CHANNEL,
     HOOK_STATUS_CHANNEL,
+    IGNORE_KEY_CAPTURED_CHANNEL,
     isHookStatus,
     isHudChip,
+    isIgnoreKeyCaptured,
     summarizeHookStatus,
     summarizeHudChip,
   } from "$lib/cast";
   import {
     DEFAULT_HUD_STYLE,
     HUD_COLOR_PRESETS,
+    armIgnoreKeyCapture,
+    cancelIgnoreKeyCapture,
     colorsFromHudPreset,
     getCaptureSettings,
     getHudStyleSettings,
@@ -27,7 +31,14 @@
     type MouseDisplayMode,
   } from "$lib/settings";
   import type { KeyboardLegendPreference } from "$lib/key-legends";
-
+  import {
+    IGNORE_CATEGORIES,
+    addCategoryIds,
+    categoryToggleState,
+    labelForKeyId,
+    removeCategoryIds,
+    type IgnoreCategoryId,
+  } from "$lib/key-ignore-presets";
   type MainTab = "settings" | "log" | "about";
 
   const MAX_LOG_LINES = 100;
@@ -50,6 +61,9 @@
   let stickToBottom = $state(true);
   let captureKeyboard = $state(true);
   let captureMouse = $state(true);
+  let ignoredKeyIds = $state<string[]>([]);
+  let ignoredKeyLabels = $state<Record<string, string>>({});
+  let ignoreCapturing = $state(false);
   let captureReady = $state(false);
   let captureSaving = $state(false);
   let hudStyle = $state<HudStyleSettings>({ ...DEFAULT_HUD_STYLE });
@@ -83,42 +97,103 @@
   ) {
     captureKeyboard = next.captureKeyboard;
     captureMouse = next.captureMouse;
+    ignoredKeyIds = [...next.ignoredKeyIds];
     captureSaving = true;
     try {
       const saved = await setCaptureSettings(next);
       captureKeyboard = saved.captureKeyboard;
       captureMouse = saved.captureMouse;
+      ignoredKeyIds = [...saved.ignoredKeyIds];
     } catch (err) {
       captureKeyboard = previous.captureKeyboard;
       captureMouse = previous.captureMouse;
+      ignoredKeyIds = [...previous.ignoredKeyIds];
       appendLog(`settings save failed: ${String(err)}`);
     } finally {
       captureSaving = false;
     }
   }
 
-  function onCaptureKeyboardChange(event: Event) {
-    const checked = (event.currentTarget as HTMLInputElement).checked;
-    const previous = {
+  function currentCapture(): CaptureSettings {
+    return {
       captureKeyboard,
       captureMouse,
+      ignoredKeyIds: [...ignoredKeyIds],
     };
+  }
+
+  function onCaptureKeyboardChange(event: Event) {
+    const checked = (event.currentTarget as HTMLInputElement).checked;
+    const previous = currentCapture();
     void persistCapture(
-      { captureKeyboard: checked, captureMouse },
+      { ...previous, captureKeyboard: checked },
       previous,
     );
   }
 
   function onCaptureMouseChange(event: Event) {
     const checked = (event.currentTarget as HTMLInputElement).checked;
-    const previous = {
-      captureKeyboard,
-      captureMouse,
-    };
+    const previous = currentCapture();
+    void persistCapture({ ...previous, captureMouse: checked }, previous);
+  }
+
+  function onIgnoreCategoryChange(categoryId: IgnoreCategoryId, event: Event) {
+    const checked = (event.currentTarget as HTMLInputElement).checked;
+    const category = IGNORE_CATEGORIES.find((c) => c.id === categoryId);
+    if (!category) return;
+    const previous = currentCapture();
+    const nextIds = checked
+      ? addCategoryIds(previous.ignoredKeyIds, category.ids)
+      : removeCategoryIds(previous.ignoredKeyIds, category.ids);
+    void persistCapture({ ...previous, ignoredKeyIds: nextIds }, previous);
+  }
+
+  function removeIgnoredKey(id: string) {
+    const previous = currentCapture();
+    if (!previous.ignoredKeyIds.includes(id)) return;
     void persistCapture(
-      { captureKeyboard, captureMouse: checked },
+      {
+        ...previous,
+        ignoredKeyIds: previous.ignoredKeyIds.filter((x) => x !== id),
+      },
       previous,
     );
+  }
+
+  async function onAddIgnoreKey() {
+    if (ignoreCapturing || !captureReady || captureSaving) return;
+    try {
+      await armIgnoreKeyCapture();
+      ignoreCapturing = true;
+    } catch (err) {
+      appendLog(`ignore capture arm failed: ${String(err)}`);
+    }
+  }
+
+  async function onCancelIgnoreKey() {
+    try {
+      await cancelIgnoreKeyCapture();
+    } catch (err) {
+      appendLog(`ignore capture cancel failed: ${String(err)}`);
+    } finally {
+      ignoreCapturing = false;
+    }
+  }
+
+  function bindCategoryCheckbox(
+    node: HTMLInputElement,
+    state: "checked" | "unchecked" | "indeterminate",
+  ) {
+    const apply = (s: typeof state) => {
+      node.checked = s === "checked";
+      node.indeterminate = s === "indeterminate";
+    };
+    apply(state);
+    return {
+      update(s: typeof state) {
+        apply(s);
+      },
+    };
   }
 
   async function persistHud(
@@ -254,12 +329,11 @@
         if (cancelled) return;
         captureKeyboard = settings.captureKeyboard;
         captureMouse = settings.captureMouse;
+        ignoredKeyIds = [...settings.ignoredKeyIds];
       } catch (err) {
         if (!cancelled) {
           appendLog(`settings load failed: ${String(err)}`);
         }
-      } finally {
-        if (!cancelled) captureReady = true;
       }
 
       try {
@@ -273,30 +347,64 @@
         if (!cancelled) hudReady = true;
       }
 
-      const unlistenStatus = await listen(HOOK_STATUS_CHANNEL, (event) => {
-        if (!isHookStatus(event.payload)) return;
-        hookOk = event.payload.ok;
-        appendLog(summarizeHookStatus(event.payload));
-      });
-      if (cancelled) {
-        unlistenStatus();
-        return;
-      }
-      unsubs.push(unlistenStatus);
+      try {
+        const unlistenStatus = await listen(HOOK_STATUS_CHANNEL, (event) => {
+          if (!isHookStatus(event.payload)) return;
+          hookOk = event.payload.ok;
+          appendLog(summarizeHookStatus(event.payload));
+        });
+        if (cancelled) {
+          unlistenStatus();
+          return;
+        }
+        unsubs.push(unlistenStatus);
 
-      const unlistenEvent = await listen(EVENT_CHANNEL, (event) => {
-        if (!isHudChip(event.payload)) return;
-        appendLog(summarizeHudChip(event.payload));
-      });
-      if (cancelled) {
-        unlistenEvent();
-        return;
+        const unlistenEvent = await listen(EVENT_CHANNEL, (event) => {
+          if (!isHudChip(event.payload)) return;
+          appendLog(summarizeHudChip(event.payload));
+        });
+        if (cancelled) {
+          unlistenEvent();
+          return;
+        }
+        unsubs.push(unlistenEvent);
+
+        const unlistenIgnoreCapture = await listen(
+          IGNORE_KEY_CAPTURED_CHANNEL,
+          (event) => {
+            if (!isIgnoreKeyCaptured(event.payload)) return;
+            ignoreCapturing = false;
+            const { id, label } = event.payload;
+            ignoredKeyLabels = { ...ignoredKeyLabels, [id]: label };
+            const previous = currentCapture();
+            if (previous.ignoredKeyIds.includes(id)) return;
+            void persistCapture(
+              { ...previous, ignoredKeyIds: [...previous.ignoredKeyIds, id] },
+              previous,
+            );
+          },
+        );
+        if (cancelled) {
+          unlistenIgnoreCapture();
+          return;
+        }
+        unsubs.push(unlistenIgnoreCapture);
+      } catch (err) {
+        if (!cancelled) {
+          appendLog(`event listen failed: ${String(err)}`);
+        }
+      } finally {
+        // After ignore-capture listener bind attempt (success or fail).
+        if (!cancelled) captureReady = true;
       }
-      unsubs.push(unlistenEvent);
     })();
 
     return () => {
       cancelled = true;
+      ignoreCapturing = false;
+      void cancelIgnoreKeyCapture().catch(() => {
+        // Best-effort disarm if the window tears down mid-capture.
+      });
       for (const unlisten of unsubs) {
         unlisten();
       }
@@ -512,6 +620,75 @@
             />
             <label for="capture-mouse">Listen to mouse</label>
           </div>
+
+          <div class="ignore-block">
+            <p class="field-label">Ignore keys</p>
+            <p class="muted ignore-hint">
+              Ignored primaries never show; ignored modifiers are stripped from
+              chords.
+            </p>
+            <div class="category-grid" role="group" aria-label="Ignore categories">
+              {#each IGNORE_CATEGORIES as category (category.id)}
+                {@const state = categoryToggleState(ignoredKeyIds, category.ids)}
+                <label class="category-toggle">
+                  <input
+                    type="checkbox"
+                    disabled={!captureReady || captureSaving || ignoreCapturing}
+                    use:bindCategoryCheckbox={state}
+                    onchange={(e) => onIgnoreCategoryChange(category.id, e)}
+                  />
+                  <span>{category.label}</span>
+                </label>
+              {/each}
+            </div>
+
+            <div class="ignore-actions">
+              {#if ignoreCapturing}
+                <button
+                  type="button"
+                  class="clear"
+                  disabled={!captureReady || captureSaving}
+                  onclick={() => void onCancelIgnoreKey()}
+                >
+                  Cancel
+                </button>
+                <span class="muted">Press a key to ignore…</span>
+              {:else}
+                <button
+                  type="button"
+                  class="clear"
+                  disabled={!captureReady || captureSaving}
+                  onclick={() => void onAddIgnoreKey()}
+                >
+                  Add key
+                </button>
+              {/if}
+            </div>
+
+            {#if ignoredKeyIds.length > 0}
+              <ul class="ignore-list">
+                {#each ignoredKeyIds as id (id)}
+                  <li class="ignore-item">
+                    <span class="ignore-label"
+                      >{ignoredKeyLabels[id] ?? labelForKeyId(id)}</span
+                    >
+                    <code class="ignore-id">{id}</code>
+                    <button
+                      type="button"
+                      class="clear ignore-remove"
+                      disabled={!captureReady || captureSaving || ignoreCapturing}
+                      aria-label={`Remove ${id}`}
+                      onclick={() => removeIgnoredKey(id)}
+                    >
+                      Remove
+                    </button>
+                  </li>
+                {/each}
+              </ul>
+            {:else}
+              <p class="muted">No ignored keys.</p>
+            {/if}
+          </div>
         </section>
       </div>
     {:else if activeTab === "log"}
@@ -684,6 +861,79 @@
     width: 16px;
     height: 16px;
     accent-color: #38bdf8;
+  }
+
+  .ignore-block {
+    display: grid;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .ignore-hint {
+    font-size: 13px;
+  }
+
+  .category-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+  }
+
+  .category-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #e2e8f0;
+    cursor: pointer;
+  }
+
+  .category-toggle input {
+    width: 14px;
+    height: 14px;
+    accent-color: #38bdf8;
+  }
+
+  .ignore-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .ignore-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+  }
+
+  .ignore-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px solid #1e293b;
+    font-size: 13px;
+  }
+
+  .ignore-label {
+    color: #e2e8f0;
+    font-weight: 550;
+  }
+
+  .ignore-id {
+    color: #64748b;
+    font-family: "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ignore-remove {
+    justify-self: end;
   }
 
   select,

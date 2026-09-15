@@ -8,10 +8,10 @@
 
 ### 1. Scope / Trigger
 
-- Trigger: Cross-layer payload (`HudChip` / `HookStatus`) crosses Rust emit and Svelte listen
+- Trigger: Cross-layer payload (`HudChip` / `HookStatus` / ignore-capture `KeyRef`) crosses Rust emit and Svelte listen
 - Owners:
-  - Rust: `src-tauri/src/input/event.rs` (+ `chip.rs` / `macos.rs` / `stub.rs` / `filter.rs`)
-  - TS: `src/lib/cast.ts` (types, channel constants, formatters, type guards)
+  - Rust: `src-tauri/src/input/event.rs` (+ `chip.rs` / `macos.rs` / `stub.rs` / `filter.rs`) + `settings.rs` (ignore list + arm)
+  - TS: `src/lib/cast.ts` (types, channel constants, formatters, type guards); `$lib/settings.ts`; `$lib/key-ignore-presets.ts`
 - Do **not** redefine the payload inline in route components
 
 ### 2. Signatures
@@ -23,14 +23,17 @@ pub fn start(app: AppHandle);
 // Channels
 pub const EVENT_CHANNEL: &str = "cast://event";
 pub const HOOK_STATUS_CHANNEL: &str = "cast://hook-status";
+pub const IGNORE_KEY_CAPTURED_CHANNEL: &str = "cast://ignore-key-captured";
 ```
 
 ```ts
 // src/lib/cast.ts
 export const EVENT_CHANNEL = "cast://event";
 export const HOOK_STATUS_CHANNEL = "cast://hook-status";
+export const IGNORE_KEY_CAPTURED_CHANNEL = "cast://ignore-key-captured";
 export function isHudChip(value: unknown): value is HudChip;
 export function isHookStatus(value: unknown): value is HookStatus;
+export function isIgnoreKeyCaptured(value: unknown): value is KeyRef;
 export function formatHudLabel(chip: HudChip): string;
 ```
 
@@ -69,22 +72,35 @@ export function formatHudLabel(chip: HudChip): string;
 | Key / mouse up | No emit |
 | `captureKeyboard == false` | After reduce, drop `HudChip::Key` before emit (held-mod state still updates) |
 | `captureMouse == false` | After reduce, drop `HudChip::Mouse` before emit |
-| Frontend receives unknown payload | `isHudChip` / `isHookStatus` reject; ignore |
+| Primary `key.id` ∈ `ignoredKeyIds` | After reduce, drop whole key chip before emit |
+| Mod `id` ∈ `ignoredKeyIds` | Strip that mod from `mods` (may leave empty `mods`); primary still emits |
+| Ignore list + mouse | Mouse chips ignore `ignoredKeyIds` |
+| Ignore-key capture armed + key/mod **down** | Emit `cast://ignore-key-captured` (`KeyRef`); suppress that raw’s `cast://event`; still `reduce` held mods; Escape adds Escape (does not cancel) |
+| Ignore-key capture + mouse | Mouse still follows normal emit path; does not disarm |
+| Frontend receives unknown payload | `isHudChip` / `isHookStatus` / `isIgnoreKeyCaptured` reject; ignore |
 
 ### Capture settings commands
 
 | Command | Args | Returns | Notes |
 |---------|------|---------|-------|
-| `get_capture_settings` | — | `CaptureSettings` | Reads process atomics (loaded from `app_config_dir/settings.json` at setup) |
-| `set_capture_settings` | `{ settings: CaptureSettings }` | `CaptureSettings` | Apply atomics **then** persist; on disk failure revert atomics and return `Err` |
+| `get_capture_settings` | — | `CaptureSettings` | Reads process atomics + ignored-id list (loaded from `app_config_dir/settings.json` at setup) |
+| `set_capture_settings` | `{ settings: CaptureSettings }` | `CaptureSettings` | Apply runtime **then** persist; dedupe `ignoredKeyIds` (preserve order, drop empties); on disk failure revert and return `Err` |
+| `arm_ignore_key_capture` | — | — | Arm next key/mod down for ignore list |
+| `cancel_ignore_key_capture` | — | — | Disarm without changing the list |
 
 ```ts
-type CaptureSettings = { captureKeyboard: boolean; captureMouse: boolean }; // both default true
+type CaptureSettings = {
+  captureKeyboard: boolean; // default true
+  captureMouse: boolean; // default true
+  ignoredKeyIds: string[]; // default []; flat id list only (category presets are frontend sugar)
+};
 ```
 
-- Owners: Rust `src-tauri/src/settings.rs`; TS `$lib/settings.ts`
-- Hot path: `settings::allows_chip(&chip)` in macOS tap **after** `ChipReducer::reduce`, **before** `emit(EVENT_CHANNEL)`
-- Forbidden: gating reduce/filter on toggles (would desync held mods while a side is off)
+**`cast://ignore-key-captured` → `KeyRef`** — once per successful arm consume.
+
+- Owners: Rust `src-tauri/src/settings.rs`; TS `$lib/settings.ts` + `$lib/key-ignore-presets.ts` (category → id[])
+- Hot path (macOS tap, after `EventFilter`, after/around `ChipReducer::reduce`): ignore-capture consume → `filter_key_chip` → `allows_chip` → `emit(EVENT_CHANNEL)`
+- Forbidden: gating reduce on capture toggles or ignore list (would desync held mods); filtering only on the frontend; cancelling capture with Escape
 
 ### 5. Good / Base / Bad Cases
 
@@ -94,9 +110,9 @@ type CaptureSettings = { captureKeyboard: boolean; captureMouse: boolean }; // b
 
 ### 6. Tests Required
 
-- `cargo check` (+ `cargo test -p z-key-cast` for chip reducer + `settings::allows_chip` unit tests)
-- `pnpm check` (guards + listeners + `$lib/settings` typecheck)
-- Manual: denied Accessibility → main log shows failed hook-status; grant → key + mouse HUD slots can show together (keyboard above mouse); bare mods silent; each side idle-fades on its own `dwellMs`; hold key → no repeat spam; toggle keyboard/mouse independently → only that side’s chips stop/resume without restart; hook-status fail → clears both slots and shows exclusive status banner
+- `cargo check` (+ `cargo test` for chip reducer + `settings::{allows_chip,filter_key_chip,ignore capture}` unit tests)
+- `npm run check` (guards + listeners + `$lib/settings` / `$lib/key-ignore-presets` typecheck)
+- Manual: denied Accessibility → main log shows failed hook-status; grant → key + mouse HUD slots can show together (keyboard above mouse); bare mods silent; each side idle-fades on its own `dwellMs`; hold key → no repeat spam; toggle keyboard/mouse independently → only that side’s chips stop/resume without restart; ignore primary / strip ignored mod; category toggles; Add key (incl. Escape) + Cancel-only exit; capture press neither HUD nor log; hook-status fail → clears both slots and shows exclusive status banner
 
 ### 7. Wrong vs Correct
 
@@ -138,6 +154,12 @@ void listen(EVENT_CHANNEL, (event) => {
 - **Decision**: Independent `captureKeyboard` / `captureMouse` atomics; filter with `allows_chip` only at emit
 - **Why**: Reducer must keep seeing raw downs so held-mod state stays correct while one side is off
 - **Forbidden**: Skipping `reduce` when a toggle is off; filtering only on the frontend (overlay would still show chips)
+
+### Ignore key list (filter after reduce)
+
+- **Decision**: Flat persisted `ignoredKeyIds`; runtime `HashSet` lookup; `filter_key_chip` drops ignored primaries and strips ignored mods; category presets expand on the frontend only
+- **Add-key capture**: Arm via command; next key/mod down emits `cast://ignore-key-captured` and suppresses that raw’s `cast://event`; Cancel disarms; Escape is data
+- **Forbidden**: Skipping `reduce` while armed; using Escape to cancel; wiping non-category ids when a category is unchecked
 
 ### HUD style settings
 

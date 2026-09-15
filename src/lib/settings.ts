@@ -9,6 +9,8 @@ export const HUD_STYLE_CHANNEL = "cast://hud-style";
 export type CaptureSettings = {
   captureKeyboard: boolean;
   captureMouse: boolean;
+  /** Key ids omitted from HUD chips (primary drop / mod strip). Default []. */
+  ignoredKeyIds: string[];
 };
 
 export type KeyboardDisplayMode = "text" | "key-card" | "keyboard";
@@ -179,13 +181,39 @@ export function hudBackgroundCss(color: string, opacity: number): string {
 }
 
 export async function getCaptureSettings(): Promise<CaptureSettings> {
-  return invoke<CaptureSettings>("get_capture_settings");
+  const raw = await invoke<CaptureSettings>("get_capture_settings");
+  return {
+    captureKeyboard: raw.captureKeyboard,
+    captureMouse: raw.captureMouse,
+    ignoredKeyIds: Array.isArray(raw.ignoredKeyIds) ? [...raw.ignoredKeyIds] : [],
+  };
 }
 
 export async function setCaptureSettings(
   settings: CaptureSettings,
 ): Promise<CaptureSettings> {
-  return invoke<CaptureSettings>("set_capture_settings", { settings });
+  const saved = await invoke<CaptureSettings>("set_capture_settings", {
+    settings: {
+      captureKeyboard: settings.captureKeyboard,
+      captureMouse: settings.captureMouse,
+      ignoredKeyIds: settings.ignoredKeyIds,
+    },
+  });
+  return {
+    captureKeyboard: saved.captureKeyboard,
+    captureMouse: saved.captureMouse,
+    ignoredKeyIds: Array.isArray(saved.ignoredKeyIds)
+      ? [...saved.ignoredKeyIds]
+      : [],
+  };
+}
+
+export async function armIgnoreKeyCapture(): Promise<void> {
+  await invoke("arm_ignore_key_capture");
+}
+
+export async function cancelIgnoreKeyCapture(): Promise<void> {
+  await invoke("cancel_ignore_key_capture");
 }
 
 export async function getHudStyleSettings(): Promise<HudStyleSettings> {

@@ -13,6 +13,8 @@
     "opener:default",
     "allow-get-capture-settings",
     "allow-set-capture-settings",
+    "allow-arm-ignore-key-capture",
+    "allow-cancel-ignore-key-capture",
     "allow-get-hud-style-settings",
     "allow-set-hud-style-settings"
   ]

@@ -12,6 +12,7 @@ use tauri::{AppHandle, Emitter};
 use super::chip::{modifier_transition, ChipReducer};
 use super::event::{
     HookStatus, KeyRef, MouseButton, Phase, RawInput, EVENT_CHANNEL, HOOK_STATUS_CHANNEL,
+    IGNORE_KEY_CAPTURED_CHANNEL,
 };
 use super::filter::EventFilter;
 use crate::settings;
@@ -69,14 +70,32 @@ fn run_tap(app: AppHandle) -> Result<(), HookStatus> {
                     .map(|mut f| f.allow(&raw))
                     .unwrap_or(true);
                 if should_process {
+                    // Capture next key/mod down for ignore list; still reduce held mods.
+                    let mut suppress_emit = false;
+                    if let RawInput::Key {
+                        key,
+                        phase: Phase::Down,
+                        ..
+                    } = &raw
+                    {
+                        if settings::take_ignore_capture() {
+                            let _ = app_for_cb.emit(IGNORE_KEY_CAPTURED_CHANNEL, key);
+                            suppress_emit = true;
+                        }
+                    }
+
                     let chip = reducer
                         .lock()
                         .map(|mut r| r.reduce(&raw))
                         .unwrap_or(None);
-                    if let Some(chip) = chip {
-                        // Filter after reduce so held-mod state stays correct while a side is off.
-                        if settings::allows_chip(&chip) {
-                            let _ = app_for_cb.emit(EVENT_CHANNEL, &chip);
+                    if !suppress_emit {
+                        if let Some(chip) = chip {
+                            // Ignore-list then capture toggles — after reduce so held mods stay correct.
+                            if let Some(chip) = settings::filter_key_chip(chip) {
+                                if settings::allows_chip(&chip) {
+                                    let _ = app_for_cb.emit(EVENT_CHANNEL, &chip);
+                                }
+                            }
                         }
                     }
                 }

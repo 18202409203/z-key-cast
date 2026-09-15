@@ -9,6 +9,16 @@ description = "Allows updating keyboard/mouse capture toggles"
 commands.allow = ["set_capture_settings"]
 
 [[permission]]
+identifier = "allow-arm-ignore-key-capture"
+description = "Allows arming capture of the next key for the ignore list"
+commands.allow = ["arm_ignore_key_capture"]
+
+[[permission]]
+identifier = "allow-cancel-ignore-key-capture"
+description = "Allows cancelling ignore-key capture without adding a key"
+commands.allow = ["cancel_ignore_key_capture"]
+
+[[permission]]
 identifier = "allow-get-hud-style-settings"
 description = "Allows reading HUD appearance and dwell settings"
 commands.allow = ["get_hud_style_settings"]

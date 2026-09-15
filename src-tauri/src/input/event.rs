@@ -81,3 +81,4 @@ impl HookStatus {
 
 pub const EVENT_CHANNEL: &str = "cast://event";
 pub const HOOK_STATUS_CHANNEL: &str = "cast://hook-status";
+pub const IGNORE_KEY_CAPTURED_CHANNEL: &str = "cast://ignore-key-captured";

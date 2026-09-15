@@ -1,5 +1,6 @@
-//! Durable app settings: capture toggles + HUD appearance.
+//! Durable app settings: capture toggles + HUD appearance + ignored keys.
 
+use std::collections::HashSet;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -12,12 +13,54 @@ use crate::input::HudChip;
 
 static CAPTURE_KEYBOARD: AtomicBool = AtomicBool::new(true);
 static CAPTURE_MOUSE: AtomicBool = AtomicBool::new(true);
+static IGNORE_KEY_CAPTURE_ARMED: AtomicBool = AtomicBool::new(false);
 static HUD: OnceLock<Mutex<HudStyleSettings>> = OnceLock::new();
+static IGNORED_KEYS: OnceLock<Mutex<IgnoredKeys>> = OnceLock::new();
 
 pub const HUD_STYLE_CHANNEL: &str = "cast://hud-style";
 
+#[derive(Debug, Default)]
+struct IgnoredKeys {
+    order: Vec<String>,
+    set: HashSet<String>,
+}
+
+impl IgnoredKeys {
+    fn from_ids(ids: Vec<String>) -> Self {
+        let order = dedupe_preserve_order(ids);
+        let set = order.iter().cloned().collect();
+        Self { order, set }
+    }
+
+    fn ids(&self) -> Vec<String> {
+        self.order.clone()
+    }
+
+    fn contains(&self, id: &str) -> bool {
+        self.set.contains(id)
+    }
+}
+
 fn hud_lock() -> &'static Mutex<HudStyleSettings> {
     HUD.get_or_init(|| Mutex::new(HudStyleSettings::default()))
+}
+
+fn ignored_lock() -> &'static Mutex<IgnoredKeys> {
+    IGNORED_KEYS.get_or_init(|| Mutex::new(IgnoredKeys::default()))
+}
+
+fn dedupe_preserve_order(ids: Vec<String>) -> Vec<String> {
+    let mut seen = HashSet::new();
+    let mut out = Vec::with_capacity(ids.len());
+    for id in ids {
+        if id.is_empty() {
+            continue;
+        }
+        if seen.insert(id.clone()) {
+            out.push(id);
+        }
+    }
+    out
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -118,6 +161,8 @@ fn is_hex_color(value: &str) -> bool {
 pub struct CaptureSettings {
     pub capture_keyboard: bool,
     pub capture_mouse: bool,
+    #[serde(default)]
+    pub ignored_key_ids: Vec<String>,
 }
 
 impl Default for CaptureSettings {
@@ -125,15 +170,21 @@ impl Default for CaptureSettings {
         Self {
             capture_keyboard: true,
             capture_mouse: true,
+            ignored_key_ids: Vec::new(),
         }
     }
 }
 
 impl CaptureSettings {
-    pub fn from_atomics() -> Self {
+    pub fn from_runtime() -> Self {
+        let ignored_key_ids = ignored_lock()
+            .lock()
+            .map(|g| g.ids())
+            .unwrap_or_default();
         Self {
             capture_keyboard: CAPTURE_KEYBOARD.load(Ordering::Relaxed),
             capture_mouse: CAPTURE_MOUSE.load(Ordering::Relaxed),
+            ignored_key_ids,
         }
     }
 }
@@ -144,6 +195,8 @@ pub struct AppSettings {
     pub capture_keyboard: bool,
     pub capture_mouse: bool,
     #[serde(default)]
+    pub ignored_key_ids: Vec<String>,
+    #[serde(default)]
     pub hud: HudStyleSettings,
 }
 
@@ -152,6 +205,7 @@ impl Default for AppSettings {
         Self {
             capture_keyboard: true,
             capture_mouse: true,
+            ignored_key_ids: Vec::new(),
             hud: HudStyleSettings::default(),
         }
     }
@@ -163,9 +217,14 @@ impl AppSettings {
             .lock()
             .map(|g| g.clone())
             .unwrap_or_default();
+        let ignored_key_ids = ignored_lock()
+            .lock()
+            .map(|g| g.ids())
+            .unwrap_or_default();
         Self {
             capture_keyboard: CAPTURE_KEYBOARD.load(Ordering::Relaxed),
             capture_mouse: CAPTURE_MOUSE.load(Ordering::Relaxed),
+            ignored_key_ids,
             hud,
         }
     }
@@ -173,6 +232,9 @@ impl AppSettings {
     fn apply_runtime(self) {
         CAPTURE_KEYBOARD.store(self.capture_keyboard, Ordering::Relaxed);
         CAPTURE_MOUSE.store(self.capture_mouse, Ordering::Relaxed);
+        if let Ok(mut guard) = ignored_lock().lock() {
+            *guard = IgnoredKeys::from_ids(self.ignored_key_ids);
+        }
         if let Ok(mut guard) = hud_lock().lock() {
             *guard = self.hud.clamp();
         }
@@ -185,6 +247,45 @@ pub fn allows_chip(chip: &HudChip) -> bool {
         HudChip::Key { .. } => CAPTURE_KEYBOARD.load(Ordering::Relaxed),
         HudChip::Mouse { .. } => CAPTURE_MOUSE.load(Ordering::Relaxed),
     }
+}
+
+/// Drop key chips whose primary id is ignored; strip ignored mods. Mouse unchanged.
+pub fn filter_key_chip(chip: HudChip) -> Option<HudChip> {
+    match chip {
+        HudChip::Mouse { .. } => Some(chip),
+        HudChip::Key { mods, key } => {
+            let ignored = ignored_lock().lock().ok();
+            let is_ignored = |id: &str| {
+                ignored
+                    .as_ref()
+                    .map(|g| g.contains(id))
+                    .unwrap_or(false)
+            };
+            if is_ignored(&key.id) {
+                return None;
+            }
+            let mods = mods
+                .into_iter()
+                .filter(|m| !is_ignored(&m.id))
+                .collect();
+            Some(HudChip::Key { mods, key })
+        }
+    }
+}
+
+/// Arm capture of the next key/mod down for the ignore list.
+pub fn arm_ignore_capture() {
+    IGNORE_KEY_CAPTURE_ARMED.store(true, Ordering::SeqCst);
+}
+
+/// Disarm without adding a key.
+pub fn cancel_ignore_capture() {
+    IGNORE_KEY_CAPTURE_ARMED.store(false, Ordering::SeqCst);
+}
+
+/// If armed, disarm and return true (caller should suppress `cast://event`).
+pub fn take_ignore_capture() -> bool {
+    IGNORE_KEY_CAPTURE_ARMED.swap(false, Ordering::SeqCst)
 }
 
 fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
@@ -221,7 +322,7 @@ fn emit_hud_style(app: &AppHandle, hud: &HudStyleSettings) {
 
 #[tauri::command]
 pub fn get_capture_settings() -> CaptureSettings {
-    CaptureSettings::from_atomics()
+    CaptureSettings::from_runtime()
 }
 
 #[tauri::command]
@@ -230,9 +331,11 @@ pub fn set_capture_settings(
     settings: CaptureSettings,
 ) -> Result<CaptureSettings, String> {
     let previous = AppSettings::from_runtime();
+    let ignored_key_ids = dedupe_preserve_order(settings.ignored_key_ids);
     let next = AppSettings {
         capture_keyboard: settings.capture_keyboard,
         capture_mouse: settings.capture_mouse,
+        ignored_key_ids: ignored_key_ids.clone(),
         hud: previous.hud.clone(),
     };
     next.clone().apply_runtime();
@@ -243,7 +346,18 @@ pub fn set_capture_settings(
     Ok(CaptureSettings {
         capture_keyboard: next.capture_keyboard,
         capture_mouse: next.capture_mouse,
+        ignored_key_ids,
     })
+}
+
+#[tauri::command]
+pub fn arm_ignore_key_capture() {
+    arm_ignore_capture();
+}
+
+#[tauri::command]
+pub fn cancel_ignore_key_capture() {
+    cancel_ignore_capture();
 }
 
 #[tauri::command]
@@ -264,6 +378,7 @@ pub fn set_hud_style_settings(
     let next = AppSettings {
         capture_keyboard: previous.capture_keyboard,
         capture_mouse: previous.capture_mouse,
+        ignored_key_ids: previous.ignored_key_ids.clone(),
         hud: hud.clone(),
     };
     next.clone().apply_runtime();
@@ -279,6 +394,12 @@ pub fn set_hud_style_settings(
 mod tests {
     use super::*;
     use crate::input::{KeyRef, MouseButton};
+
+    fn set_ignored(ids: &[&str]) {
+        if let Ok(mut guard) = ignored_lock().lock() {
+            *guard = IgnoredKeys::from_ids(ids.iter().map(|s| (*s).to_string()).collect());
+        }
+    }
 
     #[test]
     fn defaults_allow_both() {
@@ -324,6 +445,99 @@ mod tests {
     }
 
     #[test]
+    fn filter_drops_ignored_primary() {
+        set_ignored(&["KeyA"]);
+        let chip = HudChip::Key {
+            mods: vec![KeyRef::new("MetaLeft", "⌘")],
+            key: KeyRef::new("KeyA", "A"),
+        };
+        assert!(filter_key_chip(chip).is_none());
+        set_ignored(&[]);
+    }
+
+    #[test]
+    fn filter_strips_ignored_mods() {
+        set_ignored(&["MetaLeft"]);
+        let chip = HudChip::Key {
+            mods: vec![
+                KeyRef::new("MetaLeft", "⌘"),
+                KeyRef::new("ShiftLeft", "⇧"),
+            ],
+            key: KeyRef::new("KeyS", "S"),
+        };
+        let filtered = filter_key_chip(chip).expect("primary kept");
+        match filtered {
+            HudChip::Key { mods, key } => {
+                assert_eq!(key.id, "KeyS");
+                assert_eq!(mods.len(), 1);
+                assert_eq!(mods[0].id, "ShiftLeft");
+            }
+            HudChip::Mouse { .. } => panic!("expected key chip"),
+        }
+        set_ignored(&[]);
+    }
+
+    #[test]
+    fn filter_empty_ignore_passes_through() {
+        set_ignored(&[]);
+        let chip = HudChip::Key {
+            mods: vec![KeyRef::new("MetaLeft", "⌘")],
+            key: KeyRef::new("KeyA", "A"),
+        };
+        let filtered = filter_key_chip(chip).expect("kept");
+        match filtered {
+            HudChip::Key { mods, key } => {
+                assert_eq!(key.id, "KeyA");
+                assert_eq!(mods.len(), 1);
+            }
+            HudChip::Mouse { .. } => panic!("expected key chip"),
+        }
+    }
+
+    #[test]
+    fn filter_mouse_unaffected() {
+        set_ignored(&["KeyA", "MetaLeft"]);
+        let mouse = HudChip::Mouse {
+            button: MouseButton::Left,
+        };
+        assert!(matches!(
+            filter_key_chip(mouse),
+            Some(HudChip::Mouse {
+                button: MouseButton::Left
+            })
+        ));
+        set_ignored(&[]);
+    }
+
+    #[test]
+    fn ignore_capture_arm_take_cancel() {
+        cancel_ignore_capture();
+        assert!(!IGNORE_KEY_CAPTURE_ARMED.load(Ordering::SeqCst));
+        arm_ignore_capture();
+        assert!(IGNORE_KEY_CAPTURE_ARMED.load(Ordering::SeqCst));
+        assert!(take_ignore_capture());
+        assert!(!IGNORE_KEY_CAPTURE_ARMED.load(Ordering::SeqCst));
+        assert!(!take_ignore_capture());
+
+        arm_ignore_capture();
+        cancel_ignore_capture();
+        assert!(!IGNORE_KEY_CAPTURE_ARMED.load(Ordering::SeqCst));
+        assert!(!take_ignore_capture());
+    }
+
+    #[test]
+    fn dedupe_preserves_order() {
+        let ids = dedupe_preserve_order(vec![
+            "KeyA".into(),
+            "KeyB".into(),
+            "KeyA".into(),
+            "".into(),
+            "KeyC".into(),
+        ]);
+        assert_eq!(ids, vec!["KeyA", "KeyB", "KeyC"]);
+    }
+
+    #[test]
     fn hud_clamp_bounds() {
         let clamped = HudStyleSettings {
             font_size_px: 3,
@@ -348,6 +562,14 @@ mod tests {
         let parsed: AppSettings = serde_json::from_str(raw).unwrap();
         assert!(!parsed.capture_keyboard);
         assert!(parsed.capture_mouse);
+        assert!(parsed.ignored_key_ids.is_empty());
         assert_eq!(parsed.hud.dwell_ms, 1000);
+    }
+
+    #[test]
+    fn app_settings_parses_ignored_key_ids() {
+        let raw = r#"{"captureKeyboard":true,"captureMouse":true,"ignoredKeyIds":["KeyA","Escape"]}"#;
+        let parsed: AppSettings = serde_json::from_str(raw).unwrap();
+        assert_eq!(parsed.ignored_key_ids, vec!["KeyA", "Escape"]);
     }
 }
