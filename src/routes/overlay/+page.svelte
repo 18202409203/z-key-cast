@@ -322,68 +322,81 @@
     >
       {statusText}
     </div>
-  {:else}
-    {#if keySlot}
-      {#if showKeyboardMap}
-        <div transition:fade={{ duration: 200 }}>
-          <KeyboardMap
-            activeIds={activeKeyIds}
-            textColor={style.textColor}
-            backgroundCss={chipBackground}
-            fontSizePx={style.fontSizePx}
-            legendLayout={legendLayout}
-          />
-        </div>
-      {:else if showKeyCards}
-        <div
-          class="card-row"
-          style:--cap-scale={`${style.fontSizePx}px`}
-          transition:fade={{ duration: 200 }}
-        >
-          {#each keyCards() as card (card.id)}
-            <KeyCard
-              visual={toKeyCardVisual(card, legendLayout)}
-              fontSizePx={style.fontSizePx}
-              textColor={style.textColor}
-              backgroundCss={chipBackground}
-            />
-          {/each}
-        </div>
-      {:else}
-        <div
-          class="chip"
-          style:font-size={`${style.fontSizePx}px`}
-          style:color={style.textColor}
-          style:background={chipBackground}
-          transition:fade={{ duration: 200 }}
-        >
-          {keyText()}
+  {:else if keySlot || mouseSlot}
+    <div
+      class="km-group"
+      class:km-klmr={(style.keyMouseLayout ?? "key-left-mouse-right") ===
+        "key-left-mouse-right"}
+      class:km-krml={style.keyMouseLayout === "key-right-mouse-left"}
+      class:km-ktmb={style.keyMouseLayout === "key-top-mouse-bottom"}
+      class:km-kbmt={style.keyMouseLayout === "key-bottom-mouse-top"}
+    >
+      {#if keySlot}
+        <div class="km-key">
+          {#if showKeyboardMap}
+            <div transition:fade={{ duration: 200 }}>
+              <KeyboardMap
+                activeIds={activeKeyIds}
+                textColor={style.textColor}
+                backgroundCss={chipBackground}
+                fontSizePx={style.fontSizePx}
+                legendLayout={legendLayout}
+              />
+            </div>
+          {:else if showKeyCards}
+            <div
+              class="card-row"
+              style:--cap-scale={`${style.fontSizePx}px`}
+              transition:fade={{ duration: 200 }}
+            >
+              {#each keyCards() as card (card.id)}
+                <KeyCard
+                  visual={toKeyCardVisual(card, legendLayout)}
+                  fontSizePx={style.fontSizePx}
+                  textColor={style.textColor}
+                  backgroundCss={chipBackground}
+                />
+              {/each}
+            </div>
+          {:else}
+            <div
+              class="chip"
+              style:font-size={`${style.fontSizePx}px`}
+              style:color={style.textColor}
+              style:background={chipBackground}
+              transition:fade={{ duration: 200 }}
+            >
+              {keyText()}
+            </div>
+          {/if}
         </div>
       {/if}
-    {/if}
 
-    {#if mouseSlot}
-      {#if showMouseSchematic}
-        <div transition:fade={{ duration: 200 }}>
-          <MouseSchematic
-            button={mouseSlot.button}
-            textColor={style.textColor}
-            backgroundCss={chipBackground}
-            fontSizePx={style.fontSizePx}
-          />
-        </div>
-      {:else}
-        <div
-          class="chip"
-          style:font-size={`${style.fontSizePx}px`}
-          style:color={style.textColor}
-          style:background={chipBackground}
-          transition:fade={{ duration: 200 }}
-        >
-          {mouseText()}
+      {#if mouseSlot}
+        <div class="km-mouse">
+          {#if showMouseSchematic}
+            <div transition:fade={{ duration: 200 }}>
+              <MouseSchematic
+                button={mouseSlot.button}
+                textColor={style.textColor}
+                backgroundCss={chipBackground}
+                fontSizePx={style.fontSizePx}
+              />
+            </div>
+          {:else}
+            <div
+              class="chip"
+              style:font-size={`${style.fontSizePx}px`}
+              style:color={style.textColor}
+              style:background={chipBackground}
+              transition:fade={{ duration: 200 }}
+            >
+              {mouseText()}
+            </div>
+          {/if}
         </div>
       {/if}
-    {/if}
+    </div>
   {/if}
 </div>
 
@@ -437,6 +450,41 @@
     border: 1px solid rgba(56, 189, 248, 0.45);
     text-align: center;
     user-select: none;
+  }
+
+  .km-group {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    max-width: 100%;
+  }
+
+  .km-group.km-klmr,
+  .km-group.km-krml {
+    flex-direction: row;
+  }
+
+  .km-group.km-ktmb,
+  .km-group.km-kbmt {
+    flex-direction: column;
+  }
+
+  .km-key {
+    order: 0;
+  }
+
+  .km-mouse {
+    order: 1;
+  }
+
+  .km-group.km-krml .km-key,
+  .km-group.km-kbmt .km-key {
+    order: 1;
+  }
+
+  .km-group.km-krml .km-mouse,
+  .km-group.km-kbmt .km-mouse {
+    order: 0;
   }
 
   .chip {

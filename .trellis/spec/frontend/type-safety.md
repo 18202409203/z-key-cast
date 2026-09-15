@@ -32,6 +32,7 @@ See also: [Tauri Cast Events](../tauri/cast-events.md).
 - Key-card / full-keyboard / text / schematic all use HUD `textColor` + `backgroundColor`/`backgroundOpacity` (presets Black/White or custom)
 - `MouseSchematic` is a cropped pebble mouse-head (`src/lib/MouseSchematic.svelte`); pressed L/R/wheel fills with `textColor`. Do not evenodd-punch wheel wells — the overlay is transparent, so holes show the desktop
 - Legend layout preference: `keyboardLegendLayout` `auto|mac-us|win-us` (OS guess when auto)
+- Key/mouse relative arrangement: `keyMouseLayout` (`key-left-mouse-right` default; also `key-right-mouse-left`, `key-top-mouse-bottom`, `key-bottom-mouse-top`). Overlay keeps stable key→mouse DOM and uses CSS `flex-direction`/`order`; omit field → normalize/default. Do not mirror by HUD dock corner.
 
 ---
 

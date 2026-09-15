@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Verify new settings field follows existing is*/normalize contracts"}
+{"file": ".trellis/spec/tauri/index.md", "reason": "Verify Rust settings serde defaults and clamp path still sound"}
+{"file": ".trellis/tasks/09-15-hud-km-layout/prd.md", "reason": "Check AC1–AC5 against implemented overlay and Settings UI"}
+{"file": ".trellis/tasks/09-15-hud-km-layout/design.md", "reason": "Confirm stable DOM + CSS order approach, no dock mirroring"}

@@ -18,6 +18,11 @@ export type CaptureSettings = {
 
 export type KeyboardDisplayMode = "text" | "key-card" | "keyboard";
 export type MouseDisplayMode = "text" | "schematic";
+export type KeyMouseLayout =
+  | "key-left-mouse-right"
+  | "key-right-mouse-left"
+  | "key-top-mouse-bottom"
+  | "key-bottom-mouse-top";
 
 export type HudCorner = "br" | "bl" | "tr" | "tl";
 
@@ -41,6 +46,8 @@ export type HudStyleSettings = {
   keyboardLegendLayout?: KeyboardLegendPreference;
   /** Omitted → `"text"`. Independent of keyboard display mode. */
   mouseDisplayMode?: MouseDisplayMode;
+  /** Omitted → `"key-left-mouse-right"`. Absolute key/mouse arrangement. */
+  keyMouseLayout?: KeyMouseLayout;
 };
 
 export const DEFAULT_HUD_STYLE: HudStyleSettings = {
@@ -52,6 +59,7 @@ export const DEFAULT_HUD_STYLE: HudStyleSettings = {
   keyboardDisplayMode: "text",
   keyboardLegendLayout: "auto",
   mouseDisplayMode: "text",
+  keyMouseLayout: "key-left-mouse-right",
 };
 
 export const DEFAULT_HUD_POSITION: HudPositionSettings = {
@@ -131,6 +139,15 @@ function isMouseDisplayMode(value: unknown): value is MouseDisplayMode {
   return value === "text" || value === "schematic";
 }
 
+export function isKeyMouseLayout(value: unknown): value is KeyMouseLayout {
+  return (
+    value === "key-left-mouse-right" ||
+    value === "key-right-mouse-left" ||
+    value === "key-top-mouse-bottom" ||
+    value === "key-bottom-mouse-top"
+  );
+}
+
 export function isHudStyleSettings(value: unknown): value is HudStyleSettings {
   if (!value || typeof value !== "object") return false;
   const s = value as Record<string, unknown>;
@@ -161,6 +178,12 @@ export function isHudStyleSettings(value: unknown): value is HudStyleSettings {
   ) {
     return false;
   }
+  if (
+    s.keyMouseLayout !== undefined &&
+    !isKeyMouseLayout(s.keyMouseLayout)
+  ) {
+    return false;
+  }
   return true;
 }
 
@@ -169,12 +192,14 @@ export function normalizeHudStyleSettings(value: HudStyleSettings): HudStyleSett
   keyboardDisplayMode: KeyboardDisplayMode;
   keyboardLegendLayout: KeyboardLegendPreference;
   mouseDisplayMode: MouseDisplayMode;
+  keyMouseLayout: KeyMouseLayout;
 } {
   return {
     ...value,
     keyboardDisplayMode: value.keyboardDisplayMode ?? "text",
     keyboardLegendLayout: value.keyboardLegendLayout ?? "auto",
     mouseDisplayMode: value.mouseDisplayMode ?? "text",
+    keyMouseLayout: value.keyMouseLayout ?? "key-left-mouse-right",
   };
 }
 

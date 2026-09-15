@@ -118,6 +118,21 @@ impl Default for MouseDisplayMode {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum KeyMouseLayout {
+    KeyLeftMouseRight,
+    KeyRightMouseLeft,
+    KeyTopMouseBottom,
+    KeyBottomMouseTop,
+}
+
+impl Default for KeyMouseLayout {
+    fn default() -> Self {
+        Self::KeyLeftMouseRight
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum UiLocale {
     En,
@@ -180,6 +195,8 @@ pub struct HudStyleSettings {
     pub keyboard_legend_layout: KeyboardLegendLayout,
     #[serde(default)]
     pub mouse_display_mode: MouseDisplayMode,
+    #[serde(default)]
+    pub key_mouse_layout: KeyMouseLayout,
 }
 
 impl Default for HudStyleSettings {
@@ -193,6 +210,7 @@ impl Default for HudStyleSettings {
             keyboard_display_mode: KeyboardDisplayMode::Text,
             keyboard_legend_layout: KeyboardLegendLayout::Auto,
             mouse_display_mode: MouseDisplayMode::Text,
+            key_mouse_layout: KeyMouseLayout::KeyLeftMouseRight,
         }
     }
 }
@@ -823,6 +841,7 @@ mod tests {
             keyboard_display_mode: KeyboardDisplayMode::Text,
             keyboard_legend_layout: KeyboardLegendLayout::Auto,
             mouse_display_mode: MouseDisplayMode::Text,
+            key_mouse_layout: KeyMouseLayout::KeyLeftMouseRight,
         }
         .clamp();
         assert_eq!(clamped.font_size_px, 10);
@@ -840,12 +859,48 @@ mod tests {
         assert!(parsed.ignored_key_ids.is_empty());
         assert_eq!(parsed.hud.dwell_ms, 1000);
         assert_eq!(
+            parsed.hud.key_mouse_layout,
+            KeyMouseLayout::KeyLeftMouseRight
+        );
+        assert_eq!(
             parsed.hud_position,
             HudPositionSettings::Corner {
                 corner: HudCorner::Br
             }
         );
         assert_eq!(parsed.ui_locale, None);
+    }
+
+    #[test]
+    fn key_mouse_layout_defaults_when_omitted_and_parses() {
+        let omitted = r##"{
+            "captureKeyboard":true,
+            "captureMouse":true,
+            "hud":{"fontSizePx":15,"textColor":"#f8fafc","backgroundColor":"#0f172a","backgroundOpacity":0.82,"dwellMs":1000}
+        }"##;
+        let parsed: AppSettings = serde_json::from_str(omitted).unwrap();
+        assert_eq!(
+            parsed.hud.key_mouse_layout,
+            KeyMouseLayout::KeyLeftMouseRight
+        );
+
+        let flipped = r##"{
+            "captureKeyboard":true,
+            "captureMouse":true,
+            "hud":{
+                "fontSizePx":15,
+                "textColor":"#f8fafc",
+                "backgroundColor":"#0f172a",
+                "backgroundOpacity":0.82,
+                "dwellMs":1000,
+                "keyMouseLayout":"key-right-mouse-left"
+            }
+        }"##;
+        let parsed: AppSettings = serde_json::from_str(flipped).unwrap();
+        assert_eq!(
+            parsed.hud.key_mouse_layout,
+            KeyMouseLayout::KeyRightMouseLeft
+        );
     }
 
     #[test]

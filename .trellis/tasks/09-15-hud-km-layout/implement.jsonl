@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "HudStyleSettings guards and normalize patterns for new keyMouseLayout field"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend layer index before Settings/overlay UI edits"}
+{"file": ".trellis/spec/tauri/index.md", "reason": "Tauri settings persistence layer for HudStyleSettings enum extension"}
+{"file": ".trellis/tasks/09-15-hud-km-layout/design.md", "reason": "Layout contract, overlay CSS order strategy, compatibility"}
+{"file": ".trellis/tasks/09-15-hud-km-layout/prd.md", "reason": "Acceptance criteria AC1–AC5"}

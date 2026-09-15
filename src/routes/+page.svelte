@@ -27,6 +27,7 @@
     getUiLocaleSettings,
     isHudCorner,
     isHudPositionSettings,
+    isKeyMouseLayout,
     matchHudColorPreset,
     normalizeHudStyleSettings,
     setCaptureSettings,
@@ -301,6 +302,12 @@
     const value = (event.currentTarget as HTMLSelectElement).value;
     if (value !== "text" && value !== "schematic") return;
     patchHud({ mouseDisplayMode: value as MouseDisplayMode });
+  }
+
+  function onKeyMouseLayoutChange(event: Event) {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    if (!isKeyMouseLayout(value)) return;
+    patchHud({ keyMouseLayout: value });
   }
 
   function onKeyboardLegendLayoutChange(event: Event) {
@@ -753,6 +760,31 @@
               >
               <option value="schematic"
                 >{t("settings.mouseDisplay.schematic", locale)}</option
+              >
+            </select>
+          </div>
+          <div class="field">
+            <span class="field-label" id="hud-km-layout-label"
+              >{t("settings.keyMouseLayout", locale)}</span
+            >
+            <select
+              id="hud-km-layout"
+              value={hudStyle.keyMouseLayout ?? "key-left-mouse-right"}
+              disabled={!hudReady || hudSaving}
+              aria-labelledby="hud-km-layout-label"
+              onchange={onKeyMouseLayoutChange}
+            >
+              <option value="key-left-mouse-right"
+                >{t("settings.keyMouseLayout.keyLeftMouseRight", locale)}</option
+              >
+              <option value="key-right-mouse-left"
+                >{t("settings.keyMouseLayout.keyRightMouseLeft", locale)}</option
+              >
+              <option value="key-top-mouse-bottom"
+                >{t("settings.keyMouseLayout.keyTopMouseBottom", locale)}</option
+              >
+              <option value="key-bottom-mouse-top"
+                >{t("settings.keyMouseLayout.keyBottomMouseTop", locale)}</option
               >
             </select>
           </div>
