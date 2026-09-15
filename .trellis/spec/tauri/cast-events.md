@@ -4,13 +4,13 @@
 
 ---
 
-## Scenario: macOS input hooks emit CastEvent
+## Scenario: macOS input hooks emit HudChip
 
 ### 1. Scope / Trigger
 
-- Trigger: Cross-layer payload (`CastEvent` / `HookStatus`) crosses Rust emit and Svelte listen
+- Trigger: Cross-layer payload (`HudChip` / `HookStatus`) crosses Rust emit and Svelte listen
 - Owners:
-  - Rust: `src-tauri/src/input/event.rs` (+ `macos.rs` / `stub.rs` / `filter.rs`)
+  - Rust: `src-tauri/src/input/event.rs` (+ `chip.rs` / `macos.rs` / `stub.rs` / `filter.rs`)
   - TS: `src/lib/cast.ts` (types, channel constants, formatters, type guards)
 - Do **not** redefine the payload inline in route components
 
@@ -29,18 +29,24 @@ pub const HOOK_STATUS_CHANNEL: &str = "cast://hook-status";
 // src/lib/cast.ts
 export const EVENT_CHANNEL = "cast://event";
 export const HOOK_STATUS_CHANNEL = "cast://hook-status";
-export function isCastEvent(value: unknown): value is CastEvent;
+export function isHudChip(value: unknown): value is HudChip;
 export function isHookStatus(value: unknown): value is HookStatus;
+export function formatHudLabel(chip: HudChip): string;
 ```
 
 ### 3. Contracts
 
-**`cast://event` → `CastEvent`**
+**`cast://event` → `HudChip`** (breaking vs older raw `CastEvent`; no `phase`)
 
 | Variant | Fields | Notes |
 |---------|--------|-------|
-| `key` | `key: string`, `mods: string[]`, `phase: "down" \| "up"` | `mods` use macOS symbols `⌃ ⌥ ⇧ ⌘`; modifier itself may be `key` |
-| `mouse` | `button: "left" \| "right" \| "middle"`, `phase: "down" \| "up"` | No scroll / wheel delta events |
+| `key` | `mods: KeyRef[]`, `key: KeyRef` | Emitted on primary key **down** only; bare modifiers do not emit |
+| `mouse` | `button: "left" \| "right" \| "middle"` | Emitted on button **down** only |
+
+`KeyRef = { id: string; label: string }`
+
+- `id`: stable logical name (`MetaLeft`, `ShiftRight`, `KeyS`, `Digit1`, `Numpad1`, `Backspace`, `ForwardDelete`, …)
+- `label`: short text-HUD display (left/right Meta both `"⌘"`)
 
 **`cast://hook-status` → `HookStatus`**
 
@@ -56,21 +62,24 @@ export function isHookStatus(value: unknown): value is HookStatus;
 | macOS, Accessibility denied | Emit `{ ok: false, reason: "accessibility_denied" }`; do not start tap; app stays up |
 | macOS, tap create / runloop fails | Emit failed status with reason; log to stderr |
 | Non-macOS | Stub emits `{ ok: false, reason: "unsupported_platform" }` |
-| Key autorepeat (`KEYBOARD_EVENT_AUTOREPEAT`) | Drop before emit |
-| Same key-down within ~35ms | Drop in `EventFilter` |
-| Frontend receives unknown payload | `isCastEvent` / `isHookStatus` reject; ignore |
+| Key autorepeat (`KEYBOARD_EVENT_AUTOREPEAT`) | Drop before chip reduce |
+| Same primary key-down within ~35ms | Drop in `EventFilter` |
+| Modifier-only down/up | Update held-mod state; **no** `HudChip` emit |
+| Left/right same-mod FlagsChanged (shared flag bit) | Phase via `modifier_transition(flag_on, was_held)` so releasing one side while the other stays held clears only that `KeyRef` |
+| Key / mouse up | No emit |
+| Frontend receives unknown payload | `isHudChip` / `isHookStatus` reject; ignore |
 
 ### 5. Good / Base / Bad Cases
 
-- **Good**: `{ "type":"key","key":"S","mods":["⌘"],"phase":"down" }`
-- **Base**: `{ "type":"mouse","button":"left","phase":"up" }`
-- **Bad**: scroll/wheel payloads; inventing `type:"combo"`; Win/Linux fake success without a real hook
+- **Good**: `{ "kind":"key","mods":[{"id":"MetaLeft","label":"⌘"},{"id":"ShiftLeft","label":"⇧"}],"key":{"id":"KeyS","label":"S"} }`
+- **Base**: `{ "kind":"mouse","button":"left" }`
+- **Bad**: payloads with `phase`; scroll/wheel; inventing `kind:"combo"`; emitting bare `MetaLeft` as a chip; Win/Linux fake success without a real hook
 
 ### 6. Tests Required
 
-- `cargo check` on macOS host
+- `cargo check` (+ `cargo test -p z-key-cast` for chip reducer unit tests when available)
 - `pnpm check` (guards + listeners typecheck)
-- Manual: denied Accessibility → main log shows failed hook-status; grant → HUD chips for key/mouse; hold key → no repeat spam
+- Manual: denied Accessibility → main log shows failed hook-status; grant → single HUD chip for key/mouse; bare mods silent; idle ~1s fade; hold key → no repeat spam
 
 ### 7. Wrong vs Correct
 
@@ -87,8 +96,8 @@ void listen(EVENT_CHANNEL, (event) => {
 
 ```ts
 void listen(EVENT_CHANNEL, (event) => {
-  if (!isCastEvent(event.payload)) return;
-  pushChip(formatLabel(event.payload));
+  if (!isHudChip(event.payload)) return;
+  showChip(formatHudLabel(event.payload));
 });
 ```
 
@@ -99,15 +108,15 @@ void listen(EVENT_CHANNEL, (event) => {
 ### Platform boundary
 
 - **Decision**: CGEventTap on macOS only; `stub.rs` elsewhere
-- **Why**: Permission model is clear; Windows Raw Input lands later without changing `CastEvent`
+- **Why**: Permission model is clear; Windows Raw Input lands later without changing `HudChip`
 - **Forbidden**: Shipping a no-op that reports `ok: true` on unsupported platforms
 
-### Filtering scope
+### Chip reduce scope
 
-- **Decision**: Drop autorepeat + short same-key debounce only
-- **Out of scope**: Full combo merge into one HUD chip (follow-up task)
+- **Decision**: Primary/mouse down → one chip; drop ups; bare mods update state only
+- **Out of scope**: Multi-chip history, display skins, key/mouse toggles (follow-up tasks)
 
 ### Mods encoding
 
-- **Decision**: macOS symbols (`⌘`, `⇧`, …) for HUD-friendly labels
-- **Keep aligned**: Rust `modifier_symbols` ↔ TS `formatLabel`
+- **Decision**: `KeyRef` with left/right `id` and HUD-friendly `label` symbols
+- **Keep aligned**: Rust `ChipReducer` held-mods ↔ TS `formatHudLabel`

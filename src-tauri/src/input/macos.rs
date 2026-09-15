@@ -9,8 +9,9 @@ use core_graphics::event::{
 };
 use tauri::{AppHandle, Emitter};
 
+use super::chip::{modifier_transition, ChipReducer};
 use super::event::{
-    CastEvent, HookStatus, MouseButton, Phase, EVENT_CHANNEL, HOOK_STATUS_CHANNEL,
+    HookStatus, KeyRef, MouseButton, Phase, RawInput, EVENT_CHANNEL, HOOK_STATUS_CHANNEL,
 };
 use super::filter::EventFilter;
 
@@ -36,6 +37,7 @@ fn run_tap(app: AppHandle) -> Result<(), HookStatus> {
     }
 
     let filter = Mutex::new(EventFilter::default());
+    let reducer = Mutex::new(ChipReducer::default());
     let app_for_cb = app.clone();
 
     let tap = CGEventTap::new(
@@ -54,13 +56,25 @@ fn run_tap(app: AppHandle) -> Result<(), HookStatus> {
             CGEventType::OtherMouseUp,
         ],
         move |_proxy, event_type, event: &CGEvent| {
-            if let Some(cast) = normalize(event_type, event) {
-                let should_emit = filter
+            let held = |id: &str| {
+                reducer
                     .lock()
-                    .map(|mut f| f.allow(&cast))
+                    .map(|r| r.is_holding(id))
+                    .unwrap_or(false)
+            };
+            if let Some(raw) = normalize(event_type, event, &held) {
+                let should_process = filter
+                    .lock()
+                    .map(|mut f| f.allow(&raw))
                     .unwrap_or(true);
-                if should_emit {
-                    let _ = app_for_cb.emit(EVENT_CHANNEL, &cast);
+                if should_process {
+                    let chip = reducer
+                        .lock()
+                        .map(|mut r| r.reduce(&raw))
+                        .unwrap_or(None);
+                    if let Some(chip) = chip {
+                        let _ = app_for_cb.emit(EVENT_CHANNEL, &chip);
+                    }
                 }
             }
             // ListenOnly: pass through unchanged.
@@ -133,7 +147,11 @@ fn is_process_trusted(prompt: bool) -> bool {
     }
 }
 
-fn normalize(event_type: CGEventType, event: &CGEvent) -> Option<CastEvent> {
+fn normalize(
+    event_type: CGEventType,
+    event: &CGEvent,
+    is_holding: &dyn Fn(&str) -> bool,
+) -> Option<RawInput> {
     match event_type {
         CGEventType::KeyDown | CGEventType::KeyUp => {
             let is_down = matches!(event_type, CGEventType::KeyDown);
@@ -146,12 +164,19 @@ fn normalize(event_type: CGEventType, event: &CGEvent) -> Option<CastEvent> {
             }
 
             let keycode = event.get_integer_value_field(EventField::KEYBOARD_EVENT_KEYCODE);
-            let key = key_name(keycode);
+            // Modifier physical keys arrive as FlagsChanged on macOS; ignore here.
+            if modifier_key_ref(keycode).is_some() {
+                return None;
+            }
+            let key = key_ref(keycode);
             let phase = if is_down { Phase::Down } else { Phase::Up };
-            let mods = modifier_symbols(event.get_flags(), Some(keycode));
-            Some(CastEvent::Key { key, mods, phase })
+            Some(RawInput::Key {
+                key,
+                phase,
+                is_modifier: false,
+            })
         }
-        CGEventType::FlagsChanged => normalize_flags_changed(event),
+        CGEventType::FlagsChanged => normalize_flags_changed(event, is_holding),
         CGEventType::LeftMouseDown => Some(mouse(MouseButton::Left, Phase::Down)),
         CGEventType::LeftMouseUp => Some(mouse(MouseButton::Left, Phase::Up)),
         CGEventType::RightMouseDown => Some(mouse(MouseButton::Right, Phase::Down)),
@@ -174,166 +199,158 @@ fn normalize(event_type: CGEventType, event: &CGEvent) -> Option<CastEvent> {
     }
 }
 
-fn normalize_flags_changed(event: &CGEvent) -> Option<CastEvent> {
+fn normalize_flags_changed(
+    event: &CGEvent,
+    is_holding: &dyn Fn(&str) -> bool,
+) -> Option<RawInput> {
     let keycode = event.get_integer_value_field(EventField::KEYBOARD_EVENT_KEYCODE);
+    // CapsLock is not a chord modifier for HUD chips.
+    if keycode == 57 {
+        return None;
+    }
+    let (key, bit) = modifier_key_ref(keycode)?;
     let flags = event.get_flags();
-    let (key, bit) = match keycode {
-        54 | 55 => ("⌘", CGEventFlags::CGEventFlagCommand),
-        56 | 60 => ("⇧", CGEventFlags::CGEventFlagShift),
-        58 | 61 => ("⌥", CGEventFlags::CGEventFlagAlternate),
-        59 | 62 => ("⌃", CGEventFlags::CGEventFlagControl),
-        63 => ("Fn", CGEventFlags::CGEventFlagSecondaryFn),
-        _ => return None,
-    };
-
-    let phase = if flags.contains(bit) {
-        Phase::Down
-    } else {
-        Phase::Up
-    };
-    let mods = modifier_symbols(flags, Some(keycode));
-    Some(CastEvent::Key {
-        key: key.to_string(),
-        mods,
+    let flag_on = flags.contains(bit);
+    let was_held = is_holding(&key.id);
+    let phase = modifier_transition(flag_on, was_held);
+    Some(RawInput::Key {
+        key,
         phase,
+        is_modifier: true,
     })
 }
 
-fn mouse(button: MouseButton, phase: Phase) -> CastEvent {
-    CastEvent::Mouse { button, phase }
+fn mouse(button: MouseButton, phase: Phase) -> RawInput {
+    RawInput::Mouse { button, phase }
 }
 
-fn modifier_symbols(flags: CGEventFlags, exclude_keycode: Option<i64>) -> Vec<String> {
-    let mut mods = Vec::new();
-    let skip_cmd = matches!(exclude_keycode, Some(54 | 55));
-    let skip_shift = matches!(exclude_keycode, Some(56 | 60));
-    let skip_opt = matches!(exclude_keycode, Some(58 | 61));
-    let skip_ctrl = matches!(exclude_keycode, Some(59 | 62));
-
-    if flags.contains(CGEventFlags::CGEventFlagControl) && !skip_ctrl {
-        mods.push("⌃".into());
-    }
-    if flags.contains(CGEventFlags::CGEventFlagAlternate) && !skip_opt {
-        mods.push("⌥".into());
-    }
-    if flags.contains(CGEventFlags::CGEventFlagShift) && !skip_shift {
-        mods.push("⇧".into());
-    }
-    if flags.contains(CGEventFlags::CGEventFlagCommand) && !skip_cmd {
-        mods.push("⌘".into());
-    }
-    mods
-}
-
-fn key_name(keycode: i64) -> String {
+fn modifier_key_ref(keycode: i64) -> Option<(KeyRef, CGEventFlags)> {
     match keycode {
-        0 => "A",
-        1 => "S",
-        2 => "D",
-        3 => "F",
-        4 => "H",
-        5 => "G",
-        6 => "Z",
-        7 => "X",
-        8 => "C",
-        9 => "V",
-        11 => "B",
-        12 => "Q",
-        13 => "W",
-        14 => "E",
-        15 => "R",
-        16 => "Y",
-        17 => "T",
-        18 => "1",
-        19 => "2",
-        20 => "3",
-        21 => "4",
-        22 => "6",
-        23 => "5",
-        24 => "=",
-        25 => "9",
-        26 => "7",
-        27 => "-",
-        28 => "8",
-        29 => "0",
-        30 => "]",
-        31 => "O",
-        32 => "U",
-        33 => "[",
-        34 => "I",
-        35 => "P",
-        36 => "Return",
-        37 => "L",
-        38 => "J",
-        39 => "'",
-        40 => "K",
-        41 => ";",
-        42 => "\\",
-        43 => ",",
-        44 => "/",
-        45 => "N",
-        46 => "M",
-        47 => ".",
-        48 => "Tab",
-        49 => "Space",
-        50 => "`",
-        51 => "Delete",
-        53 => "Escape",
-        54 | 55 => "⌘",
-        56 | 60 => "⇧",
-        57 => "CapsLock",
-        58 | 61 => "⌥",
-        59 | 62 => "⌃",
-        63 => "Fn",
-        64 => "F17",
-        65 => "NumPad.",
-        67 => "NumPad*",
-        69 => "NumPad+",
-        71 => "Clear",
-        75 => "NumPad/",
-        76 => "NumPadEnter",
-        78 => "NumPad-",
-        79 => "F18",
-        80 => "F19",
-        81 => "NumPad=",
-        82 => "NumPad0",
-        83 => "NumPad1",
-        84 => "NumPad2",
-        85 => "NumPad3",
-        86 => "NumPad4",
-        87 => "NumPad5",
-        88 => "NumPad6",
-        89 => "NumPad7",
-        90 => "F20",
-        91 => "NumPad8",
-        92 => "NumPad9",
-        96 => "F5",
-        97 => "F6",
-        98 => "F7",
-        99 => "F3",
-        100 => "F8",
-        101 => "F9",
-        103 => "F11",
-        105 => "F13",
-        106 => "F16",
-        107 => "F14",
-        109 => "F10",
-        111 => "F12",
-        113 => "F15",
-        114 => "Help",
-        115 => "Home",
-        116 => "PageUp",
-        117 => "ForwardDelete",
-        118 => "F4",
-        119 => "End",
-        120 => "F2",
-        121 => "PageDown",
-        122 => "F1",
-        123 => "←",
-        124 => "→",
-        125 => "↓",
-        126 => "↑",
-        _ => return format!("Key{keycode}"),
+        55 => Some((KeyRef::new("MetaLeft", "⌘"), CGEventFlags::CGEventFlagCommand)),
+        54 => Some((KeyRef::new("MetaRight", "⌘"), CGEventFlags::CGEventFlagCommand)),
+        56 => Some((KeyRef::new("ShiftLeft", "⇧"), CGEventFlags::CGEventFlagShift)),
+        60 => Some((KeyRef::new("ShiftRight", "⇧"), CGEventFlags::CGEventFlagShift)),
+        58 => Some((KeyRef::new("AltLeft", "⌥"), CGEventFlags::CGEventFlagAlternate)),
+        61 => Some((KeyRef::new("AltRight", "⌥"), CGEventFlags::CGEventFlagAlternate)),
+        59 => Some((
+            KeyRef::new("ControlLeft", "⌃"),
+            CGEventFlags::CGEventFlagControl,
+        )),
+        62 => Some((
+            KeyRef::new("ControlRight", "⌃"),
+            CGEventFlags::CGEventFlagControl,
+        )),
+        63 => Some((
+            KeyRef::new("Fn", "Fn"),
+            CGEventFlags::CGEventFlagSecondaryFn,
+        )),
+        _ => None,
     }
-    .to_string()
+}
+
+fn key_ref(keycode: i64) -> KeyRef {
+    match keycode {
+        0 => KeyRef::new("KeyA", "A"),
+        1 => KeyRef::new("KeyS", "S"),
+        2 => KeyRef::new("KeyD", "D"),
+        3 => KeyRef::new("KeyF", "F"),
+        4 => KeyRef::new("KeyH", "H"),
+        5 => KeyRef::new("KeyG", "G"),
+        6 => KeyRef::new("KeyZ", "Z"),
+        7 => KeyRef::new("KeyX", "X"),
+        8 => KeyRef::new("KeyC", "C"),
+        9 => KeyRef::new("KeyV", "V"),
+        11 => KeyRef::new("KeyB", "B"),
+        12 => KeyRef::new("KeyQ", "Q"),
+        13 => KeyRef::new("KeyW", "W"),
+        14 => KeyRef::new("KeyE", "E"),
+        15 => KeyRef::new("KeyR", "R"),
+        16 => KeyRef::new("KeyY", "Y"),
+        17 => KeyRef::new("KeyT", "T"),
+        18 => KeyRef::new("Digit1", "1"),
+        19 => KeyRef::new("Digit2", "2"),
+        20 => KeyRef::new("Digit3", "3"),
+        21 => KeyRef::new("Digit4", "4"),
+        22 => KeyRef::new("Digit6", "6"),
+        23 => KeyRef::new("Digit5", "5"),
+        24 => KeyRef::new("Equal", "="),
+        25 => KeyRef::new("Digit9", "9"),
+        26 => KeyRef::new("Digit7", "7"),
+        27 => KeyRef::new("Minus", "-"),
+        28 => KeyRef::new("Digit8", "8"),
+        29 => KeyRef::new("Digit0", "0"),
+        30 => KeyRef::new("BracketRight", "]"),
+        31 => KeyRef::new("KeyO", "O"),
+        32 => KeyRef::new("KeyU", "U"),
+        33 => KeyRef::new("BracketLeft", "["),
+        34 => KeyRef::new("KeyI", "I"),
+        35 => KeyRef::new("KeyP", "P"),
+        36 => KeyRef::new("Enter", "Return"),
+        37 => KeyRef::new("KeyL", "L"),
+        38 => KeyRef::new("KeyJ", "J"),
+        39 => KeyRef::new("Quote", "'"),
+        40 => KeyRef::new("KeyK", "K"),
+        41 => KeyRef::new("Semicolon", ";"),
+        42 => KeyRef::new("Backslash", "\\"),
+        43 => KeyRef::new("Comma", ","),
+        44 => KeyRef::new("Slash", "/"),
+        45 => KeyRef::new("KeyN", "N"),
+        46 => KeyRef::new("KeyM", "M"),
+        47 => KeyRef::new("Period", "."),
+        48 => KeyRef::new("Tab", "Tab"),
+        49 => KeyRef::new("Space", "Space"),
+        50 => KeyRef::new("Backquote", "`"),
+        // macOS keycode 51 is Backspace (labeled "delete" on keyboards); 117 is ForwardDelete.
+        51 => KeyRef::new("Backspace", "⌫"),
+        53 => KeyRef::new("Escape", "Esc"),
+        64 => KeyRef::new("F17", "F17"),
+        65 => KeyRef::new("NumpadDecimal", "Num."),
+        67 => KeyRef::new("NumpadMultiply", "Num*"),
+        69 => KeyRef::new("NumpadAdd", "Num+"),
+        71 => KeyRef::new("NumLock", "Clear"),
+        75 => KeyRef::new("NumpadDivide", "Num/"),
+        76 => KeyRef::new("NumpadEnter", "NumEnter"),
+        78 => KeyRef::new("NumpadSubtract", "Num-"),
+        79 => KeyRef::new("F18", "F18"),
+        80 => KeyRef::new("F19", "F19"),
+        81 => KeyRef::new("NumpadEqual", "Num="),
+        82 => KeyRef::new("Numpad0", "Num0"),
+        83 => KeyRef::new("Numpad1", "Num1"),
+        84 => KeyRef::new("Numpad2", "Num2"),
+        85 => KeyRef::new("Numpad3", "Num3"),
+        86 => KeyRef::new("Numpad4", "Num4"),
+        87 => KeyRef::new("Numpad5", "Num5"),
+        88 => KeyRef::new("Numpad6", "Num6"),
+        89 => KeyRef::new("Numpad7", "Num7"),
+        90 => KeyRef::new("F20", "F20"),
+        91 => KeyRef::new("Numpad8", "Num8"),
+        92 => KeyRef::new("Numpad9", "Num9"),
+        96 => KeyRef::new("F5", "F5"),
+        97 => KeyRef::new("F6", "F6"),
+        98 => KeyRef::new("F7", "F7"),
+        99 => KeyRef::new("F3", "F3"),
+        100 => KeyRef::new("F8", "F8"),
+        101 => KeyRef::new("F9", "F9"),
+        103 => KeyRef::new("F11", "F11"),
+        105 => KeyRef::new("F13", "F13"),
+        106 => KeyRef::new("F16", "F16"),
+        107 => KeyRef::new("F14", "F14"),
+        109 => KeyRef::new("F10", "F10"),
+        111 => KeyRef::new("F12", "F12"),
+        113 => KeyRef::new("F15", "F15"),
+        114 => KeyRef::new("Help", "Help"),
+        115 => KeyRef::new("Home", "Home"),
+        116 => KeyRef::new("PageUp", "PageUp"),
+        117 => KeyRef::new("ForwardDelete", "⌦"),
+        118 => KeyRef::new("F4", "F4"),
+        119 => KeyRef::new("End", "End"),
+        120 => KeyRef::new("F2", "F2"),
+        121 => KeyRef::new("PageDown", "PageDown"),
+        122 => KeyRef::new("F1", "F1"),
+        123 => KeyRef::new("ArrowLeft", "←"),
+        124 => KeyRef::new("ArrowRight", "→"),
+        125 => KeyRef::new("ArrowDown", "↓"),
+        126 => KeyRef::new("ArrowUp", "↑"),
+        _ => KeyRef::new(format!("Key{keycode}"), format!("Key{keycode}")),
+    }
 }

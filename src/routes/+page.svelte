@@ -4,10 +4,10 @@
   import {
     EVENT_CHANNEL,
     HOOK_STATUS_CHANNEL,
-    isCastEvent,
     isHookStatus,
-    summarizeEvent,
+    isHudChip,
     summarizeHookStatus,
+    summarizeHudChip,
   } from "$lib/cast";
 
   const MAX_LOG_LINES = 100;
@@ -62,8 +62,8 @@
       unsubs.push(unlistenStatus);
 
       const unlistenEvent = await listen(EVENT_CHANNEL, (event) => {
-        if (!isCastEvent(event.payload)) return;
-        appendLog(summarizeEvent(event.payload));
+        if (!isHudChip(event.payload)) return;
+        appendLog(summarizeHudChip(event.payload));
       });
       if (cancelled) {
         unlistenEvent();

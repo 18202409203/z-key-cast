@@ -1,27 +1,34 @@
 <script lang="ts">
   import { listen } from "@tauri-apps/api/event";
+  import { fade } from "svelte/transition";
   import { onMount } from "svelte";
   import {
     EVENT_CHANNEL,
     HOOK_STATUS_CHANNEL,
-    formatLabel,
-    isCastEvent,
+    formatHudLabel,
     isHookStatus,
+    isHudChip,
   } from "$lib/cast";
 
-  type HudItem = {
-    id: number;
-    label: string;
-  };
+  const IDLE_MS = 1000;
 
-  const MAX_CHIPS = 3;
+  let chipLabel = $state<string | null>(null);
+  let idleTimer: ReturnType<typeof setTimeout> | null = null;
 
-  let items = $state<HudItem[]>([]);
-  let nextId = 0;
+  function clearIdleTimer() {
+    if (idleTimer !== null) {
+      clearTimeout(idleTimer);
+      idleTimer = null;
+    }
+  }
 
-  function pushChip(label: string) {
-    nextId += 1;
-    items = [...items, { id: nextId, label }].slice(-MAX_CHIPS);
+  function showChip(label: string) {
+    chipLabel = label;
+    clearIdleTimer();
+    idleTimer = setTimeout(() => {
+      chipLabel = null;
+      idleTimer = null;
+    }, IDLE_MS);
   }
 
   onMount(() => {
@@ -30,8 +37,8 @@
 
     void (async () => {
       const unlistenEvent = await listen(EVENT_CHANNEL, (event) => {
-        if (!isCastEvent(event.payload)) return;
-        pushChip(formatLabel(event.payload));
+        if (!isHudChip(event.payload)) return;
+        showChip(formatHudLabel(event.payload));
       });
       if (cancelled) {
         unlistenEvent();
@@ -42,7 +49,7 @@
       const unlistenStatus = await listen(HOOK_STATUS_CHANNEL, (event) => {
         if (!isHookStatus(event.payload)) return;
         if (!event.payload.ok) {
-          pushChip(`Hook offline · ${event.payload.reason ?? "denied"}`);
+          showChip(`Hook offline · ${event.payload.reason ?? "denied"}`);
         }
       });
       if (cancelled) {
@@ -54,6 +61,7 @@
 
     return () => {
       cancelled = true;
+      clearIdleTimer();
       for (const unlisten of unsubs) {
         unlisten();
       }
@@ -62,9 +70,9 @@
 </script>
 
 <div class="hud" aria-live="polite">
-  {#each items as item (item.id)}
-    <div class="chip">{item.label}</div>
-  {/each}
+  {#if chipLabel}
+    <div class="chip" transition:fade={{ duration: 200 }}>{chipLabel}</div>
+  {/if}
 </div>
 
 <style>
@@ -105,17 +113,5 @@
     letter-spacing: 0.02em;
     backdrop-filter: blur(10px);
     box-shadow: 0 10px 30px rgba(2, 6, 23, 0.35);
-    animation: rise 220ms ease-out;
-  }
-
-  @keyframes rise {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
   }
 </style>

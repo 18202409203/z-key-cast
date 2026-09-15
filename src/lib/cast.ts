@@ -1,10 +1,13 @@
 /** Wire contract — keep aligned with `design/index.md` and Rust `input/event.rs`. */
 
-export type Phase = "down" | "up";
+export type KeyRef = {
+  id: string;
+  label: string;
+};
 
-export type CastEvent =
-  | { type: "key"; key: string; mods: string[]; phase: Phase }
-  | { type: "mouse"; button: "left" | "right" | "middle"; phase: Phase };
+export type HudChip =
+  | { kind: "key"; mods: KeyRef[]; key: KeyRef }
+  | { kind: "mouse"; button: "left" | "right" | "middle" };
 
 export type HookStatus = {
   ok: boolean;
@@ -14,29 +17,31 @@ export type HookStatus = {
 export const EVENT_CHANNEL = "cast://event";
 export const HOOK_STATUS_CHANNEL = "cast://hook-status";
 
-function isPhase(value: unknown): value is Phase {
-  return value === "down" || value === "up";
+function isKeyRef(value: unknown): value is KeyRef {
+  if (!value || typeof value !== "object") return false;
+  const ref = value as Record<string, unknown>;
+  return typeof ref.id === "string" && typeof ref.label === "string";
 }
 
-export function isCastEvent(value: unknown): value is CastEvent {
+export function isHudChip(value: unknown): value is HudChip {
   if (!value || typeof value !== "object") return false;
-  const event = value as Record<string, unknown>;
+  const chip = value as Record<string, unknown>;
+  // Public wire contract has no `phase` (raw downs/ups stay internal).
+  if ("phase" in chip) return false;
 
-  if (event.type === "key") {
+  if (chip.kind === "key") {
     return (
-      typeof event.key === "string" &&
-      Array.isArray(event.mods) &&
-      event.mods.every((mod) => typeof mod === "string") &&
-      isPhase(event.phase)
+      Array.isArray(chip.mods) &&
+      chip.mods.every(isKeyRef) &&
+      isKeyRef(chip.key)
     );
   }
 
-  if (event.type === "mouse") {
+  if (chip.kind === "mouse") {
     return (
-      (event.button === "left" ||
-        event.button === "right" ||
-        event.button === "middle") &&
-      isPhase(event.phase)
+      chip.button === "left" ||
+      chip.button === "right" ||
+      chip.button === "middle"
     );
   }
 
@@ -51,22 +56,24 @@ export function isHookStatus(value: unknown): value is HookStatus {
   return true;
 }
 
-export function formatLabel(event: CastEvent): string {
-  if (event.type === "key") {
-    if (event.mods.length > 0) {
-      return `${event.mods.join(" + ")} + ${event.key}`;
-    }
-    return event.key;
+export function formatHudLabel(chip: HudChip): string {
+  if (chip.kind === "key") {
+    const parts = [...chip.mods.map((m) => m.label), chip.key.label];
+    return parts.join(" + ");
   }
 
   const button =
-    event.button === "left" ? "Left" : event.button === "right" ? "Right" : "Middle";
+    chip.button === "left" ? "Left" : chip.button === "right" ? "Right" : "Middle";
   return `Mouse · ${button}`;
 }
 
-export function summarizeEvent(event: CastEvent): string {
-  const label = formatLabel(event);
-  return `${event.type} ${event.phase}: ${label}`;
+export function summarizeHudChip(chip: HudChip): string {
+  if (chip.kind === "key") {
+    const modIds = chip.mods.map((m) => m.id).join(",");
+    const modPart = modIds ? ` mods=[${modIds}]` : "";
+    return `key${modPart} key=${chip.key.id} · ${formatHudLabel(chip)}`;
+  }
+  return `mouse button=${chip.button} · ${formatHudLabel(chip)}`;
 }
 
 export function summarizeHookStatus(status: HookStatus): string {

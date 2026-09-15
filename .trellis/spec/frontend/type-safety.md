@@ -23,7 +23,7 @@ See also: [Tauri Cast Events](../tauri/cast-events.md).
 
 ## Validation
 
-- Decode Tauri event payloads with `isCastEvent` / `isHookStatus` before use
+- Decode Tauri event payloads with `isHudChip` / `isHookStatus` before use
 - Do not trust `listen<T>(...)` generics alone — they are compile-time only
 
 ---
@@ -31,11 +31,11 @@ See also: [Tauri Cast Events](../tauri/cast-events.md).
 ## Common Patterns
 
 ```ts
-import { EVENT_CHANNEL, isCastEvent, formatLabel } from "$lib/cast";
+import { EVENT_CHANNEL, isHudChip, formatHudLabel } from "$lib/cast";
 
 listen(EVENT_CHANNEL, (event) => {
-  if (!isCastEvent(event.payload)) return;
-  pushChip(formatLabel(event.payload));
+  if (!isHudChip(event.payload)) return;
+  showChip(formatHudLabel(event.payload));
 });
 ```
 
@@ -43,5 +43,6 @@ listen(EVENT_CHANNEL, (event) => {
 
 ## Forbidden Patterns
 
-- Inline `as CastEvent` / field fishing on `event.payload` in routes
+- Inline `as HudChip` / field fishing on `event.payload` in routes
 - Duplicating channel string literals outside `$lib/cast.ts` / Rust `EVENT_CHANNEL`
+- Assuming a public `phase` field on `cast://event` payloads

@@ -1,3 +1,4 @@
+mod chip;
 mod event;
 mod filter;
 
@@ -8,7 +9,9 @@ mod macos;
 mod stub;
 
 #[allow(unused_imports)]
-pub use event::{CastEvent, HookStatus, MouseButton, Phase, EVENT_CHANNEL, HOOK_STATUS_CHANNEL};
+pub use event::{
+    HookStatus, HudChip, KeyRef, MouseButton, Phase, EVENT_CHANNEL, HOOK_STATUS_CHANNEL,
+};
 
 use tauri::AppHandle;
 

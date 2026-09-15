@@ -1,24 +1,48 @@
 use serde::{Deserialize, Serialize};
 
-/// Wire contract — keep aligned with `design/index.md`.
+/// Public HUD chip — keep aligned with `design/index.md` and `src/lib/cast.ts`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum CastEvent {
+#[serde(tag = "kind")]
+pub enum HudChip {
     #[serde(rename = "key")]
     Key {
-        key: String,
-        mods: Vec<String>,
-        phase: Phase,
+        mods: Vec<KeyRef>,
+        key: KeyRef,
     },
     #[serde(rename = "mouse")]
+    Mouse { button: MouseButton },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct KeyRef {
+    pub id: String,
+    pub label: String,
+}
+
+impl KeyRef {
+    pub fn new(id: impl Into<String>, label: impl Into<String>) -> Self {
+        Self {
+            id: id.into(),
+            label: label.into(),
+        }
+    }
+}
+
+/// Internal raw input (not emitted on `cast://event`).
+#[derive(Debug, Clone)]
+pub enum RawInput {
+    Key {
+        key: KeyRef,
+        phase: Phase,
+        is_modifier: bool,
+    },
     Mouse {
         button: MouseButton,
         phase: Phase,
     },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Phase {
     Down,
     Up,

@@ -14,7 +14,7 @@ This layer owns Rust-side modules under `src-tauri/` and the wire contracts shar
 
 | Guide | Description | Status |
 |-------|-------------|--------|
-| [Cast Events](./cast-events.md) | `CastEvent` / `HookStatus` payloads, channels, platform cfg boundary | Filled |
+| [Cast Events](./cast-events.md) | `HudChip` / `HookStatus` payloads, channels, platform cfg boundary | Filled |
 
 ---
 
@@ -28,6 +28,7 @@ This layer owns Rust-side modules under `src-tauri/` and the wire contracts shar
 
 ## Quality Check
 
-- [ ] Payload shape matches `design/index.md`
+- [ ] Payload shape matches `design/index.md` (`HudChip`, no public `phase`)
 - [ ] Non-macOS path is an explicit stub (`unsupported_platform`), not a fake hook
 - [ ] Key autorepeat / spam filtering happens before `cast://event` emit
+- [ ] Chip reducer: bare mods no emit; primary/mouse down only

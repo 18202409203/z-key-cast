@@ -1,8 +1,8 @@
 use std::time::{Duration, Instant};
 
-use super::event::{CastEvent, Phase};
+use super::event::{Phase, RawInput};
 
-/// Drops key-repeat and obvious same-key spam before emit.
+/// Drops obvious same-key spam before the chip reducer.
 pub struct EventFilter {
     last_key_down: Option<(String, Instant)>,
     min_key_down_interval: Duration,
@@ -18,28 +18,33 @@ impl Default for EventFilter {
 }
 
 impl EventFilter {
-    /// Returns true when the event should be emitted.
-    pub fn allow(&mut self, event: &CastEvent) -> bool {
+    /// Returns true when the raw event should reach the chip reducer.
+    pub fn allow(&mut self, event: &RawInput) -> bool {
         match event {
-            CastEvent::Key {
+            // Modifier state must always reach the reducer.
+            RawInput::Key {
+                is_modifier: true, ..
+            } => true,
+            RawInput::Key {
                 key,
                 phase: Phase::Down,
-                ..
+                is_modifier: false,
             } => {
                 let now = Instant::now();
-                if let Some((prev_key, prev_at)) = &self.last_key_down {
-                    if prev_key == key && now.duration_since(*prev_at) < self.min_key_down_interval
+                if let Some((prev_id, prev_at)) = &self.last_key_down {
+                    if prev_id == &key.id
+                        && now.duration_since(*prev_at) < self.min_key_down_interval
                     {
                         return false;
                     }
                 }
-                self.last_key_down = Some((key.clone(), now));
+                self.last_key_down = Some((key.id.clone(), now));
                 true
             }
-            CastEvent::Key {
+            RawInput::Key {
                 phase: Phase::Up, ..
             }
-            | CastEvent::Mouse { .. } => true,
+            | RawInput::Mouse { .. } => true,
         }
     }
 }

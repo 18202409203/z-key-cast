@@ -4851,7 +4851,7 @@ dependencies = [
 
 [[package]]
 name = "z-key-cast"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "core-foundation",
  "core-graphics 0.24.0",

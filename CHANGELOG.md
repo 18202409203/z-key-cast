@@ -4,5 +4,5 @@
 
 ### Features
 
-  - macOS hooks emit CastEvent to HUD
+  - macOS hooks emit HudChip to HUD (single text chip, idle fade)
 
