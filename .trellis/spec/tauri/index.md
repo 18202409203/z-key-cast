@@ -22,7 +22,7 @@ This layer owns Rust-side modules under `src-tauri/` and the wire contracts shar
 
 - [ ] Read [Cast Events](./cast-events.md) before changing emit payloads, channel names, or capture toggles
 - [ ] Keep TypeScript `$lib/cast.ts` aligned with Rust `input/event.rs`
-- [ ] Keep `$lib/settings.ts` aligned with Rust `settings.rs` (capture + `HudStyleSettings` + `HudPositionSettings`)
+- [ ] Keep `$lib/settings.ts` aligned with Rust `settings.rs` (capture + `HudStyleSettings` + `HudPositionSettings` + `uiLocale`)
 - [ ] Do not implement Windows/Linux hooks without a dedicated task
 
 ---

@@ -3,9 +3,11 @@ import {
   isKeyboardLegendPreference,
   type KeyboardLegendPreference,
 } from "$lib/key-legends";
+import { isUiLocale, type UiLocale } from "$lib/i18n";
 
 export const HUD_STYLE_CHANNEL = "cast://hud-style";
 export const HUD_PLACE_MODE_CHANNEL = "cast://hud-place-mode";
+export const UI_LOCALE_CHANNEL = "cast://ui-locale";
 
 export type CaptureSettings = {
   captureKeyboard: boolean;
@@ -287,4 +289,24 @@ export async function startHudPlaceMode(): Promise<void> {
 export async function endHudPlaceMode(): Promise<HudPositionSettings> {
   const raw = await invoke<HudPositionSettings>("end_hud_place_mode");
   return isHudPositionSettings(raw) ? raw : { ...DEFAULT_HUD_POSITION };
+}
+
+export type UiLocalePayload = {
+  locale: UiLocale;
+};
+
+export function isUiLocalePayload(value: unknown): value is UiLocalePayload {
+  if (!value || typeof value !== "object") return false;
+  return isUiLocale((value as Record<string, unknown>).locale);
+}
+
+/** `null` when unset (frontend should guess once then persist). */
+export async function getUiLocaleSettings(): Promise<UiLocale | null> {
+  const raw = await invoke<UiLocale | null>("get_ui_locale_settings");
+  return isUiLocale(raw) ? raw : null;
+}
+
+export async function setUiLocaleSettings(locale: UiLocale): Promise<UiLocale> {
+  const saved = await invoke<UiLocale>("set_ui_locale_settings", { locale });
+  return isUiLocale(saved) ? saved : locale;
 }

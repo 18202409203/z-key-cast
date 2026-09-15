@@ -21,6 +21,8 @@
     "allow-get-hud-position-settings",
     "allow-set-hud-position-settings",
     "allow-start-hud-place-mode",
-    "allow-end-hud-place-mode"
+    "allow-end-hud-place-mode",
+    "allow-get-ui-locale-settings",
+    "allow-set-ui-locale-settings"
   ]
 }

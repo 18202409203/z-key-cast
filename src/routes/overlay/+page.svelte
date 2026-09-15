@@ -22,25 +22,46 @@
     DEFAULT_HUD_STYLE,
     HUD_PLACE_MODE_CHANNEL,
     HUD_STYLE_CHANNEL,
+    UI_LOCALE_CHANNEL,
     getHudStyleSettings,
+    getUiLocaleSettings,
     hudBackgroundCss,
     isHudPlaceModePayload,
     isHudStyleSettings,
+    isUiLocalePayload,
     normalizeHudStyleSettings,
+    setUiLocaleSettings,
     type HudStyleSettings,
   } from "$lib/settings";
+  import {
+    guessLocaleFromSystem,
+    t,
+    type UiLocale,
+  } from "$lib/i18n";
 
   type KeyChip = Extract<HudChip, { kind: "key" }>;
   type MouseChip = Extract<HudChip, { kind: "mouse" }>;
 
   let keySlot = $state<KeyChip | null>(null);
   let mouseSlot = $state<MouseChip | null>(null);
-  let statusText = $state<string | null>(null);
+  /** When true, overlay shows hook-offline status (re-translated on locale change). */
+  let statusActive = $state(false);
+  /** Raw reason code; `null` while active → localized "denied" fallback. */
+  let statusReason = $state<string | null>(null);
   let style = $state<HudStyleSettings>({ ...DEFAULT_HUD_STYLE });
   let placeMode = $state(false);
+  let locale = $state<UiLocale>("en");
   let keyIdleTimer: ReturnType<typeof setTimeout> | null = null;
   let mouseIdleTimer: ReturnType<typeof setTimeout> | null = null;
   let statusIdleTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const statusText = $derived(
+    statusActive
+      ? t("overlay.hookOffline", locale, {
+          reason: statusReason ?? t("overlay.denied", locale),
+        })
+      : null,
+  );
 
   const legendLayout = $derived(
     resolveKeyboardLegendLayout(style.keyboardLegendLayout),
@@ -113,10 +134,15 @@
     }, style.dwellMs);
   }
 
+  function clearStatus() {
+    statusActive = false;
+    statusReason = null;
+  }
+
   function armStatusIdle() {
     clearStatusIdleTimer();
     statusIdleTimer = setTimeout(() => {
-      statusText = null;
+      clearStatus();
       statusIdleTimer = null;
     }, style.dwellMs);
   }
@@ -125,29 +151,31 @@
     style = normalizeHudStyleSettings(next);
     if (keySlot !== null) armKeyIdle();
     if (mouseSlot !== null) armMouseIdle();
-    if (statusText !== null) armStatusIdle();
+    if (statusActive) armStatusIdle();
   }
 
   function showChip(chip: HudChip) {
     if (chip.kind === "key") {
       clearStatusIdleTimer();
-      statusText = null;
+      clearStatus();
       keySlot = chip;
       armKeyIdle();
       return;
     }
     clearStatusIdleTimer();
-    statusText = null;
+    clearStatus();
     mouseSlot = chip;
     armMouseIdle();
   }
 
-  function showMessage(text: string) {
+  function showHookOffline(reason: string | undefined) {
     keySlot = null;
     mouseSlot = null;
     clearKeyIdleTimer();
     clearMouseIdleTimer();
-    statusText = text;
+    statusActive = true;
+    statusReason =
+      reason === undefined || reason === "" ? null : reason;
     armStatusIdle();
   }
 
@@ -180,11 +208,40 @@
 
     void (async () => {
       try {
+        const stored = await getUiLocaleSettings();
+        if (!cancelled) {
+          if (stored) {
+            locale = stored;
+          } else {
+            const guessed = guessLocaleFromSystem();
+            locale = guessed;
+            try {
+              await setUiLocaleSettings(guessed);
+            } catch {
+              // Main window may persist first; keep guessed locale in-memory.
+            }
+          }
+        }
+      } catch {
+        if (!cancelled) locale = guessLocaleFromSystem();
+      }
+
+      try {
         const loaded = await getHudStyleSettings();
         if (!cancelled) applyStyle(loaded);
       } catch {
         // Keep defaults when invoke is unavailable (browser-only).
       }
+
+      const unlistenLocale = await listen(UI_LOCALE_CHANNEL, (event) => {
+        if (!isUiLocalePayload(event.payload)) return;
+        locale = event.payload.locale;
+      });
+      if (cancelled) {
+        unlistenLocale();
+        return;
+      }
+      unsubs.push(unlistenLocale);
 
       const unlistenStyle = await listen(HUD_STYLE_CHANNEL, (event) => {
         if (!isHudStyleSettings(event.payload)) return;
@@ -219,7 +276,7 @@
       const unlistenStatus = await listen(HOOK_STATUS_CHANNEL, (event) => {
         if (!isHookStatus(event.payload)) return;
         if (!event.payload.ok) {
-          showMessage(`Hook offline · ${event.payload.reason ?? "denied"}`);
+          showHookOffline(event.payload.reason);
         }
       });
       if (cancelled) {
@@ -243,13 +300,15 @@
   class="hud"
   class:placing={placeMode}
   role="application"
-  aria-label={placeMode ? "HUD place mode — drag to move" : "Key cast HUD"}
+  aria-label={placeMode
+    ? t("overlay.placeAria", locale)
+    : t("overlay.hudAria", locale)}
   aria-live="polite"
   onpointerdown={onPlacePointerDown}
 >
   {#if placeMode}
     <div class="place-affordance" transition:fade={{ duration: 150 }}>
-      Drag to move · Done in Settings
+      {t("overlay.placeAffordance", locale)}
     </div>
   {/if}
 

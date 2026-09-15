@@ -24,6 +24,7 @@
     getCaptureSettings,
     getHudPositionSettings,
     getHudStyleSettings,
+    getUiLocaleSettings,
     isHudCorner,
     isHudPositionSettings,
     matchHudColorPreset,
@@ -31,6 +32,7 @@
     setCaptureSettings,
     setHudPositionSettings,
     setHudStyleSettings,
+    setUiLocaleSettings,
     startHudPlaceMode,
     type CaptureSettings,
     type HudColorPresetId,
@@ -48,20 +50,29 @@
     removeCategoryIds,
     type IgnoreCategoryId,
   } from "$lib/key-ignore-presets";
+  import {
+    categoryLabelKey,
+    guessLocaleFromSystem,
+    isUiLocale,
+    t,
+    type UiLocale,
+  } from "$lib/i18n";
   type MainTab = "settings" | "log" | "about";
 
   const MAX_LOG_LINES = 100;
   const STICK_BOTTOM_PX = 48;
   const FALLBACK_APP_NAME = "z-key-cast";
   const FALLBACK_APP_VERSION = "1.0.0";
-  const PRODUCT_BLURB =
-    "Corner HUD for keyboard and mouse actions while screen recording.";
 
-  const TABS: { id: MainTab; label: string }[] = [
-    { id: "settings", label: "Settings" },
-    { id: "log", label: "Log" },
-    { id: "about", label: "About" },
-  ];
+  let locale = $state<UiLocale>("en");
+  let localeReady = $state(false);
+  let localeSaving = $state(false);
+
+  const TABS = $derived<{ id: MainTab; label: string }[]>([
+    { id: "settings", label: t("nav.settings", locale) },
+    { id: "log", label: t("nav.log", locale) },
+    { id: "about", label: t("nav.about", locale) },
+  ]);
 
   let activeTab = $state<MainTab>("log");
   let logLines = $state<string[]>([]);
@@ -340,6 +351,22 @@
     }
   }
 
+  async function onLocaleChange(event: Event) {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    if (!isUiLocale(value)) return;
+    const previous = locale;
+    locale = value;
+    localeSaving = true;
+    try {
+      locale = await setUiLocaleSettings(value);
+    } catch (err) {
+      locale = previous;
+      appendLog(`locale save failed: ${String(err)}`);
+    } finally {
+      localeSaving = false;
+    }
+  }
+
   function selectTab(tab: MainTab) {
     activeTab = tab;
   }
@@ -392,6 +419,30 @@
         }
       } catch {
         // Keep package fallbacks when not running under Tauri.
+      }
+
+      try {
+        const stored = await getUiLocaleSettings();
+        if (!cancelled) {
+          if (stored) {
+            locale = stored;
+          } else {
+            const guessed = guessLocaleFromSystem();
+            locale = guessed;
+            try {
+              await setUiLocaleSettings(guessed);
+            } catch (err) {
+              appendLog(`locale save failed: ${String(err)}`);
+            }
+          }
+        }
+      } catch (err) {
+        if (!cancelled) {
+          locale = guessLocaleFromSystem();
+          appendLog(`locale load failed: ${String(err)}`);
+        }
+      } finally {
+        if (!cancelled) localeReady = true;
       }
 
       try {
@@ -500,7 +551,7 @@
 <main class="shell">
   <header class="top">
     <p class="brand">{appName}</p>
-    <div class="tabs" role="tablist" aria-label="Main sections">
+    <div class="tabs" role="tablist" aria-label={t("nav.aria", locale)}>
       {#each TABS as tab (tab.id)}
         <button
           type="button"
@@ -529,9 +580,26 @@
         aria-labelledby="tab-settings"
       >
         <section>
-          <h2>Display</h2>
+          <h2>{t("settings.display", locale)}</h2>
           <div class="field">
-            <span class="field-label" id="setting-corner-label">Corner</span>
+            <span class="field-label" id="setting-language-label"
+              >{t("settings.language", locale)}</span
+            >
+            <select
+              id="setting-language"
+              value={locale}
+              disabled={!localeReady || localeSaving}
+              aria-labelledby="setting-language-label"
+              onchange={onLocaleChange}
+            >
+              <option value="en">{t("settings.language.en", locale)}</option>
+              <option value="zh">{t("settings.language.zh", locale)}</option>
+            </select>
+          </div>
+          <div class="field">
+            <span class="field-label" id="setting-corner-label"
+              >{t("settings.corner", locale)}</span
+            >
             <select
               id="setting-corner"
               value={cornerSelectValue(hudPosition)}
@@ -539,17 +607,19 @@
               aria-labelledby="setting-corner-label"
               onchange={onCornerChange}
             >
-              <option value="br">Bottom right</option>
-              <option value="bl">Bottom left</option>
-              <option value="tr">Top right</option>
-              <option value="tl">Top left</option>
+              <option value="br">{t("settings.corner.br", locale)}</option>
+              <option value="bl">{t("settings.corner.bl", locale)}</option>
+              <option value="tr">{t("settings.corner.tr", locale)}</option>
+              <option value="tl">{t("settings.corner.tl", locale)}</option>
               <option value="custom" disabled={hudPosition.mode !== "custom"}
-                >Custom</option
+                >{t("settings.corner.custom", locale)}</option
               >
             </select>
           </div>
           <div class="field">
-            <span class="field-label" id="setting-place-label">HUD position</span>
+            <span class="field-label" id="setting-place-label"
+              >{t("settings.hudPosition", locale)}</span
+            >
             <button
               type="button"
               class="clear"
@@ -558,19 +628,21 @@
               aria-labelledby="setting-place-label"
               onclick={() => void onTogglePlaceMode()}
             >
-              {placeModeActive ? "Done" : "Move HUD"}
+              {placeModeActive
+                ? t("settings.done", locale)
+                : t("settings.moveHud", locale)}
             </button>
             {#if placeModeActive}
-              <p class="muted">Drag the overlay, then press Done.</p>
+              <p class="muted">{t("settings.placeHint", locale)}</p>
             {/if}
           </div>
         </section>
 
         <section>
-          <h2>HUD appearance</h2>
+          <h2>{t("settings.hudAppearance", locale)}</h2>
           <div class="field">
             <span class="field-label" id="hud-keyboard-mode-label"
-              >Keyboard display</span
+              >{t("settings.keyboardDisplay", locale)}</span
             >
             <select
               id="hud-keyboard-mode"
@@ -579,13 +651,21 @@
               aria-labelledby="hud-keyboard-mode-label"
               onchange={onKeyboardDisplayModeChange}
             >
-              <option value="text">Text</option>
-              <option value="key-card">Key cards</option>
-              <option value="keyboard">Full keyboard</option>
+              <option value="text"
+                >{t("settings.keyboardDisplay.text", locale)}</option
+              >
+              <option value="key-card"
+                >{t("settings.keyboardDisplay.keyCard", locale)}</option
+              >
+              <option value="keyboard"
+                >{t("settings.keyboardDisplay.keyboard", locale)}</option
+              >
             </select>
           </div>
           <div class="field">
-            <span class="field-label" id="hud-mouse-mode-label">Mouse display</span>
+            <span class="field-label" id="hud-mouse-mode-label"
+              >{t("settings.mouseDisplay", locale)}</span
+            >
             <select
               id="hud-mouse-mode"
               value={hudStyle.mouseDisplayMode ?? "text"}
@@ -593,13 +673,17 @@
               aria-labelledby="hud-mouse-mode-label"
               onchange={onMouseDisplayModeChange}
             >
-              <option value="text">Text</option>
-              <option value="schematic">Schematic</option>
+              <option value="text"
+                >{t("settings.mouseDisplay.text", locale)}</option
+              >
+              <option value="schematic"
+                >{t("settings.mouseDisplay.schematic", locale)}</option
+              >
             </select>
           </div>
           <div class="field">
             <span class="field-label" id="hud-legend-layout-label"
-              >Key legend layout</span
+              >{t("settings.legendLayout", locale)}</span
             >
             <select
               id="hud-legend-layout"
@@ -608,14 +692,22 @@
               aria-labelledby="hud-legend-layout-label"
               onchange={onKeyboardLegendLayoutChange}
             >
-              <option value="auto">Auto (guess from OS)</option>
-              <option value="mac-us">Mac US ANSI</option>
-              <option value="win-us">Windows US ANSI</option>
+              <option value="auto"
+                >{t("settings.legendLayout.auto", locale)}</option
+              >
+              <option value="mac-us"
+                >{t("settings.legendLayout.macUs", locale)}</option
+              >
+              <option value="win-us"
+                >{t("settings.legendLayout.winUs", locale)}</option
+              >
             </select>
           </div>
           <div class="field">
             <span class="field-label" id="hud-font-size-label"
-              >Font size ({hudStyle.fontSizePx}px)</span
+              >{t("settings.fontSize", locale, {
+                n: hudStyle.fontSizePx,
+              })}</span
             >
             <input
               id="hud-font-size"
@@ -630,7 +722,9 @@
             />
           </div>
           <div class="field">
-            <span class="field-label" id="hud-color-preset-label">Color preset</span>
+            <span class="field-label" id="hud-color-preset-label"
+              >{t("settings.colorPreset", locale)}</span
+            >
             <select
               id="hud-color-preset"
               value={matchHudColorPreset(hudStyle)}
@@ -639,13 +733,21 @@
               onchange={onColorPresetChange}
             >
               {#each HUD_COLOR_PRESETS as preset (preset.id)}
-                <option value={preset.id}>{preset.label}</option>
+                <option value={preset.id}
+                  >{preset.id === "dark"
+                    ? t("settings.colorPreset.dark", locale)
+                    : t("settings.colorPreset.light", locale)}</option
+                >
               {/each}
-              <option value="custom">Custom</option>
+              <option value="custom"
+                >{t("settings.colorPreset.custom", locale)}</option
+              >
             </select>
           </div>
           <div class="field">
-            <span class="field-label" id="hud-text-color-label">Text color</span>
+            <span class="field-label" id="hud-text-color-label"
+              >{t("settings.textColor", locale)}</span
+            >
             <input
               id="hud-text-color"
               type="color"
@@ -656,7 +758,9 @@
             />
           </div>
           <div class="field">
-            <span class="field-label" id="hud-bg-color-label">Background color</span>
+            <span class="field-label" id="hud-bg-color-label"
+              >{t("settings.bgColor", locale)}</span
+            >
             <input
               id="hud-bg-color"
               type="color"
@@ -668,7 +772,9 @@
           </div>
           <div class="field">
             <span class="field-label" id="hud-bg-opacity-label"
-              >Background opacity ({hudStyle.backgroundOpacity.toFixed(2)})</span
+              >{t("settings.bgOpacity", locale, {
+                n: hudStyle.backgroundOpacity.toFixed(2),
+              })}</span
             >
             <input
               id="hud-bg-opacity"
@@ -683,7 +789,9 @@
             />
           </div>
           <div class="field">
-            <span class="field-label" id="hud-dwell-ms-label">Dwell (ms)</span>
+            <span class="field-label" id="hud-dwell-ms-label"
+              >{t("settings.dwellMs", locale)}</span
+            >
             <input
               id="hud-dwell-ms"
               type="number"
@@ -699,15 +807,14 @@
         </section>
 
         <section>
-          <h2>Capture</h2>
+          <h2>{t("settings.capture", locale)}</h2>
           <p class="muted">
             {#if hookOk === true}
-              Input hook is active.
+              {t("settings.hookActive", locale)}
             {:else if hookOk === false}
-              Input hook failed — grant Accessibility in System Settings, then
-              restart.
+              {t("settings.hookFailed", locale)}
             {:else}
-              Waiting for hook status…
+              {t("settings.hookWaiting", locale)}
             {/if}
           </p>
           <div class="field field-toggle">
@@ -718,7 +825,9 @@
               disabled={!captureReady || captureSaving}
               onchange={onCaptureKeyboardChange}
             />
-            <label for="capture-keyboard">Listen to keyboard</label>
+            <label for="capture-keyboard"
+              >{t("settings.listenKeyboard", locale)}</label
+            >
           </div>
           <div class="field field-toggle">
             <input
@@ -728,18 +837,22 @@
               disabled={!captureReady || captureSaving}
               onchange={onCaptureMouseChange}
             />
-            <label for="capture-mouse">Listen to mouse</label>
+            <label for="capture-mouse"
+              >{t("settings.listenMouse", locale)}</label
+            >
           </div>
 
           <div class="ignore-block">
-            <p class="field-label">Ignore keys</p>
-            <p class="muted ignore-hint">
-              Ignored primaries never show; ignored modifiers are stripped from
-              chords.
-            </p>
-            <div class="category-grid" role="group" aria-label="Ignore categories">
+            <p class="field-label">{t("settings.ignoreKeys", locale)}</p>
+            <p class="muted ignore-hint">{t("settings.ignoreHint", locale)}</p>
+            <div
+              class="category-grid"
+              role="group"
+              aria-label={t("settings.ignoreCategories", locale)}
+            >
               {#each IGNORE_CATEGORIES as category (category.id)}
                 {@const state = categoryToggleState(ignoredKeyIds, category.ids)}
+                {@const labelKey = categoryLabelKey(category.id)}
                 <label class="category-toggle">
                   <input
                     type="checkbox"
@@ -747,7 +860,11 @@
                     use:bindCategoryCheckbox={state}
                     onchange={(e) => onIgnoreCategoryChange(category.id, e)}
                   />
-                  <span>{category.label}</span>
+                  <span
+                    >{labelKey
+                      ? t(labelKey, locale)
+                      : category.label}</span
+                  >
                 </label>
               {/each}
             </div>
@@ -760,9 +877,9 @@
                   disabled={!captureReady || captureSaving}
                   onclick={() => void onCancelIgnoreKey()}
                 >
-                  Cancel
+                  {t("settings.cancel", locale)}
                 </button>
-                <span class="muted">Press a key to ignore…</span>
+                <span class="muted">{t("settings.pressKey", locale)}</span>
               {:else}
                 <button
                   type="button"
@@ -770,7 +887,7 @@
                   disabled={!captureReady || captureSaving}
                   onclick={() => void onAddIgnoreKey()}
                 >
-                  Add key
+                  {t("settings.addKey", locale)}
                 </button>
               {/if}
             </div>
@@ -787,16 +904,16 @@
                       type="button"
                       class="clear ignore-remove"
                       disabled={!captureReady || captureSaving || ignoreCapturing}
-                      aria-label={`Remove ${id}`}
+                      aria-label={t("settings.removeAria", locale, { id })}
                       onclick={() => removeIgnoredKey(id)}
                     >
-                      Remove
+                      {t("settings.remove", locale)}
                     </button>
                   </li>
                 {/each}
               </ul>
             {:else}
-              <p class="muted">No ignored keys.</p>
+              <p class="muted">{t("settings.noIgnoredKeys", locale)}</p>
             {/if}
           </div>
         </section>
@@ -809,8 +926,10 @@
         aria-labelledby="tab-log"
       >
         <div class="log-header">
-          <h2>Event log</h2>
-          <button type="button" class="clear" onclick={clearLog}>Clear</button>
+          <h2>{t("log.title", locale)}</h2>
+          <button type="button" class="clear" onclick={clearLog}
+            >{t("log.clear", locale)}</button
+          >
         </div>
         <div
           class="log"
@@ -820,7 +939,7 @@
           onscroll={onLogScroll}
         >
           {#if logLines.length === 0}
-            <p class="muted empty">No events yet.</p>
+            <p class="muted empty">{t("log.empty", locale)}</p>
           {:else}
             {#each logLines as line, i (i)}
               <div class="log-line">{line}</div>
@@ -836,8 +955,10 @@
         aria-labelledby="tab-about"
       >
         <h1 class="about-name">{appName}</h1>
-        <p class="about-version">Version {appVersion}</p>
-        <p class="lead">{PRODUCT_BLURB}</p>
+        <p class="about-version"
+          >{t("about.version", locale, { version: appVersion })}</p
+        >
+        <p class="lead">{t("about.blurb", locale)}</p>
       </div>
     {/if}
   </div>

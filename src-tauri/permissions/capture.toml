@@ -47,3 +47,13 @@ commands.allow = ["start_hud_place_mode"]
 identifier = "allow-end-hud-place-mode"
 description = "Allows exiting HUD drag-to-place mode and persisting custom position"
 commands.allow = ["end_hud_place_mode"]
+
+[[permission]]
+identifier = "allow-get-ui-locale-settings"
+description = "Allows reading persisted UI language"
+commands.allow = ["get_ui_locale_settings"]
+
+[[permission]]
+identifier = "allow-set-ui-locale-settings"
+description = "Allows updating persisted UI language"
+commands.allow = ["set_ui_locale_settings"]

@@ -18,6 +18,8 @@ pub fn run() {
             settings::set_hud_position_settings,
             settings::start_hud_place_mode,
             settings::end_hud_place_mode,
+            settings::get_ui_locale_settings,
+            settings::set_ui_locale_settings,
         ])
         .setup(|app| {
             settings::load(app.handle());

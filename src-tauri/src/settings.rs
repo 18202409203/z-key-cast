@@ -18,9 +18,11 @@ static HUD_PLACE_MODE: AtomicBool = AtomicBool::new(false);
 static HUD: OnceLock<Mutex<HudStyleSettings>> = OnceLock::new();
 static HUD_POSITION: OnceLock<Mutex<HudPositionSettings>> = OnceLock::new();
 static IGNORED_KEYS: OnceLock<Mutex<IgnoredKeys>> = OnceLock::new();
+static UI_LOCALE: OnceLock<Mutex<Option<UiLocale>>> = OnceLock::new();
 
 pub const HUD_STYLE_CHANNEL: &str = "cast://hud-style";
 pub const HUD_PLACE_MODE_CHANNEL: &str = "cast://hud-place-mode";
+pub const UI_LOCALE_CHANNEL: &str = "cast://ui-locale";
 
 #[derive(Debug, Default)]
 struct IgnoredKeys {
@@ -54,6 +56,10 @@ fn hud_position_lock() -> &'static Mutex<HudPositionSettings> {
 
 fn ignored_lock() -> &'static Mutex<IgnoredKeys> {
     IGNORED_KEYS.get_or_init(|| Mutex::new(IgnoredKeys::default()))
+}
+
+fn ui_locale_lock() -> &'static Mutex<Option<UiLocale>> {
+    UI_LOCALE.get_or_init(|| Mutex::new(None))
 }
 
 fn dedupe_preserve_order(ids: Vec<String>) -> Vec<String> {
@@ -109,6 +115,19 @@ impl Default for MouseDisplayMode {
     fn default() -> Self {
         Self::Text
     }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum UiLocale {
+    En,
+    Zh,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct UiLocalePayload {
+    pub locale: UiLocale,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -243,6 +262,9 @@ pub struct AppSettings {
     pub hud: HudStyleSettings,
     #[serde(default)]
     pub hud_position: HudPositionSettings,
+    /// Absent until the frontend resolves (system guess or user choice).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ui_locale: Option<UiLocale>,
 }
 
 impl Default for AppSettings {
@@ -253,6 +275,7 @@ impl Default for AppSettings {
             ignored_key_ids: Vec::new(),
             hud: HudStyleSettings::default(),
             hud_position: HudPositionSettings::default(),
+            ui_locale: None,
         }
     }
 }
@@ -271,12 +294,17 @@ impl AppSettings {
             .lock()
             .map(|g| g.ids())
             .unwrap_or_default();
+        let ui_locale = ui_locale_lock()
+            .lock()
+            .map(|g| *g)
+            .unwrap_or(None);
         Self {
             capture_keyboard: CAPTURE_KEYBOARD.load(Ordering::Relaxed),
             capture_mouse: CAPTURE_MOUSE.load(Ordering::Relaxed),
             ignored_key_ids,
             hud,
             hud_position,
+            ui_locale,
         }
     }
 
@@ -291,6 +319,9 @@ impl AppSettings {
         }
         if let Ok(mut guard) = hud_position_lock().lock() {
             *guard = self.hud_position;
+        }
+        if let Ok(mut guard) = ui_locale_lock().lock() {
+            *guard = self.ui_locale;
         }
     }
 }
@@ -381,6 +412,10 @@ fn emit_hud_place_mode(app: &AppHandle, active: bool) {
     );
 }
 
+fn emit_ui_locale(app: &AppHandle, locale: UiLocale) {
+    let _ = app.emit(UI_LOCALE_CHANNEL, UiLocalePayload { locale });
+}
+
 fn corner_position(
     corner: HudCorner,
     screen_w: i32,
@@ -465,6 +500,7 @@ pub fn set_capture_settings(
         ignored_key_ids: ignored_key_ids.clone(),
         hud: previous.hud.clone(),
         hud_position: previous.hud_position.clone(),
+        ui_locale: previous.ui_locale,
     };
     persist_app_settings(&app, next)?;
     Ok(CaptureSettings {
@@ -505,6 +541,7 @@ pub fn set_hud_style_settings(
         ignored_key_ids: previous.ignored_key_ids.clone(),
         hud: hud.clone(),
         hud_position: previous.hud_position.clone(),
+        ui_locale: previous.ui_locale,
     };
     persist_app_settings(&app, next)?;
     emit_hud_style(&app, &hud);
@@ -531,10 +568,38 @@ pub fn set_hud_position_settings(
         ignored_key_ids: previous.ignored_key_ids.clone(),
         hud: previous.hud.clone(),
         hud_position: settings.clone(),
+        ui_locale: previous.ui_locale,
     };
     persist_app_settings(&app, next)?;
     apply_hud_position(&app);
     Ok(settings)
+}
+
+#[tauri::command]
+pub fn get_ui_locale_settings() -> Option<UiLocale> {
+    ui_locale_lock()
+        .lock()
+        .map(|g| *g)
+        .unwrap_or(None)
+}
+
+#[tauri::command]
+pub fn set_ui_locale_settings(
+    app: AppHandle,
+    locale: UiLocale,
+) -> Result<UiLocale, String> {
+    let previous = AppSettings::from_runtime();
+    let next = AppSettings {
+        capture_keyboard: previous.capture_keyboard,
+        capture_mouse: previous.capture_mouse,
+        ignored_key_ids: previous.ignored_key_ids.clone(),
+        hud: previous.hud.clone(),
+        hud_position: previous.hud_position.clone(),
+        ui_locale: Some(locale),
+    };
+    persist_app_settings(&app, next)?;
+    emit_ui_locale(&app, locale);
+    Ok(locale)
 }
 
 #[tauri::command]
@@ -584,6 +649,7 @@ pub fn end_hud_place_mode(app: AppHandle) -> Result<HudPositionSettings, String>
         ignored_key_ids: previous.ignored_key_ids.clone(),
         hud: previous.hud.clone(),
         hud_position: custom.clone(),
+        ui_locale: previous.ui_locale,
     };
 
     if let Err(err) = persist_app_settings(&app, next) {
@@ -779,6 +845,14 @@ mod tests {
                 corner: HudCorner::Br
             }
         );
+        assert_eq!(parsed.ui_locale, None);
+    }
+
+    #[test]
+    fn app_settings_parses_ui_locale() {
+        let raw = r#"{"captureKeyboard":true,"captureMouse":true,"uiLocale":"zh"}"#;
+        let parsed: AppSettings = serde_json::from_str(raw).unwrap();
+        assert_eq!(parsed.ui_locale, Some(UiLocale::Zh));
     }
 
     #[test]

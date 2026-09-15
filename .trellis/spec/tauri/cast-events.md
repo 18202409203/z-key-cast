@@ -181,6 +181,14 @@ void listen(EVENT_CHANNEL, (event) => {
 - **Margins** (corner): ~24× / 48y CSS-px × monitor scale (same as prior hardcoded BR)
 - **Exit safety**: closing Settings / app quit while placing calls `abandon_hud_place_mode` (restore click-through, clear flag, snap back to persisted position — no custom persist without Done)
 
+### UI locale settings
+
+- **Persist**: optional `uiLocale` in `settings.json` as `"en"` | `"zh"` (omit until first resolve)
+- **Commands**: `get_ui_locale_settings` → `Option<"en"|"zh">`; `set_ui_locale_settings` → persist + emit
+- **Channel**: `cast://ui-locale` → `{ locale: "en" | "zh" }` so overlay hot-updates status/place chrome
+- **Boot**: if unset, frontend guesses from `navigator.language` (`zh*` → `zh`, else `en`) and persists once; user choice then sticks
+- **Scope**: main Settings/Log/About + overlay status/place strings via `$lib/i18n` `t()`; do **not** translate `HudChip.id` / `label` or `summarizeHudChip` log lines
+
 ### Mods encoding
 
 - **Decision**: `KeyRef` with left/right `id` and HUD-friendly `label` symbols
