@@ -21,6 +21,7 @@
     type HudStyleSettings,
     type KeyboardDisplayMode,
   } from "$lib/settings";
+  import type { KeyboardLegendPreference } from "$lib/key-legends";
 
   type MainTab = "settings" | "log" | "about";
 
@@ -168,6 +169,12 @@
     const value = (event.currentTarget as HTMLSelectElement).value;
     if (value !== "text" && value !== "key-card" && value !== "keyboard") return;
     patchHud({ keyboardDisplayMode: value as KeyboardDisplayMode });
+  }
+
+  function onKeyboardLegendLayoutChange(event: Event) {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    if (value !== "auto" && value !== "mac-us" && value !== "win-us") return;
+    patchHud({ keyboardLegendLayout: value as KeyboardLegendPreference });
   }
 
   function selectTab(tab: MainTab) {
@@ -339,6 +346,22 @@
               <option value="text">Text</option>
               <option value="key-card">Key cards</option>
               <option value="keyboard">Full keyboard</option>
+            </select>
+          </div>
+          <div class="field">
+            <span class="field-label" id="hud-legend-layout-label"
+              >Key legend layout</span
+            >
+            <select
+              id="hud-legend-layout"
+              value={hudStyle.keyboardLegendLayout ?? "auto"}
+              disabled={!hudReady || hudSaving}
+              aria-labelledby="hud-legend-layout-label"
+              onchange={onKeyboardLegendLayoutChange}
+            >
+              <option value="auto">Auto (guess from OS)</option>
+              <option value="mac-us">Mac US ANSI</option>
+              <option value="win-us">Windows US ANSI</option>
             </select>
           </div>
           <div class="field">

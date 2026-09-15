@@ -34,6 +34,20 @@ impl Default for KeyboardDisplayMode {
     }
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum KeyboardLegendLayout {
+    Auto,
+    MacUs,
+    WinUs,
+}
+
+impl Default for KeyboardLegendLayout {
+    fn default() -> Self {
+        Self::Auto
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct HudStyleSettings {
@@ -44,6 +58,8 @@ pub struct HudStyleSettings {
     pub dwell_ms: u32,
     #[serde(default)]
     pub keyboard_display_mode: KeyboardDisplayMode,
+    #[serde(default)]
+    pub keyboard_legend_layout: KeyboardLegendLayout,
 }
 
 impl Default for HudStyleSettings {
@@ -55,6 +71,7 @@ impl Default for HudStyleSettings {
             background_opacity: 0.82,
             dwell_ms: 1000,
             keyboard_display_mode: KeyboardDisplayMode::Text,
+            keyboard_legend_layout: KeyboardLegendLayout::Auto,
         }
     }
 }
@@ -299,6 +316,7 @@ mod tests {
             background_opacity: 2.0,
             dwell_ms: 10,
             keyboard_display_mode: KeyboardDisplayMode::Text,
+            keyboard_legend_layout: KeyboardLegendLayout::Auto,
         }
         .clamp();
         assert_eq!(clamped.font_size_px, 10);

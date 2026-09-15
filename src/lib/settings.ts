@@ -1,4 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
+import {
+  isKeyboardLegendPreference,
+  type KeyboardLegendPreference,
+} from "$lib/key-legends";
 
 export const HUD_STYLE_CHANNEL = "cast://hud-style";
 
@@ -17,6 +21,8 @@ export type HudStyleSettings = {
   dwellMs: number;
   /** Omitted in older settings → treat as `"text"`. */
   keyboardDisplayMode?: KeyboardDisplayMode;
+  /** Omitted → `"auto"` (guess from OS). */
+  keyboardLegendLayout?: KeyboardLegendPreference;
 };
 
 export const DEFAULT_HUD_STYLE: HudStyleSettings = {
@@ -26,6 +32,7 @@ export const DEFAULT_HUD_STYLE: HudStyleSettings = {
   backgroundOpacity: 0.82,
   dwellMs: 1000,
   keyboardDisplayMode: "text",
+  keyboardLegendLayout: "auto",
 };
 
 function isKeyboardDisplayMode(value: unknown): value is KeyboardDisplayMode {
@@ -50,16 +57,24 @@ export function isHudStyleSettings(value: unknown): value is HudStyleSettings {
   ) {
     return false;
   }
+  if (
+    s.keyboardLegendLayout !== undefined &&
+    !isKeyboardLegendPreference(s.keyboardLegendLayout)
+  ) {
+    return false;
+  }
   return true;
 }
 
 /** Fill defaults for fields omitted by older settings.json / emits. */
-export function normalizeHudStyleSettings(
-  value: HudStyleSettings,
-): HudStyleSettings & { keyboardDisplayMode: KeyboardDisplayMode } {
+export function normalizeHudStyleSettings(value: HudStyleSettings): HudStyleSettings & {
+  keyboardDisplayMode: KeyboardDisplayMode;
+  keyboardLegendLayout: KeyboardLegendPreference;
+} {
   return {
     ...value,
     keyboardDisplayMode: value.keyboardDisplayMode ?? "text",
+    keyboardLegendLayout: value.keyboardLegendLayout ?? "auto",
   };
 }
 

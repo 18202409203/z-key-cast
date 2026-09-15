@@ -3,6 +3,9 @@
   import { fade } from "svelte/transition";
   import { onMount } from "svelte";
   import KeyboardMap from "$lib/KeyboardMap.svelte";
+  import KeyCard from "$lib/KeyCard.svelte";
+  import { toKeyCardVisual } from "$lib/key-card";
+  import { resolveKeyboardLegendLayout } from "$lib/key-legends";
   import {
     EVENT_CHANNEL,
     HOOK_STATUS_CHANNEL,
@@ -30,6 +33,10 @@
   let active = $state<ActiveHud | null>(null);
   let style = $state<HudStyleSettings>({ ...DEFAULT_HUD_STYLE });
   let idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const legendLayout = $derived(
+    resolveKeyboardLegendLayout(style.keyboardLegendLayout),
+  );
 
   const activeKeyIds = $derived.by(() => {
     const ids = new Set<string>();
@@ -161,18 +168,20 @@
           textColor={style.textColor}
           backgroundCss={chipBackground}
           fontSizePx={style.fontSizePx}
+          legendLayout={legendLayout}
         />
       </div>
     {:else if style.keyboardDisplayMode === "key-card"}
       <div
         class="card-row"
-        style:--chip-fg={style.textColor}
-        style:--chip-bg={chipBackground}
-        style:--chip-size={`${style.fontSizePx}px`}
+        style:--cap-scale={`${style.fontSizePx}px`}
         transition:fade={{ duration: 200 }}
       >
         {#each cardsForActive() as card (card.id)}
-          <div class="key-card" data-key-id={card.id}>{card.label}</div>
+          <KeyCard
+            visual={toKeyCardVisual(card, legendLayout)}
+            fontSizePx={style.fontSizePx}
+          />
         {/each}
       </div>
     {:else}
@@ -230,23 +239,8 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-end;
-    gap: 8px;
+    align-items: flex-end;
+    gap: 10px;
     max-width: 100%;
-  }
-
-  .key-card {
-    box-sizing: border-box;
-    min-width: 2.4em;
-    padding: 0.55em 0.75em;
-    border-radius: 10px;
-    background: var(--chip-bg);
-    color: var(--chip-fg);
-    font-size: var(--chip-size);
-    font-weight: 650;
-    letter-spacing: 0.02em;
-    text-align: center;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 10px 30px rgba(2, 6, 23, 0.35);
-    border: 1px solid rgba(248, 250, 252, 0.12);
   }
 </style>
