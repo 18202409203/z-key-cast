@@ -96,7 +96,7 @@ type CaptureSettings = { captureKeyboard: boolean; captureMouse: boolean }; // b
 
 - `cargo check` (+ `cargo test -p z-key-cast` for chip reducer + `settings::allows_chip` unit tests)
 - `pnpm check` (guards + listeners + `$lib/settings` typecheck)
-- Manual: denied Accessibility → main log shows failed hook-status; grant → single HUD chip for key/mouse; bare mods silent; idle ~1s fade; hold key → no repeat spam; toggle keyboard/mouse independently → only that side’s chips stop/resume without restart
+- Manual: denied Accessibility → main log shows failed hook-status; grant → key + mouse HUD slots can show together (keyboard above mouse); bare mods silent; each side idle-fades on its own `dwellMs`; hold key → no repeat spam; toggle keyboard/mouse independently → only that side’s chips stop/resume without restart; hook-status fail → clears both slots and shows exclusive status banner
 
 ### 7. Wrong vs Correct
 
@@ -143,7 +143,7 @@ void listen(EVENT_CHANNEL, (event) => {
 
 - **Channel**: `cast://hud-style` → `HudStyleSettings` (`fontSizePx`, `textColor`, `backgroundColor`, `backgroundOpacity`, `dwellMs`)
 - **Commands**: `get_hud_style_settings` / `set_hud_style_settings` (persist in same `settings.json` as capture; never wipe sibling fields)
-- **Overlay**: load on mount + `listen`; chip idle timer uses `dwellMs`; defaults match MVP (`dwellMs=1000`)
+- **Overlay**: load on mount + `listen`; dual slots (`keySlot` / `mouseSlot`) with independent idle timers sharing `dwellMs`; status message is exclusive (clears both slots); defaults match MVP (`dwellMs=1000`)
 - **Clamp**: font 10–48, dwell 200–5000, opacity 0–1, colors `#rgb`/`#rrggbb`
 - **`keyboardDisplayMode`**: `text` | `key-card` | `keyboard`
 - **`mouseDisplayMode`**: `text` | `schematic` (independent; schematic highlights L/M/R on `MouseSchematic`)

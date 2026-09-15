@@ -29,7 +29,9 @@
     "09-15-key-filter",
     "09-15-drag-hud-position",
     "09-15-i18n",
-    "09-15-log-export"
+    "09-15-log-export",
+    "09-15-mouse-schematic-crop",
+    "09-15-key-mouse-hud-coexist"
   ],
   "parent": null,
   "relatedFiles": [],

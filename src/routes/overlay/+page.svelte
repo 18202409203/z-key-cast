@@ -27,13 +27,16 @@
     type HudStyleSettings,
   } from "$lib/settings";
 
-  type ActiveHud =
-    | { kind: "chip"; chip: HudChip }
-    | { kind: "message"; text: string };
+  type KeyChip = Extract<HudChip, { kind: "key" }>;
+  type MouseChip = Extract<HudChip, { kind: "mouse" }>;
 
-  let active = $state<ActiveHud | null>(null);
+  let keySlot = $state<KeyChip | null>(null);
+  let mouseSlot = $state<MouseChip | null>(null);
+  let statusText = $state<string | null>(null);
   let style = $state<HudStyleSettings>({ ...DEFAULT_HUD_STYLE });
-  let idleTimer: ReturnType<typeof setTimeout> | null = null;
+  let keyIdleTimer: ReturnType<typeof setTimeout> | null = null;
+  let mouseIdleTimer: ReturnType<typeof setTimeout> | null = null;
+  let statusIdleTimer: ReturnType<typeof setTimeout> | null = null;
 
   const legendLayout = $derived(
     resolveKeyboardLegendLayout(style.keyboardLegendLayout),
@@ -41,8 +44,8 @@
 
   const activeKeyIds = $derived.by(() => {
     const ids = new Set<string>();
-    if (active?.kind === "chip" && active.chip.kind === "key") {
-      for (const card of hudCards(active.chip)) {
+    if (keySlot) {
+      for (const card of hudCards(keySlot)) {
         ids.add(card.id);
       }
     }
@@ -54,73 +57,106 @@
   );
 
   const showKeyboardMap = $derived(
-    active?.kind === "chip" &&
-      active.chip.kind === "key" &&
-      style.keyboardDisplayMode === "keyboard",
+    keySlot !== null && style.keyboardDisplayMode === "keyboard",
   );
 
   const showKeyCards = $derived(
-    active?.kind === "chip" &&
-      active.chip.kind === "key" &&
-      style.keyboardDisplayMode === "key-card",
+    keySlot !== null && style.keyboardDisplayMode === "key-card",
   );
 
   const showMouseSchematic = $derived(
-    active?.kind === "chip" &&
-      active.chip.kind === "mouse" &&
-      style.mouseDisplayMode === "schematic",
+    mouseSlot !== null && style.mouseDisplayMode === "schematic",
   );
 
-  const mouseButton = $derived(
-    active?.kind === "chip" && active.chip.kind === "mouse"
-      ? active.chip.button
-      : null,
-  );
-
-  function clearIdleTimer() {
-    if (idleTimer !== null) {
-      clearTimeout(idleTimer);
-      idleTimer = null;
-    }
+  function clearTimer(timer: ReturnType<typeof setTimeout> | null) {
+    if (timer !== null) clearTimeout(timer);
   }
 
-  function armIdle() {
-    clearIdleTimer();
-    idleTimer = setTimeout(() => {
-      active = null;
-      idleTimer = null;
+  function clearKeyIdleTimer() {
+    clearTimer(keyIdleTimer);
+    keyIdleTimer = null;
+  }
+
+  function clearMouseIdleTimer() {
+    clearTimer(mouseIdleTimer);
+    mouseIdleTimer = null;
+  }
+
+  function clearStatusIdleTimer() {
+    clearTimer(statusIdleTimer);
+    statusIdleTimer = null;
+  }
+
+  function clearAllIdleTimers() {
+    clearKeyIdleTimer();
+    clearMouseIdleTimer();
+    clearStatusIdleTimer();
+  }
+
+  function armKeyIdle() {
+    clearKeyIdleTimer();
+    keyIdleTimer = setTimeout(() => {
+      keySlot = null;
+      keyIdleTimer = null;
+    }, style.dwellMs);
+  }
+
+  function armMouseIdle() {
+    clearMouseIdleTimer();
+    mouseIdleTimer = setTimeout(() => {
+      mouseSlot = null;
+      mouseIdleTimer = null;
+    }, style.dwellMs);
+  }
+
+  function armStatusIdle() {
+    clearStatusIdleTimer();
+    statusIdleTimer = setTimeout(() => {
+      statusText = null;
+      statusIdleTimer = null;
     }, style.dwellMs);
   }
 
   function applyStyle(next: HudStyleSettings) {
     style = normalizeHudStyleSettings(next);
-    if (active !== null) {
-      armIdle();
-    }
+    if (keySlot !== null) armKeyIdle();
+    if (mouseSlot !== null) armMouseIdle();
+    if (statusText !== null) armStatusIdle();
   }
 
   function showChip(chip: HudChip) {
-    active = { kind: "chip", chip };
-    armIdle();
+    if (chip.kind === "key") {
+      clearStatusIdleTimer();
+      statusText = null;
+      keySlot = chip;
+      armKeyIdle();
+      return;
+    }
+    clearStatusIdleTimer();
+    statusText = null;
+    mouseSlot = chip;
+    armMouseIdle();
   }
 
   function showMessage(text: string) {
-    active = { kind: "message", text };
-    armIdle();
+    keySlot = null;
+    mouseSlot = null;
+    clearKeyIdleTimer();
+    clearMouseIdleTimer();
+    statusText = text;
+    armStatusIdle();
   }
 
-  function cardsForActive(): KeyRef[] {
-    if (!active) return [];
-    if (active.kind === "message") {
-      return [{ id: "message", label: active.text }];
-    }
-    return hudCards(active.chip);
+  function keyCards(): KeyRef[] {
+    return keySlot ? hudCards(keySlot) : [];
   }
 
-  function textForActive(): string {
-    if (!active) return "";
-    if (active.kind === "message") return active.text;
-    return formatHudLabel(active.chip);
+  function keyText(): string {
+    return keySlot ? formatHudLabel(keySlot) : "";
+  }
+
+  function mouseText(): string {
+    return mouseSlot ? formatHudLabel(mouseSlot) : "";
   }
 
   onMount(() => {
@@ -170,7 +206,7 @@
 
     return () => {
       cancelled = true;
-      clearIdleTimer();
+      clearAllIdleTimers();
       for (const unlisten of unsubs) {
         unlisten();
       }
@@ -179,51 +215,77 @@
 </script>
 
 <div class="hud" aria-live="polite">
-  {#if active}
-    {#if showKeyboardMap}
-      <div transition:fade={{ duration: 200 }}>
-        <KeyboardMap
-          activeIds={activeKeyIds}
-          textColor={style.textColor}
-          backgroundCss={chipBackground}
-          fontSizePx={style.fontSizePx}
-          legendLayout={legendLayout}
-        />
-      </div>
-    {:else if showKeyCards}
-      <div
-        class="card-row"
-        style:--cap-scale={`${style.fontSizePx}px`}
-        transition:fade={{ duration: 200 }}
-      >
-        {#each cardsForActive() as card (card.id)}
-          <KeyCard
-            visual={toKeyCardVisual(card, legendLayout)}
-            fontSizePx={style.fontSizePx}
+  {#if statusText}
+    <div
+      class="chip"
+      style:font-size={`${style.fontSizePx}px`}
+      style:color={style.textColor}
+      style:background={chipBackground}
+      transition:fade={{ duration: 200 }}
+    >
+      {statusText}
+    </div>
+  {:else}
+    {#if keySlot}
+      {#if showKeyboardMap}
+        <div transition:fade={{ duration: 200 }}>
+          <KeyboardMap
+            activeIds={activeKeyIds}
             textColor={style.textColor}
             backgroundCss={chipBackground}
+            fontSizePx={style.fontSizePx}
+            legendLayout={legendLayout}
           />
-        {/each}
-      </div>
-    {:else if showMouseSchematic && mouseButton}
-      <div transition:fade={{ duration: 200 }}>
-        <MouseSchematic
-          button={mouseButton}
-          textColor={style.textColor}
-          backgroundCss={chipBackground}
-          fontSizePx={style.fontSizePx}
-        />
-      </div>
-    {:else}
-      <div
-        class="chip"
-        style:font-size={`${style.fontSizePx}px`}
-        style:color={style.textColor}
-        style:background={chipBackground}
-        transition:fade={{ duration: 200 }}
-      >
-        {textForActive()}
-      </div>
+        </div>
+      {:else if showKeyCards}
+        <div
+          class="card-row"
+          style:--cap-scale={`${style.fontSizePx}px`}
+          transition:fade={{ duration: 200 }}
+        >
+          {#each keyCards() as card (card.id)}
+            <KeyCard
+              visual={toKeyCardVisual(card, legendLayout)}
+              fontSizePx={style.fontSizePx}
+              textColor={style.textColor}
+              backgroundCss={chipBackground}
+            />
+          {/each}
+        </div>
+      {:else}
+        <div
+          class="chip"
+          style:font-size={`${style.fontSizePx}px`}
+          style:color={style.textColor}
+          style:background={chipBackground}
+          transition:fade={{ duration: 200 }}
+        >
+          {keyText()}
+        </div>
+      {/if}
+    {/if}
+
+    {#if mouseSlot}
+      {#if showMouseSchematic}
+        <div transition:fade={{ duration: 200 }}>
+          <MouseSchematic
+            button={mouseSlot.button}
+            textColor={style.textColor}
+            backgroundCss={chipBackground}
+            fontSizePx={style.fontSizePx}
+          />
+        </div>
+      {:else}
+        <div
+          class="chip"
+          style:font-size={`${style.fontSizePx}px`}
+          style:color={style.textColor}
+          style:background={chipBackground}
+          transition:fade={{ duration: 200 }}
+        >
+          {mouseText()}
+        </div>
+      {/if}
     {/if}
   {/if}
 </div>

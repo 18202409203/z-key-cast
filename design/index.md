@@ -54,8 +54,9 @@ type HudChip =
 
 - 默认右下角，可改左下 / 左上 / 右上；避开 Dock / 任务栏
 - Overlay：透明 + always-on-top + click-through
-- 同时最多 1 条可见 chip；新事件替换并重置 1000ms 空闲淡出
-- 鼠标按键进同一 HUD 槽，不做光标涟漪
+- 键、鼠各最多 1 条可见；可同时显示（竖排：键盘在上、鼠标在下）；同类新事件替换同侧并重置该侧空闲淡出；两侧独立计时（共享 `dwellMs`）
+- Status（如 hook offline）独占：清掉键/鼠两槽后单独 dwell
+- 不做光标涟漪
 
 ## MVP
 
