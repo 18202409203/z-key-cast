@@ -12,6 +12,7 @@ export type CaptureSettings = {
 };
 
 export type KeyboardDisplayMode = "text" | "key-card" | "keyboard";
+export type MouseDisplayMode = "text" | "schematic";
 
 export type HudStyleSettings = {
   fontSizePx: number;
@@ -23,6 +24,8 @@ export type HudStyleSettings = {
   keyboardDisplayMode?: KeyboardDisplayMode;
   /** Omitted → `"auto"` (guess from OS). */
   keyboardLegendLayout?: KeyboardLegendPreference;
+  /** Omitted → `"text"`. Independent of keyboard display mode. */
+  mouseDisplayMode?: MouseDisplayMode;
 };
 
 export const DEFAULT_HUD_STYLE: HudStyleSettings = {
@@ -33,6 +36,7 @@ export const DEFAULT_HUD_STYLE: HudStyleSettings = {
   dwellMs: 1000,
   keyboardDisplayMode: "text",
   keyboardLegendLayout: "auto",
+  mouseDisplayMode: "text",
 };
 
 /** Quick color themes for text, key-card, and full-keyboard modes. */
@@ -103,6 +107,10 @@ function isKeyboardDisplayMode(value: unknown): value is KeyboardDisplayMode {
   return value === "text" || value === "key-card" || value === "keyboard";
 }
 
+function isMouseDisplayMode(value: unknown): value is MouseDisplayMode {
+  return value === "text" || value === "schematic";
+}
+
 export function isHudStyleSettings(value: unknown): value is HudStyleSettings {
   if (!value || typeof value !== "object") return false;
   const s = value as Record<string, unknown>;
@@ -127,6 +135,12 @@ export function isHudStyleSettings(value: unknown): value is HudStyleSettings {
   ) {
     return false;
   }
+  if (
+    s.mouseDisplayMode !== undefined &&
+    !isMouseDisplayMode(s.mouseDisplayMode)
+  ) {
+    return false;
+  }
   return true;
 }
 
@@ -134,11 +148,13 @@ export function isHudStyleSettings(value: unknown): value is HudStyleSettings {
 export function normalizeHudStyleSettings(value: HudStyleSettings): HudStyleSettings & {
   keyboardDisplayMode: KeyboardDisplayMode;
   keyboardLegendLayout: KeyboardLegendPreference;
+  mouseDisplayMode: MouseDisplayMode;
 } {
   return {
     ...value,
     keyboardDisplayMode: value.keyboardDisplayMode ?? "text",
     keyboardLegendLayout: value.keyboardLegendLayout ?? "auto",
+    mouseDisplayMode: value.mouseDisplayMode ?? "text",
   };
 }
 

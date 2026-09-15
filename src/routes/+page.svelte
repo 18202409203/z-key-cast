@@ -24,6 +24,7 @@
     type HudColorPresetId,
     type HudStyleSettings,
     type KeyboardDisplayMode,
+    type MouseDisplayMode,
   } from "$lib/settings";
   import type { KeyboardLegendPreference } from "$lib/key-legends";
 
@@ -173,6 +174,12 @@
     const value = (event.currentTarget as HTMLSelectElement).value;
     if (value !== "text" && value !== "key-card" && value !== "keyboard") return;
     patchHud({ keyboardDisplayMode: value as KeyboardDisplayMode });
+  }
+
+  function onMouseDisplayModeChange(event: Event) {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    if (value !== "text" && value !== "schematic") return;
+    patchHud({ mouseDisplayMode: value as MouseDisplayMode });
   }
 
   function onKeyboardLegendLayoutChange(event: Event) {
@@ -357,6 +364,19 @@
               <option value="text">Text</option>
               <option value="key-card">Key cards</option>
               <option value="keyboard">Full keyboard</option>
+            </select>
+          </div>
+          <div class="field">
+            <span class="field-label" id="hud-mouse-mode-label">Mouse display</span>
+            <select
+              id="hud-mouse-mode"
+              value={hudStyle.mouseDisplayMode ?? "text"}
+              disabled={!hudReady || hudSaving}
+              aria-labelledby="hud-mouse-mode-label"
+              onchange={onMouseDisplayModeChange}
+            >
+              <option value="text">Text</option>
+              <option value="schematic">Schematic</option>
             </select>
           </div>
           <div class="field">

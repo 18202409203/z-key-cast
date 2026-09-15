@@ -146,6 +146,7 @@ void listen(EVENT_CHANNEL, (event) => {
 - **Overlay**: load on mount + `listen`; chip idle timer uses `dwellMs`; defaults match MVP (`dwellMs=1000`)
 - **Clamp**: font 10–48, dwell 200–5000, opacity 0–1, colors `#rgb`/`#rrggbb`
 - **`keyboardDisplayMode`**: `text` | `key-card` | `keyboard`
+- **`mouseDisplayMode`**: `text` | `schematic` (independent; schematic highlights L/M/R on `MouseSchematic`)
 - **`keyboardLegendLayout`**: `auto` (OS guess) | `mac-us` | `win-us` — dual-glyph legends from `$lib/key-legends.ts` (US ANSI `!`/`1` etc.); key-card + full keyboard consume the resolved layout
 
 ### Mods encoding

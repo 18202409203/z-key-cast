@@ -4,6 +4,7 @@
   import { onMount } from "svelte";
   import KeyboardMap from "$lib/KeyboardMap.svelte";
   import KeyCard from "$lib/KeyCard.svelte";
+  import MouseSchematic from "$lib/MouseSchematic.svelte";
   import { toKeyCardVisual } from "$lib/key-card";
   import { resolveKeyboardLegendLayout } from "$lib/key-legends";
   import {
@@ -52,6 +53,30 @@
     hudBackgroundCss(style.backgroundColor, style.backgroundOpacity),
   );
 
+  const showKeyboardMap = $derived(
+    active?.kind === "chip" &&
+      active.chip.kind === "key" &&
+      style.keyboardDisplayMode === "keyboard",
+  );
+
+  const showKeyCards = $derived(
+    active?.kind === "chip" &&
+      active.chip.kind === "key" &&
+      style.keyboardDisplayMode === "key-card",
+  );
+
+  const showMouseSchematic = $derived(
+    active?.kind === "chip" &&
+      active.chip.kind === "mouse" &&
+      style.mouseDisplayMode === "schematic",
+  );
+
+  const mouseButton = $derived(
+    active?.kind === "chip" && active.chip.kind === "mouse"
+      ? active.chip.button
+      : null,
+  );
+
   function clearIdleTimer() {
     if (idleTimer !== null) {
       clearTimeout(idleTimer);
@@ -97,12 +122,6 @@
     if (active.kind === "message") return active.text;
     return formatHudLabel(active.chip);
   }
-
-  const showKeyboardMap = $derived(
-    style.keyboardDisplayMode === "keyboard" &&
-      active?.kind === "chip" &&
-      active.chip.kind === "key",
-  );
 
   onMount(() => {
     let cancelled = false;
@@ -171,7 +190,7 @@
           legendLayout={legendLayout}
         />
       </div>
-    {:else if style.keyboardDisplayMode === "key-card"}
+    {:else if showKeyCards}
       <div
         class="card-row"
         style:--cap-scale={`${style.fontSizePx}px`}
@@ -185,6 +204,15 @@
             backgroundCss={chipBackground}
           />
         {/each}
+      </div>
+    {:else if showMouseSchematic && mouseButton}
+      <div transition:fade={{ duration: 200 }}>
+        <MouseSchematic
+          button={mouseButton}
+          textColor={style.textColor}
+          backgroundCss={chipBackground}
+          fontSizePx={style.fontSizePx}
+        />
       </div>
     {:else}
       <div
