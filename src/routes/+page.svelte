@@ -57,7 +57,7 @@
     t,
     type UiLocale,
   } from "$lib/i18n";
-  type MainTab = "settings" | "log" | "about";
+  type MainTab = "settings" | "capture" | "log" | "about";
 
   const MAX_LOG_LINES = 100;
   const STICK_BOTTOM_PX = 48;
@@ -70,6 +70,7 @@
 
   const TABS = $derived<{ id: MainTab; label: string }[]>([
     { id: "settings", label: t("nav.settings", locale) },
+    { id: "capture", label: t("nav.capture", locale) },
     { id: "log", label: t("nav.log", locale) },
     { id: "about", label: t("nav.about", locale) },
   ]);
@@ -93,8 +94,29 @@
   let positionReady = $state(false);
   let positionSaving = $state(false);
   let placeModeActive = $state(false);
+  /** When true, color pickers stay visible even if colors still match a preset. */
+  let forceCustomAppearance = $state(false);
   let appName = $state(FALLBACK_APP_NAME);
   let appVersion = $state(FALLBACK_APP_VERSION);
+
+  const colorPresetSelect = $derived(
+    forceCustomAppearance || matchHudColorPreset(hudStyle) === "custom"
+      ? "custom"
+      : matchHudColorPreset(hudStyle),
+  );
+  const showCustomColors = $derived(colorPresetSelect === "custom");
+  const showLegendLayout = $derived(
+    hudStyle.keyboardDisplayMode === "key-card" ||
+      hudStyle.keyboardDisplayMode === "keyboard",
+  );
+  const showPlaceControls = $derived(
+    placeModeActive || hudPosition.mode === "custom",
+  );
+  const cornerSelectDisplay = $derived(
+    placeModeActive || hudPosition.mode === "custom"
+      ? "custom"
+      : cornerSelectValue(hudPosition),
+  );
 
   function isNearBottom(el: HTMLDivElement) {
     return el.scrollHeight - el.scrollTop - el.clientHeight <= STICK_BOTTOM_PX;
@@ -244,7 +266,7 @@
   function onFontSizeChange(event: Event) {
     const value = Number((event.currentTarget as HTMLInputElement).value);
     if (!Number.isFinite(value)) return;
-    patchHud({ fontSizePx: value });
+    patchHud({ fontSizePx: Math.max(12, Math.min(48, value)) });
   }
 
   function onTextColorChange(event: Event) {
@@ -289,8 +311,12 @@
 
   function onColorPresetChange(event: Event) {
     const value = (event.currentTarget as HTMLSelectElement).value;
-    if (value === "custom") return;
+    if (value === "custom") {
+      forceCustomAppearance = true;
+      return;
+    }
     if (value !== "dark" && value !== "light") return;
+    forceCustomAppearance = false;
     patchHud(colorsFromHudPreset(value as HudColorPresetId));
   }
 
@@ -315,12 +341,29 @@
 
   function onCornerChange(event: Event) {
     const value = (event.currentTarget as HTMLSelectElement).value;
-    if (value === "custom" || !isHudCorner(value)) return;
+    if (value === "custom") {
+      if (!placeModeActive) void onTogglePlaceMode();
+      return;
+    }
+    if (!isHudCorner(value)) return;
     const previous =
       hudPosition.mode === "custom"
         ? { mode: "custom" as const, x: hudPosition.x, y: hudPosition.y }
         : { mode: "corner" as const, corner: hudPosition.corner };
-    void persistPosition({ mode: "corner", corner: value }, previous);
+    void (async () => {
+      if (placeModeActive) {
+        positionSaving = true;
+        try {
+          await endHudPlaceMode();
+          placeModeActive = false;
+        } catch (err) {
+          appendLog(`end place mode failed: ${String(err)}`);
+        } finally {
+          positionSaving = false;
+        }
+      }
+      await persistPosition({ mode: "corner", corner: value }, previous);
+    })();
   }
 
   async function onTogglePlaceMode() {
@@ -580,66 +623,98 @@
         aria-labelledby="tab-settings"
       >
         <section>
-          <h2>{t("settings.display", locale)}</h2>
+          <h2>{t("settings.hudAppearance", locale)}</h2>
           <div class="field">
-            <span class="field-label" id="setting-language-label"
-              >{t("settings.language", locale)}</span
+            <span class="field-label" id="hud-font-size-label"
+              >{t("settings.fontSize", locale, {
+                n: hudStyle.fontSizePx,
+              })}</span
             >
-            <select
-              id="setting-language"
-              value={locale}
-              disabled={!localeReady || localeSaving}
-              aria-labelledby="setting-language-label"
-              onchange={onLocaleChange}
-            >
-              <option value="en">{t("settings.language.en", locale)}</option>
-              <option value="zh">{t("settings.language.zh", locale)}</option>
-            </select>
+            <input
+              id="hud-font-size"
+              type="range"
+              min="12"
+              max="48"
+              step="1"
+              value={hudStyle.fontSizePx}
+              disabled={!hudReady || hudSaving}
+              aria-labelledby="hud-font-size-label"
+              onchange={onFontSizeChange}
+            />
           </div>
           <div class="field">
-            <span class="field-label" id="setting-corner-label"
-              >{t("settings.corner", locale)}</span
+            <span class="field-label" id="hud-color-preset-label"
+              >{t("settings.colorPreset", locale)}</span
             >
             <select
-              id="setting-corner"
-              value={cornerSelectValue(hudPosition)}
-              disabled={!positionReady || positionSaving}
-              aria-labelledby="setting-corner-label"
-              onchange={onCornerChange}
+              id="hud-color-preset"
+              value={colorPresetSelect}
+              disabled={!hudReady || hudSaving}
+              aria-labelledby="hud-color-preset-label"
+              onchange={onColorPresetChange}
             >
-              <option value="br">{t("settings.corner.br", locale)}</option>
-              <option value="bl">{t("settings.corner.bl", locale)}</option>
-              <option value="tr">{t("settings.corner.tr", locale)}</option>
-              <option value="tl">{t("settings.corner.tl", locale)}</option>
-              <option value="custom" disabled={hudPosition.mode !== "custom"}
-                >{t("settings.corner.custom", locale)}</option
+              {#each HUD_COLOR_PRESETS as preset (preset.id)}
+                <option value={preset.id}
+                  >{preset.id === "dark"
+                    ? t("settings.colorPreset.dark", locale)
+                    : t("settings.colorPreset.light", locale)}</option
+                >
+              {/each}
+              <option value="custom"
+                >{t("settings.colorPreset.custom", locale)}</option
               >
             </select>
           </div>
-          <div class="field">
-            <span class="field-label" id="setting-place-label"
-              >{t("settings.hudPosition", locale)}</span
-            >
-            <button
-              type="button"
-              class="clear"
-              id="setting-place"
-              disabled={!positionReady || positionSaving}
-              aria-labelledby="setting-place-label"
-              onclick={() => void onTogglePlaceMode()}
-            >
-              {placeModeActive
-                ? t("settings.done", locale)
-                : t("settings.moveHud", locale)}
-            </button>
-            {#if placeModeActive}
-              <p class="muted">{t("settings.placeHint", locale)}</p>
-            {/if}
-          </div>
+          {#if showCustomColors}
+            <div class="field">
+              <span class="field-label" id="hud-text-color-label"
+                >{t("settings.textColor", locale)}</span
+              >
+              <input
+                id="hud-text-color"
+                type="color"
+                value={hudStyle.textColor}
+                disabled={!hudReady || hudSaving}
+                aria-labelledby="hud-text-color-label"
+                onchange={onTextColorChange}
+              />
+            </div>
+            <div class="field">
+              <span class="field-label" id="hud-bg-color-label"
+                >{t("settings.bgColor", locale)}</span
+              >
+              <input
+                id="hud-bg-color"
+                type="color"
+                value={hudStyle.backgroundColor}
+                disabled={!hudReady || hudSaving}
+                aria-labelledby="hud-bg-color-label"
+                onchange={onBackgroundColorChange}
+              />
+            </div>
+            <div class="field">
+              <span class="field-label" id="hud-bg-opacity-label"
+                >{t("settings.bgOpacity", locale, {
+                  n: hudStyle.backgroundOpacity.toFixed(2),
+                })}</span
+              >
+              <input
+                id="hud-bg-opacity"
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={hudStyle.backgroundOpacity}
+                disabled={!hudReady || hudSaving}
+                aria-labelledby="hud-bg-opacity-label"
+                onchange={onBackgroundOpacityChange}
+              />
+            </div>
+          {/if}
         </section>
 
         <section>
-          <h2>{t("settings.hudAppearance", locale)}</h2>
+          <h2>{t("settings.presentation", locale)}</h2>
           <div class="field">
             <span class="field-label" id="hud-keyboard-mode-label"
               >{t("settings.keyboardDisplay", locale)}</span
@@ -681,113 +756,30 @@
               >
             </select>
           </div>
-          <div class="field">
-            <span class="field-label" id="hud-legend-layout-label"
-              >{t("settings.legendLayout", locale)}</span
-            >
-            <select
-              id="hud-legend-layout"
-              value={hudStyle.keyboardLegendLayout ?? "auto"}
-              disabled={!hudReady || hudSaving}
-              aria-labelledby="hud-legend-layout-label"
-              onchange={onKeyboardLegendLayoutChange}
-            >
-              <option value="auto"
-                >{t("settings.legendLayout.auto", locale)}</option
+          {#if showLegendLayout}
+            <div class="field">
+              <span class="field-label" id="hud-legend-layout-label"
+                >{t("settings.legendLayout", locale)}</span
               >
-              <option value="mac-us"
-                >{t("settings.legendLayout.macUs", locale)}</option
+              <select
+                id="hud-legend-layout"
+                value={hudStyle.keyboardLegendLayout ?? "auto"}
+                disabled={!hudReady || hudSaving}
+                aria-labelledby="hud-legend-layout-label"
+                onchange={onKeyboardLegendLayoutChange}
               >
-              <option value="win-us"
-                >{t("settings.legendLayout.winUs", locale)}</option
-              >
-            </select>
-          </div>
-          <div class="field">
-            <span class="field-label" id="hud-font-size-label"
-              >{t("settings.fontSize", locale, {
-                n: hudStyle.fontSizePx,
-              })}</span
-            >
-            <input
-              id="hud-font-size"
-              type="range"
-              min="10"
-              max="48"
-              step="1"
-              value={hudStyle.fontSizePx}
-              disabled={!hudReady || hudSaving}
-              aria-labelledby="hud-font-size-label"
-              onchange={onFontSizeChange}
-            />
-          </div>
-          <div class="field">
-            <span class="field-label" id="hud-color-preset-label"
-              >{t("settings.colorPreset", locale)}</span
-            >
-            <select
-              id="hud-color-preset"
-              value={matchHudColorPreset(hudStyle)}
-              disabled={!hudReady || hudSaving}
-              aria-labelledby="hud-color-preset-label"
-              onchange={onColorPresetChange}
-            >
-              {#each HUD_COLOR_PRESETS as preset (preset.id)}
-                <option value={preset.id}
-                  >{preset.id === "dark"
-                    ? t("settings.colorPreset.dark", locale)
-                    : t("settings.colorPreset.light", locale)}</option
+                <option value="auto"
+                  >{t("settings.legendLayout.auto", locale)}</option
                 >
-              {/each}
-              <option value="custom"
-                >{t("settings.colorPreset.custom", locale)}</option
-              >
-            </select>
-          </div>
-          <div class="field">
-            <span class="field-label" id="hud-text-color-label"
-              >{t("settings.textColor", locale)}</span
-            >
-            <input
-              id="hud-text-color"
-              type="color"
-              value={hudStyle.textColor}
-              disabled={!hudReady || hudSaving}
-              aria-labelledby="hud-text-color-label"
-              onchange={onTextColorChange}
-            />
-          </div>
-          <div class="field">
-            <span class="field-label" id="hud-bg-color-label"
-              >{t("settings.bgColor", locale)}</span
-            >
-            <input
-              id="hud-bg-color"
-              type="color"
-              value={hudStyle.backgroundColor}
-              disabled={!hudReady || hudSaving}
-              aria-labelledby="hud-bg-color-label"
-              onchange={onBackgroundColorChange}
-            />
-          </div>
-          <div class="field">
-            <span class="field-label" id="hud-bg-opacity-label"
-              >{t("settings.bgOpacity", locale, {
-                n: hudStyle.backgroundOpacity.toFixed(2),
-              })}</span
-            >
-            <input
-              id="hud-bg-opacity"
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={hudStyle.backgroundOpacity}
-              disabled={!hudReady || hudSaving}
-              aria-labelledby="hud-bg-opacity-label"
-              onchange={onBackgroundOpacityChange}
-            />
-          </div>
+                <option value="mac-us"
+                  >{t("settings.legendLayout.macUs", locale)}</option
+                >
+                <option value="win-us"
+                  >{t("settings.legendLayout.winUs", locale)}</option
+                >
+              </select>
+            </div>
+          {/if}
           <div class="field">
             <span class="field-label" id="hud-dwell-ms-label"
               >{t("settings.dwellMs", locale)}</span
@@ -801,14 +793,92 @@
               value={hudStyle.dwellMs}
               disabled={!hudReady || hudSaving}
               aria-labelledby="hud-dwell-ms-label"
+              aria-describedby="hud-dwell-ms-hint"
+              title={t("settings.dwellMsHint", locale)}
               onchange={onDwellMsChange}
             />
+            <p class="field-hint" id="hud-dwell-ms-hint"
+              >{t("settings.dwellMsHint", locale)}</p
+            >
           </div>
         </section>
 
         <section>
+          <h2>{t("settings.position", locale)}</h2>
+          <div class="field">
+            <span class="field-label" id="setting-corner-label"
+              >{t("settings.corner", locale)}</span
+            >
+            <select
+              id="setting-corner"
+              value={cornerSelectDisplay}
+              disabled={!positionReady || positionSaving}
+              aria-labelledby="setting-corner-label"
+              onchange={onCornerChange}
+            >
+              <option value="br">{t("settings.corner.br", locale)}</option>
+              <option value="bl">{t("settings.corner.bl", locale)}</option>
+              <option value="tr">{t("settings.corner.tr", locale)}</option>
+              <option value="tl">{t("settings.corner.tl", locale)}</option>
+              <option value="custom"
+                >{t("settings.corner.custom", locale)}</option
+              >
+            </select>
+          </div>
+          {#if showPlaceControls}
+            <div class="field">
+              <span class="field-label" id="setting-place-label"
+                >{t("settings.hudPosition", locale)}</span
+              >
+              <button
+                type="button"
+                class="clear"
+                id="setting-place"
+                disabled={!positionReady || positionSaving}
+                aria-labelledby="setting-place-label"
+                onclick={() => void onTogglePlaceMode()}
+              >
+                {placeModeActive
+                  ? t("settings.done", locale)
+                  : t("settings.moveHud", locale)}
+              </button>
+              {#if placeModeActive}
+                <p class="muted">{t("settings.placeHint", locale)}</p>
+              {/if}
+            </div>
+          {/if}
+        </section>
+
+        <section>
+          <h2 id="setting-language-heading">{t("settings.language", locale)}</h2>
+          <div class="field">
+            <select
+              id="setting-language"
+              value={locale}
+              disabled={!localeReady || localeSaving}
+              aria-labelledby="setting-language-heading"
+              onchange={onLocaleChange}
+            >
+              <option value="en">{t("settings.language.en", locale)}</option>
+              <option value="zh">{t("settings.language.zh", locale)}</option>
+            </select>
+          </div>
+        </section>
+      </div>
+    {:else if activeTab === "capture"}
+      <div
+        class="panel settings-panel"
+        id="panel-capture"
+        role="tabpanel"
+        aria-labelledby="tab-capture"
+      >
+        <section>
           <h2>{t("settings.capture", locale)}</h2>
-          <p class="muted">
+          <p
+            class="muted"
+            class:ok={hookOk === true}
+            class:error={hookOk === false}
+          >
             {#if hookOk === true}
               {t("settings.hookActive", locale)}
             {:else if hookOk === false}
@@ -979,6 +1049,8 @@
   }
 
   .shell {
+    --radius-sm: 8px;
+    --radius-md: 10px;
     box-sizing: border-box;
     height: 100%;
     width: 100%;
@@ -1025,6 +1097,7 @@
     font-weight: 550;
     padding: 8px 12px;
     cursor: pointer;
+    transition: color 120ms ease, border-color 120ms ease;
   }
 
   .tab:hover {
@@ -1054,6 +1127,7 @@
     gap: 24px;
     overflow-x: hidden;
     overflow-y: auto;
+    padding-right: 4px;
   }
 
   .settings-panel section {
@@ -1072,7 +1146,7 @@
 
   .field {
     display: grid;
-    gap: 8px;
+    gap: 10px;
     min-width: 0;
     font-size: 14px;
   }
@@ -1080,6 +1154,13 @@
   .field > label,
   .field-label {
     color: #e2e8f0;
+  }
+
+  .field-hint {
+    margin: 0;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.4;
   }
 
   .field-toggle {
@@ -1180,28 +1261,44 @@
   select,
   input[type="number"] {
     border: 1px solid #334155;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     background: #0f172a;
     color: #e2e8f0;
     padding: 10px 12px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
   input[type="color"] {
-    height: 40px;
+    min-height: 40px;
     border: 1px solid #334155;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     background: #0f172a;
     padding: 4px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
   input[type="range"] {
     accent-color: #38bdf8;
   }
 
+  select:disabled,
+  input:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
   .muted {
     margin: 0;
     color: #94a3b8;
     font-size: 14px;
+  }
+
+  .muted.ok {
+    color: #86efac;
+  }
+
+  .muted.error {
+    color: #fca5a5;
   }
 
   .log-panel {
@@ -1219,7 +1316,7 @@
 
   .clear {
     border: 1px solid #334155;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: #0f172a;
     color: #94a3b8;
     font-size: 12px;
@@ -1230,6 +1327,7 @@
   .clear:hover {
     color: #e2e8f0;
     border-color: #475569;
+    background: #1e293b;
   }
 
   .log {
@@ -1238,8 +1336,8 @@
     min-height: 0;
     overflow: auto;
     border: 1px solid #334155;
-    border-radius: 10px;
-    background: rgba(15, 23, 42, 0.72);
+    border-radius: var(--radius-md);
+    background: rgba(15, 23, 42, 0.9);
     padding: 10px 12px;
     font-family: "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
     font-size: 12px;

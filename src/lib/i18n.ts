@@ -6,6 +6,7 @@ export type MessageKey = keyof typeof en;
 
 const en = {
   "nav.settings": "Settings",
+  "nav.capture": "Capture",
   "nav.log": "Log",
   "nav.about": "About",
   "nav.aria": "Main sections",
@@ -18,7 +19,8 @@ const en = {
   "settings.language.en": "English",
   "settings.language.zh": "中文",
 
-  "settings.display": "Display",
+  "settings.presentation": "Presentation",
+  "settings.position": "Position",
   "settings.corner": "Corner",
   "settings.corner.br": "Bottom right",
   "settings.corner.bl": "Bottom left",
@@ -30,7 +32,7 @@ const en = {
   "settings.done": "Done",
   "settings.placeHint": "Drag the overlay, then press Done.",
 
-  "settings.hudAppearance": "HUD appearance",
+  "settings.hudAppearance": "Appearance",
   "settings.keyboardDisplay": "Keyboard display",
   "settings.keyboardDisplay.text": "Text",
   "settings.keyboardDisplay.keyCard": "Key cards",
@@ -51,11 +53,12 @@ const en = {
   "settings.bgColor": "Background color",
   "settings.bgOpacity": "Background opacity ({n})",
   "settings.dwellMs": "Dwell (ms)",
+  "settings.dwellMsHint": "How long keys stay visible after release",
 
   "settings.capture": "Capture",
   "settings.hookActive": "Input hook is active.",
   "settings.hookFailed":
-    "Input hook failed — grant Accessibility in System Settings, then restart.",
+    "Input hook failed — enable Accessibility permission for this app in System Settings, then fully restart the app.",
   "settings.hookWaiting": "Waiting for hook status…",
   "settings.listenKeyboard": "Listen to keyboard",
   "settings.listenMouse": "Listen to mouse",
@@ -91,6 +94,7 @@ const en = {
 
 const zh: Record<MessageKey, string> = {
   "nav.settings": "设置",
+  "nav.capture": "捕获",
   "nav.log": "日志",
   "nav.about": "关于",
   "nav.aria": "主要分区",
@@ -102,7 +106,8 @@ const zh: Record<MessageKey, string> = {
   "settings.language.en": "English",
   "settings.language.zh": "中文",
 
-  "settings.display": "显示",
+  "settings.presentation": "展示方式",
+  "settings.position": "位置",
   "settings.corner": "角落",
   "settings.corner.br": "右下",
   "settings.corner.bl": "左下",
@@ -114,7 +119,7 @@ const zh: Record<MessageKey, string> = {
   "settings.done": "完成",
   "settings.placeHint": "拖动浮层，然后点击完成。",
 
-  "settings.hudAppearance": "HUD 外观",
+  "settings.hudAppearance": "外观",
   "settings.keyboardDisplay": "键盘显示",
   "settings.keyboardDisplay.text": "文本",
   "settings.keyboardDisplay.keyCard": "按键卡片",
@@ -135,11 +140,12 @@ const zh: Record<MessageKey, string> = {
   "settings.bgColor": "背景颜色",
   "settings.bgOpacity": "背景不透明度（{n}）",
   "settings.dwellMs": "停留时间（毫秒）",
+  "settings.dwellMsHint": "按键松开后 HUD 继续显示多久",
 
   "settings.capture": "捕获",
   "settings.hookActive": "输入钩子已启用。",
   "settings.hookFailed":
-    "输入钩子失败 — 请在系统设置中授予辅助功能权限，然后重启。",
+    "输入钩子失败 — 请在系统设置中为本应用开启辅助功能权限，然后完全退出并重新打开应用。",
   "settings.hookWaiting": "正在等待钩子状态…",
   "settings.listenKeyboard": "监听键盘",
   "settings.listenMouse": "监听鼠标",
