@@ -1,0 +1,28 @@
+use tauri::{Manager, PhysicalPosition};
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
+        .setup(|app| {
+            if let Some(overlay) = app.get_webview_window("overlay") {
+                // Click-through so the HUD never steals pointer input from the desktop.
+                let _ = overlay.set_ignore_cursor_events(true);
+
+                if let Ok(Some(monitor)) = overlay.current_monitor() {
+                    let screen = monitor.size();
+                    let scale = monitor.scale_factor();
+                    if let Ok(size) = overlay.outer_size() {
+                        let margin_x = (24.0 * scale) as i32;
+                        let margin_y = (48.0 * scale) as i32;
+                        let x = screen.width as i32 - size.width as i32 - margin_x;
+                        let y = screen.height as i32 - size.height as i32 - margin_y;
+                        let _ = overlay.set_position(PhysicalPosition::new(x, y));
+                    }
+                }
+            }
+            Ok(())
+        })
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
