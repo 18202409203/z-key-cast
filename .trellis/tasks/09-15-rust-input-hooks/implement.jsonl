@@ -1,0 +1,4 @@
+{"file": "design/index.md", "reason": "CastEvent contract, MVP capture scope, architecture emit path"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Rust→Tauri event→overlay boundary and payload consistency"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Avoid inventing parallel event shapes; reuse design contract"}
+{"file": ".trellis/tasks/09-15-rust-input-hooks/design.md", "reason": "Module layout, channels, CGEventTap choice, filter scope"}

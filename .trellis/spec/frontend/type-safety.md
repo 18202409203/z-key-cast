@@ -6,46 +6,42 @@
 
 ## Overview
 
-<!--
-Document your project's type safety conventions here.
-
-Questions to answer:
-- What type system do you use?
-- How are types organized?
-- What validation library do you use?
-- How do you handle type inference?
--->
-
-(To be filled by the team)
+TypeScript (strict via SvelteKit) for the webviews. Shared wire types for Tauri events live in `$lib`, not in route files.
 
 ---
 
 ## Type Organization
 
-<!-- Where types are defined, shared types vs local types -->
+| Kind | Location |
+|------|----------|
+| Cast / hook wire types | `src/lib/cast.ts` (mirror Rust `src-tauri/src/input/event.rs`) |
+| Route-local UI state | Colocated in `+page.svelte` |
 
-(To be filled by the team)
+See also: [Tauri Cast Events](../tauri/cast-events.md).
 
 ---
 
 ## Validation
 
-<!-- Runtime validation patterns (Zod, Yup, io-ts, etc.) -->
-
-(To be filled by the team)
+- Decode Tauri event payloads with `isCastEvent` / `isHookStatus` before use
+- Do not trust `listen<T>(...)` generics alone — they are compile-time only
 
 ---
 
 ## Common Patterns
 
-<!-- Type utilities, generics, type guards -->
+```ts
+import { EVENT_CHANNEL, isCastEvent, formatLabel } from "$lib/cast";
 
-(To be filled by the team)
+listen(EVENT_CHANNEL, (event) => {
+  if (!isCastEvent(event.payload)) return;
+  pushChip(formatLabel(event.payload));
+});
+```
 
 ---
 
 ## Forbidden Patterns
 
-<!-- any, type assertions, etc. -->
-
-(To be filled by the team)
+- Inline `as CastEvent` / field fishing on `event.payload` in routes
+- Duplicating channel string literals outside `$lib/cast.ts` / Rust `EVENT_CHANNEL`

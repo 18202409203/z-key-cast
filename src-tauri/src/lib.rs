@@ -1,3 +1,5 @@
+mod input;
+
 use tauri::{Manager, PhysicalPosition};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -21,6 +23,13 @@ pub fn run() {
                     }
                 }
             }
+
+            // Give webviews a moment to subscribe before the first hook-status emit.
+            let handle = app.handle().clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_millis(600));
+                input::start(handle);
+            });
             Ok(())
         })
         .run(tauri::generate_context!())

@@ -1,14 +1,64 @@
 <script lang="ts">
+  import { listen } from "@tauri-apps/api/event";
+  import { onMount } from "svelte";
+  import {
+    EVENT_CHANNEL,
+    HOOK_STATUS_CHANNEL,
+    formatLabel,
+    isCastEvent,
+    isHookStatus,
+  } from "$lib/cast";
+
   type HudItem = {
     id: number;
     label: string;
   };
 
-  // Demo chips prove the corner HUD path; real CastEvents replace this later.
-  let items = $state<HudItem[]>([
-    { id: 1, label: "⌘ + Shift + S" },
-    { id: 2, label: "Mouse · Left" },
-  ]);
+  const MAX_CHIPS = 3;
+
+  let items = $state<HudItem[]>([]);
+  let nextId = 0;
+
+  function pushChip(label: string) {
+    nextId += 1;
+    items = [...items, { id: nextId, label }].slice(-MAX_CHIPS);
+  }
+
+  onMount(() => {
+    let cancelled = false;
+    const unsubs: Array<() => void> = [];
+
+    void (async () => {
+      const unlistenEvent = await listen(EVENT_CHANNEL, (event) => {
+        if (!isCastEvent(event.payload)) return;
+        pushChip(formatLabel(event.payload));
+      });
+      if (cancelled) {
+        unlistenEvent();
+        return;
+      }
+      unsubs.push(unlistenEvent);
+
+      const unlistenStatus = await listen(HOOK_STATUS_CHANNEL, (event) => {
+        if (!isHookStatus(event.payload)) return;
+        if (!event.payload.ok) {
+          pushChip(`Hook offline · ${event.payload.reason ?? "denied"}`);
+        }
+      });
+      if (cancelled) {
+        unlistenStatus();
+        return;
+      }
+      unsubs.push(unlistenStatus);
+    })();
+
+    return () => {
+      cancelled = true;
+      for (const unlisten of unsubs) {
+        unlisten();
+      }
+    };
+  });
 </script>
 
 <div class="hud" aria-live="polite">

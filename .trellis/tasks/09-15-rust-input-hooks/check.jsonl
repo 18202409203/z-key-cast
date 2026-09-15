@@ -1,0 +1,4 @@
+{"file": "design/index.md", "reason": "Accept CastEvent shape and out-of-scope (scroll, combo polish)"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Verify emit payload matches overlay listener expectations"}
+{"file": ".trellis/tasks/09-15-rust-input-hooks/prd.md", "reason": "Acceptance criteria AC1–AC6"}
+{"file": ".trellis/tasks/09-15-rust-input-hooks/design.md", "reason": "Channel names, platform cfg boundary, permission status contract"}
