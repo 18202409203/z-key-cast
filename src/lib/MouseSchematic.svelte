@@ -9,57 +9,68 @@
   let { button, textColor, backgroundCss, fontSizePx }: Props = $props();
 
   const scale = $derived(Math.max(0.85, Math.min(1.35, fontSizePx / 15)));
+
+  const body =
+    "M8 25C8 12.2 20.5 5.2 40 5.2C59.5 5.2 72 12.2 72 25C72 33.2 71.6 39.4 67.6 44.2C63.4 49.2 52.8 51.2 40 51.2C27.2 51.2 16.6 49.2 12.4 44.2C8.4 39.4 8 33.2 8 25Z";
 </script>
 
 <div
   class="mouse-wrap"
   style:--m-fg={textColor}
   style:--m-bg={backgroundCss}
-  style:--m-scale={scale}
   aria-label={`Mouse ${button}`}
 >
   <svg
     class="mouse"
-    viewBox="0 0 120 180"
-    width={Math.round(96 * scale)}
-    height={Math.round(144 * scale)}
+    viewBox="0 0 80 56"
+    width={Math.round(86 * scale)}
+    height={Math.round(60 * scale)}
     role="img"
   >
-    <!-- Body -->
-    <rect
-      class="body"
-      x="18"
-      y="8"
-      width="84"
-      height="164"
-      rx="42"
-      ry="42"
-    />
-    <!-- Left button -->
-    <path
-      class="btn"
-      class:active={button === "left"}
-      d="M22 14h34v52c0 8-6 14-14 14H36c-8 0-14-8-14-18V22c0-4.4 1.8-8 4-8z"
-    />
-    <!-- Right button -->
-    <path
-      class="btn"
-      class:active={button === "right"}
-      d="M64 14h34c2.2 0 4 3.6 4 8v40c0 10-6 18-14 18H78c-8 0-14-6-14-14V14z"
-    />
-    <!-- Middle / wheel well -->
+    <defs>
+      <clipPath id="ms-body">
+        <path d={body} />
+      </clipPath>
+    </defs>
+
+    <g clip-path="url(#ms-body)">
+      <rect
+        class="btn"
+        class:active={button === "left"}
+        x="0"
+        y="0"
+        width="40"
+        height="56"
+      />
+      <rect
+        class="btn"
+        class:active={button === "right"}
+        x="40"
+        y="0"
+        width="40"
+        height="56"
+      />
+    </g>
+
+    <path class="outline" d={body} />
+    <line class="seam" x1="40" y1="6.4" x2="40" y2="12.2" />
+    <line class="seam" x1="40" y1="32.2" x2="40" y2="50.6" />
+
+    <rect class="well" x="35.05" y="10.9" width="9.9" height="22.6" rx="4.95" />
     <rect
       class="btn wheel"
       class:active={button === "middle"}
-      x="52"
-      y="28"
-      width="16"
-      height="36"
-      rx="8"
+      x="36.2"
+      y="12.1"
+      width="7.6"
+      height="20.2"
+      rx="3.8"
     />
-    <!-- Seam -->
-    <line class="seam" x1="60" y1="14" x2="60" y2="80" />
-    <line class="seam" x1="22" y1="80" x2="98" y2="80" />
+    <g class="ticks" class:on={button === "middle"}>
+      <line x1="38.15" y1="17.3" x2="41.85" y2="17.3" />
+      <line x1="38.15" y1="22.2" x2="41.85" y2="22.2" />
+      <line x1="38.15" y1="27.1" x2="41.85" y2="27.1" />
+    </g>
   </svg>
 </div>
 
@@ -68,34 +79,61 @@
     display: flex;
     align-items: flex-end;
     justify-content: flex-end;
-    filter: drop-shadow(0 10px 24px color-mix(in srgb, #000 28%, transparent));
+    filter: drop-shadow(0 8px 18px color-mix(in srgb, #000 26%, transparent));
   }
 
   .mouse {
     display: block;
-  }
-
-  .body {
-    fill: color-mix(in srgb, var(--m-bg) 55%, transparent);
-    stroke: color-mix(in srgb, var(--m-fg) 22%, transparent);
-    stroke-width: 2;
+    overflow: visible;
   }
 
   .btn {
-    fill: color-mix(in srgb, var(--m-bg) 72%, transparent);
-    stroke: color-mix(in srgb, var(--m-fg) 18%, transparent);
-    stroke-width: 1.5;
-    transition: fill 120ms ease, stroke 120ms ease;
+    fill: color-mix(in srgb, var(--m-fg) 10%, transparent);
+    stroke: none;
+    transition: fill 140ms ease;
   }
 
   .btn.active {
-    fill: var(--m-bg);
-    stroke: color-mix(in srgb, var(--m-fg) 45%, transparent);
+    fill: var(--m-fg);
+  }
+
+  .outline {
+    fill: none;
+    stroke: color-mix(in srgb, var(--m-fg) 80%, transparent);
+    stroke-width: 1.65;
+    stroke-linejoin: round;
+    stroke-linecap: round;
   }
 
   .seam {
     stroke: color-mix(in srgb, var(--m-fg) 28%, transparent);
-    stroke-width: 1.5;
+    stroke-width: 1.15;
     stroke-linecap: round;
+  }
+
+  .well {
+    fill: color-mix(in srgb, var(--m-fg) 8%, transparent);
+    stroke: none;
+  }
+
+  .wheel {
+    fill: color-mix(in srgb, var(--m-bg) 88%, var(--m-fg) 6%);
+    stroke: color-mix(in srgb, var(--m-fg) 80%, transparent);
+    stroke-width: 1.45;
+  }
+
+  .wheel.active {
+    fill: var(--m-fg);
+    stroke: var(--m-fg);
+  }
+
+  .ticks {
+    stroke: color-mix(in srgb, var(--m-fg) 58%, transparent);
+    stroke-width: 1.1;
+    stroke-linecap: round;
+  }
+
+  .ticks.on {
+    stroke: color-mix(in srgb, var(--m-bg) 78%, transparent);
   }
 </style>

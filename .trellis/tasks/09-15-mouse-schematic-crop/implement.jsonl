@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "HUD textColor/backgroundCss passed into overlay schematic"}
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "mouseDisplayMode schematic highlights L/M/R; no payload change"}

@@ -29,7 +29,8 @@ See also: [Tauri Cast Events](../tauri/cast-events.md).
 - Call capture / HUD style APIs only through `$lib/settings.ts`; do not inline invoke command names in routes
 - Keep `HUD_STYLE_CHANNEL` (`cast://hud-style`) in `$lib/settings.ts` aligned with Rust `settings::HUD_STYLE_CHANNEL`
 - Key-card / full-keyboard rendering uses `hudCards()` + layout `id`s from `$lib/cast.ts` / `$lib/keyboard-layout.ts`; do not invent labels in the overlay
-- Key-card / full-keyboard / text all use HUD `textColor` + `backgroundColor`/`backgroundOpacity` (presets Black/White or custom)
+- Key-card / full-keyboard / text / schematic all use HUD `textColor` + `backgroundColor`/`backgroundOpacity` (presets Black/White or custom)
+- `MouseSchematic` is a cropped pebble mouse-head (`src/lib/MouseSchematic.svelte`); pressed L/R/wheel fills with `textColor`. Do not evenodd-punch wheel wells — the overlay is transparent, so holes show the desktop
 - Legend layout preference: `keyboardLegendLayout` `auto|mac-us|win-us` (OS guess when auto)
 
 ---

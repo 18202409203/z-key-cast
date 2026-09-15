@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Schematic still consumes HUD colors only"}
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "No new mouse mode or chip field"}
