@@ -104,3 +104,46 @@ Cropped MouseSchematic to a compact pebble mouse-head; L/R/wheel press fills wit
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: key-filter + drag HUD position
+
+**Date**: 2026-09-15
+**Task**: key-filter + drag HUD position
+**Branch**: `main`
+
+### Summary
+
+Shipped ignore-key filter (categories + press-to-add) and HUD corner/custom drag-to-place with place-mode click-through safety.
+
+### Main Changes
+
+### Done
+- key-filter: ignoredKeyIds, category presets, Add key capture, emit-path filter
+- drag-hud-position: corner|custom persist, Move HUD/Done, abandon on exit
+- Spec: cast-events updated for both
+
+### Next
+- 09-15-i18n then 09-15-log-export
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5b681c1` | (see git log) |
+| `c91a73f` | (see git log) |
+| `7c92b3e` | (see git log) |
+| `8552a2f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
