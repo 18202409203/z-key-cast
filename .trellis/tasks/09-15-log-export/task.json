@@ -21,6 +21,9 @@
   "children": [],
   "parent": "09-15-hud-roadmap",
   "relatedFiles": [],
-  "notes": "",
-  "meta": {}
+  "notes": "BACKLOG — deferred 2026-09-15; do not start without explicit ask",
+  "meta": {
+    "backlog": true,
+    "deferredAt": "2026-09-15"
+  }
 }

@@ -35,6 +35,9 @@
   ],
   "parent": null,
   "relatedFiles": [],
-  "notes": "",
-  "meta": {}
+  "notes": "Active roadmap closed through i18n (#10). log-export (#11) deferred to backlog 2026-09-15.",
+  "meta": {
+    "activeClosedAt": "2026-09-15",
+    "backlogChildren": ["09-15-log-export"]
+  }
 }

@@ -1,12 +1,14 @@
 # Export operation log
 
+> **BACKLOG — deferred 2026-09-15.** Not in active execution; pick up later when needed. Do not start without explicit ask.
+
 ## Goal
 
 导出一段操作步骤（chip 序列）便于分享或调试。
 
 ## Ordering
 
-- Last in roadmap；depends on chip 流。
+- Was last in roadmap；depends on chip 流。**Paused** after i18n.
 
 ## Requirements
 
