@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 4
+- **Total Sessions**: 5
 - **Last Active**: 2026-09-15
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~149 | Active |
+| `journal-1.md` | ~190 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 5 | 2026-09-15 | i18n done; archive filter/drag/i18n; log-export backlog | `54bb082`, `a2cb71f` | `main` |
 | 4 | 2026-09-15 | key-filter + drag HUD position | `5b681c1`, `c91a73f`, `7c92b3e`, `8552a2f` | `main` |
 | 3 | 2026-09-15 | Mouse schematic top-half crop | `10fdf28` | `main` |
 | 2 | 2026-09-15 | Key-mouse HUD coexist | `beacdf7` | `main` |

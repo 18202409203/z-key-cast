@@ -147,3 +147,44 @@ Shipped ignore-key filter (categories + press-to-add) and HUD corner/custom drag
 ### Next Steps
 
 - None - task complete
+
+
+## Session 5: i18n done; archive filter/drag/i18n; log-export backlog
+
+**Date**: 2026-09-15
+**Task**: i18n done; archive filter/drag/i18n; log-export backlog
+**Branch**: `main`
+
+### Summary
+
+Shipped en/zh UI; archived key-filter, drag-hud-position, i18n; deferred log-export to backlog.
+
+### Main Changes
+
+### Done
+- Archived 09-15-key-filter, 09-15-drag-hud-position, 09-15-i18n
+- Roadmap active path closed through #10 (i18n)
+- 09-15-log-export marked BACKLOG (deferred)
+
+### Left dirty
+- design/02-ui.md (untracked polish notes; not committed)
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `54bb082` | (see git log) |
+| `a2cb71f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
