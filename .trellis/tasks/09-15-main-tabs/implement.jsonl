@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "Main window UI conventions"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Keep cast/settings imports typed"}
+{"file": "design/index.md", "reason": "Product shell / settings surface"}
+{"file": ".trellis/tasks/09-15-main-tabs/prd.md", "reason": "TAB requirements and AC"}

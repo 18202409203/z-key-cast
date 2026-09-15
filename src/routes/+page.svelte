@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getName, getVersion } from "@tauri-apps/api/app";
   import { listen } from "@tauri-apps/api/event";
   import { onMount } from "svelte";
   import {
@@ -15,9 +16,22 @@
     type CaptureSettings,
   } from "$lib/settings";
 
+  type MainTab = "settings" | "log" | "about";
+
   const MAX_LOG_LINES = 100;
   const STICK_BOTTOM_PX = 48;
+  const FALLBACK_APP_NAME = "z-key-cast";
+  const FALLBACK_APP_VERSION = "1.0.0";
+  const PRODUCT_BLURB =
+    "Corner HUD for keyboard and mouse actions while screen recording.";
 
+  const TABS: { id: MainTab; label: string }[] = [
+    { id: "settings", label: "Settings" },
+    { id: "log", label: "Log" },
+    { id: "about", label: "About" },
+  ];
+
+  let activeTab = $state<MainTab>("log");
   let logLines = $state<string[]>([]);
   let hookOk = $state<boolean | null>(null);
   let logEl = $state<HTMLDivElement | null>(null);
@@ -26,6 +40,8 @@
   let captureMouse = $state(true);
   let captureReady = $state(false);
   let captureSaving = $state(false);
+  let appName = $state(FALLBACK_APP_NAME);
+  let appVersion = $state(FALLBACK_APP_VERSION);
 
   function isNearBottom(el: HTMLDivElement) {
     return el.scrollHeight - el.scrollTop - el.clientHeight <= STICK_BOTTOM_PX;
@@ -90,9 +106,40 @@
     );
   }
 
+  function selectTab(tab: MainTab) {
+    activeTab = tab;
+  }
+
+  function onTabListKeydown(event: KeyboardEvent) {
+    const current = TABS.findIndex((tab) => tab.id === activeTab);
+    if (current < 0) return;
+
+    let next = current;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      next = (current + 1) % TABS.length;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      next = (current - 1 + TABS.length) % TABS.length;
+    } else if (event.key === "Home") {
+      next = 0;
+    } else if (event.key === "End") {
+      next = TABS.length - 1;
+    } else {
+      return;
+    }
+
+    event.preventDefault();
+    const nextTab = TABS[next];
+    if (!nextTab) return;
+    selectTab(nextTab.id);
+    queueMicrotask(() => {
+      document.getElementById(`tab-${nextTab.id}`)?.focus();
+    });
+  }
+
   $effect(() => {
     logLines;
-    if (!stickToBottom || !logEl) return;
+    activeTab;
+    if (activeTab !== "log" || !stickToBottom || !logEl) return;
     queueMicrotask(() => {
       if (logEl) logEl.scrollTop = logEl.scrollHeight;
     });
@@ -103,6 +150,16 @@
     const unsubs: Array<() => void> = [];
 
     void (async () => {
+      try {
+        const [name, version] = await Promise.all([getName(), getVersion()]);
+        if (!cancelled) {
+          if (name) appName = name;
+          if (version) appVersion = version;
+        }
+      } catch {
+        // Keep package fallbacks when not running under Tauri.
+      }
+
       try {
         const settings = await getCaptureSettings();
         if (cancelled) return;
@@ -147,80 +204,122 @@
   });
 </script>
 
-<main class="settings">
-  <header>
-    <p class="brand">z-key-cast</p>
-    <h1>Settings</h1>
-    <p class="lead">
-      Corner HUD overlay is running. Global input capture feeds the log below.
-    </p>
+<main class="shell">
+  <header class="top">
+    <p class="brand">{appName}</p>
+    <div class="tabs" role="tablist" aria-label="Main sections">
+      {#each TABS as tab (tab.id)}
+        <button
+          type="button"
+          class="tab"
+          class:active={activeTab === tab.id}
+          aria-selected={activeTab === tab.id}
+          aria-controls={`panel-${tab.id}`}
+          id={`tab-${tab.id}`}
+          role="tab"
+          tabindex={activeTab === tab.id ? 0 : -1}
+          onclick={() => selectTab(tab.id)}
+          onkeydown={onTabListKeydown}
+        >
+          {tab.label}
+        </button>
+      {/each}
+    </div>
   </header>
 
-  <section>
-    <h2>Display</h2>
-    <label>
-      Corner
-      <select disabled>
-        <option selected>Bottom right</option>
-        <option>Bottom left</option>
-        <option>Top right</option>
-        <option>Top left</option>
-      </select>
-    </label>
-  </section>
+  <div class="panels">
+    {#if activeTab === "settings"}
+      <div
+        class="panel settings-panel"
+        id="panel-settings"
+        role="tabpanel"
+        aria-labelledby="tab-settings"
+      >
+        <section>
+          <h2>Display</h2>
+          <label>
+            Corner
+            <select disabled>
+              <option selected>Bottom right</option>
+              <option>Bottom left</option>
+              <option>Top right</option>
+              <option>Top left</option>
+            </select>
+          </label>
+        </section>
 
-  <section>
-    <h2>Capture</h2>
-    <p class="muted">
-      {#if hookOk === true}
-        Input hook is active.
-      {:else if hookOk === false}
-        Input hook failed — grant Accessibility in System Settings, then restart.
-      {:else}
-        Waiting for hook status…
-      {/if}
-    </p>
-    <label class="toggle">
-      <input
-        type="checkbox"
-        checked={captureKeyboard}
-        disabled={!captureReady || captureSaving}
-        onchange={onCaptureKeyboardChange}
-      />
-      <span>Listen to keyboard</span>
-    </label>
-    <label class="toggle">
-      <input
-        type="checkbox"
-        checked={captureMouse}
-        disabled={!captureReady || captureSaving}
-        onchange={onCaptureMouseChange}
-      />
-      <span>Listen to mouse</span>
-    </label>
-  </section>
-
-  <section class="log-section">
-    <div class="log-header">
-      <h2>Event log</h2>
-      <button type="button" class="clear" onclick={clearLog}>Clear</button>
-    </div>
-    <div
-      class="log"
-      role="log"
-      aria-live="polite"
-      bind:this={logEl}
-      onscroll={onLogScroll}
-    >
-      {#if logLines.length === 0}
-        <p class="muted empty">No events yet.</p>
-      {:else}
-        {#each logLines as line, i (i)}
-          <div class="log-line">{line}</div>
-        {/each}
-      {/if}
-    </div>
-  </section>
+        <section>
+          <h2>Capture</h2>
+          <p class="muted">
+            {#if hookOk === true}
+              Input hook is active.
+            {:else if hookOk === false}
+              Input hook failed — grant Accessibility in System Settings, then
+              restart.
+            {:else}
+              Waiting for hook status…
+            {/if}
+          </p>
+          <label class="toggle">
+            <input
+              type="checkbox"
+              checked={captureKeyboard}
+              disabled={!captureReady || captureSaving}
+              onchange={onCaptureKeyboardChange}
+            />
+            <span>Listen to keyboard</span>
+          </label>
+          <label class="toggle">
+            <input
+              type="checkbox"
+              checked={captureMouse}
+              disabled={!captureReady || captureSaving}
+              onchange={onCaptureMouseChange}
+            />
+            <span>Listen to mouse</span>
+          </label>
+        </section>
+      </div>
+    {:else if activeTab === "log"}
+      <div
+        class="panel log-panel"
+        id="panel-log"
+        role="tabpanel"
+        aria-labelledby="tab-log"
+      >
+        <div class="log-header">
+          <h2>Event log</h2>
+          <button type="button" class="clear" onclick={clearLog}>Clear</button>
+        </div>
+        <div
+          class="log"
+          role="log"
+          aria-live="polite"
+          bind:this={logEl}
+          onscroll={onLogScroll}
+        >
+          {#if logLines.length === 0}
+            <p class="muted empty">No events yet.</p>
+          {:else}
+            {#each logLines as line, i (i)}
+              <div class="log-line">{line}</div>
+            {/each}
+          {/if}
+        </div>
+      </div>
+    {:else}
+      <div
+        class="panel about-panel"
+        id="panel-about"
+        role="tabpanel"
+        aria-labelledby="tab-about"
+      >
+        <h1 class="about-name">{appName}</h1>
+        <p class="about-version">Version {appVersion}</p>
+        <p class="lead">{PRODUCT_BLURB}</p>
+      </div>
+    {/if}
+  </div>
 </main>
 
 <style>
@@ -236,38 +335,79 @@
     font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
   }
 
-  .settings {
+  .shell {
     box-sizing: border-box;
     height: 100%;
-    padding: 28px 24px 32px;
+    padding: 20px 20px 24px;
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    gap: 16px;
     overflow: hidden;
   }
 
+  .top {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
   .brand {
-    margin: 0 0 8px;
+    margin: 0;
     font-size: 13px;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: #7dd3fc;
   }
 
-  h1 {
-    margin: 0;
-    font-size: 28px;
-    font-weight: 650;
-    letter-spacing: -0.03em;
+  .tabs {
+    display: flex;
+    gap: 6px;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 0;
   }
 
-  .lead {
-    margin: 10px 0 0;
+  .tab {
+    appearance: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    background: transparent;
     color: #94a3b8;
-    line-height: 1.5;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 550;
+    padding: 8px 12px;
+    cursor: pointer;
   }
 
-  section {
+  .tab:hover {
+    color: #e2e8f0;
+  }
+
+  .tab.active {
+    color: #e2e8f0;
+    border-bottom-color: #38bdf8;
+  }
+
+  .panels {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .panel {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    overflow: auto;
+  }
+
+  .settings-panel section {
     display: grid;
     gap: 12px;
   }
@@ -313,12 +453,9 @@
     font-size: 14px;
   }
 
-  .log-section {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
+  .log-panel {
     gap: 10px;
+    overflow: hidden;
   }
 
   .log-header {
@@ -366,5 +503,32 @@
 
   .empty {
     font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  }
+
+  .about-panel {
+    justify-content: center;
+    gap: 10px;
+    overflow: auto;
+  }
+
+  .about-name {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 650;
+    letter-spacing: -0.03em;
+  }
+
+  .about-version {
+    margin: 0;
+    color: #7dd3fc;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+  }
+
+  .lead {
+    margin: 6px 0 0;
+    max-width: 32ch;
+    color: #94a3b8;
+    line-height: 1.5;
   }
 </style>

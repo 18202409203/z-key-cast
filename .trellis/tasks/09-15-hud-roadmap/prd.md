@@ -25,14 +25,15 @@
 |---|------|------|--------|
 | 1 | `09-15-hud-chip` | `HudChip` 状态机 + 合同 + text HUD + Key 映射纠偏 | 复杂（需 design/implement） |
 | 2 | `09-15-key-mouse-toggles` | 键/鼠监听独立开关 | 轻量 |
-| 3 | `09-15-custom-hud-styles` | 字体/色/透明度/停留时长 | 中等 |
-| 4 | `09-15-key-card-mode` | 键卡片展示模式 | 中等 |
-| 5 | `09-15-full-keyboard-mode` | 全键盘映射模式 | 复杂 |
-| 6 | `09-15-mouse-schematic` | 鼠标示意模式 | 中等 |
-| 7 | `09-15-key-filter` | 监听/忽略键 | 中等 |
-| 8 | `09-15-drag-hud-position` | 拖拽放置位置 | 轻量 |
-| 9 | `09-15-i18n` | 中英 UI | 轻量 |
-| 10 | `09-15-log-export` | 操作日志导出 | 轻量 |
+| 3 | `09-15-main-tabs` | 主窗口 Settings / Log / About TAB | 轻量 |
+| 4 | `09-15-custom-hud-styles` | 字体/色/透明度/停留时长 | 中等 |
+| 5 | `09-15-key-card-mode` | 键卡片展示模式 | 中等 |
+| 6 | `09-15-full-keyboard-mode` | 全键盘映射模式 | 复杂 |
+| 7 | `09-15-mouse-schematic` | 鼠标示意模式 | 中等 |
+| 8 | `09-15-key-filter` | 监听/忽略键 | 中等 |
+| 9 | `09-15-drag-hud-position` | 拖拽放置位置 | 轻量 |
+| 10 | `09-15-i18n` | 中英 UI | 轻量 |
+| 11 | `09-15-log-export` | 操作日志导出 | 轻量 |
 
 四角位置切换、托盘开关若 scaffold 已具备则在 #1 验收时顺手确认；缺失则另开薄任务，不塞进 #1 主范围。
 

@@ -21,6 +21,7 @@
   "children": [
     "09-15-hud-chip",
     "09-15-key-mouse-toggles",
+    "09-15-main-tabs",
     "09-15-custom-hud-styles",
     "09-15-key-card-mode",
     "09-15-full-keyboard-mode",
