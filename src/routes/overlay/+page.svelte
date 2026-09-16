@@ -463,7 +463,9 @@
                 activeButtons={mouseActiveButtons}
                 textColor={style.textColor}
                 backgroundCss={chipBackground}
-                fontSizePx={style.fontSizePx}
+                fontSizePx={isFull
+                  ? DEFAULT_HUD_STYLE.fontSizePx
+                  : style.fontSizePx}
               />
             </div>
           {:else if mouseSlot}

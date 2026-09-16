@@ -60,7 +60,7 @@ const en = {
   "settings.bgOpacity": "Background opacity ({n})",
   "settings.dwellMs": "Dwell (ms)",
   "settings.dwellMsHint":
-    "How long Text/Lite chips stay after input before fading",
+    "How long Text/Lite chips stay after input before fading (200–5000)",
 
   "settings.capture": "Capture",
   "settings.hookActive": "Input hook is active.",
@@ -155,7 +155,8 @@ const zh: Record<MessageKey, string> = {
   "settings.bgColor": "背景颜色",
   "settings.bgOpacity": "背景不透明度（{n}）",
   "settings.dwellMs": "停留时间（毫秒）",
-  "settings.dwellMsHint": "文本/精简模式下，输入后芯片停留多久再淡出",
+  "settings.dwellMsHint":
+    "文本/精简模式下，输入后芯片停留多久再淡出（200–5000）",
 
   "settings.capture": "捕获",
   "settings.hookActive": "输入钩子已启用。",
