@@ -60,3 +60,15 @@
   - clarify special-key legends with glyphs
   - align mouse schematic with keycap colors
 
+
+## 1.3.0 (2026-09-16)
+
+### Features
+
+  - add keyboard-mouse app icon
+  - add LL input hooks; KeyRef id-only
+
+### Other
+
+  - docs: split README into EN and zh-CN
+
