@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "HUD style channel, HudStyleSettings persist+emit, overlay dwell timers"}
+{"file": ".trellis/spec/tauri/index.md", "reason": "Pre-dev: keep TS settings.ts aligned with Rust settings.rs"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "isHudStyleSettings decode; settings API only via $lib/settings.ts"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "New HUD json field crosses Rust persist, emit, TS normalize, overlay"}

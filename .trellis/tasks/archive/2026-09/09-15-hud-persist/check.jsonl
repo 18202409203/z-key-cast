@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "Quality: hud-style hot-update, sibling fields preserved, dwell clamp"}
+{"file": ".trellis/spec/tauri/index.md", "reason": "Quality checklist for capture/HUD settings ACL and alignment"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Guards and normalize for omitted persistVisible"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Reuse patchHud, field-toggle, idle timers; do not fork highlight store"}
