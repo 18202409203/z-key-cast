@@ -174,7 +174,7 @@ void listen(EVENT_CHANNEL, (event) => {
 - **Wrong**: persist hides the schematic after dwell, or persist keeps last key highlighted forever on the full keyboard. **Correct**: board/mouse stay; highlights follow `dwellMs`.
 - **Clamp**: font 10–48, dwell 200–5000, opacity 0–1, colors `#rgb`/`#rrggbb`
 - **`keyboardDisplayMode`**: `text` | `key-card` | `keyboard`
-- **`mouseDisplayMode`**: `text` | `schematic` (independent; schematic is a cropped pebble mouse-head with no palm stub; pressed L/M/R uses HUD `textColor` solid fill on `MouseSchematic`, not stroke-only highlight)
+- **`mouseDisplayMode`**: `text` | `schematic` (independent; schematic is a cropped pebble mouse-head with no palm stub; resting body uses HUD background like keycaps; pressed L/M/R uses HUD `textColor` solid fill on `MouseSchematic`, not stroke-only highlight)
 - **`keyboardLegendLayout`**: `auto` (OS guess) | `mac-us` | `win-us` — dual-glyph legends from `$lib/key-legends.ts` (US ANSI `!`/`1` etc.); key-card + full keyboard consume the resolved layout
 
 ### HUD position settings

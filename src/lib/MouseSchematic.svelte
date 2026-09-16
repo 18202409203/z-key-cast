@@ -87,8 +87,9 @@
     overflow: visible;
   }
 
+  /* Resting body = HUD background (same as keycaps); press = textColor. */
   .btn {
-    fill: color-mix(in srgb, var(--m-fg) 10%, transparent);
+    fill: color-mix(in srgb, var(--m-bg) 92%, transparent);
     stroke: none;
     transition: fill 140ms ease;
   }
@@ -99,26 +100,26 @@
 
   .outline {
     fill: none;
-    stroke: color-mix(in srgb, var(--m-fg) 80%, transparent);
+    stroke: color-mix(in srgb, var(--m-fg) 32%, transparent);
     stroke-width: 1.65;
     stroke-linejoin: round;
     stroke-linecap: round;
   }
 
   .seam {
-    stroke: color-mix(in srgb, var(--m-fg) 28%, transparent);
+    stroke: color-mix(in srgb, var(--m-fg) 22%, transparent);
     stroke-width: 1.15;
     stroke-linecap: round;
   }
 
   .well {
-    fill: color-mix(in srgb, var(--m-fg) 8%, transparent);
+    fill: color-mix(in srgb, var(--m-bg) 72%, var(--m-fg) 10%);
     stroke: none;
   }
 
   .wheel {
-    fill: color-mix(in srgb, var(--m-bg) 88%, var(--m-fg) 6%);
-    stroke: color-mix(in srgb, var(--m-fg) 80%, transparent);
+    fill: color-mix(in srgb, var(--m-bg) 78%, var(--m-fg) 10%);
+    stroke: color-mix(in srgb, var(--m-fg) 32%, transparent);
     stroke-width: 1.45;
   }
 
