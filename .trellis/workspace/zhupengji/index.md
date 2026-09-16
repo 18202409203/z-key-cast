@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 10
+- **Total Sessions**: 11
 - **Last Active**: 2026-09-16
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~411 | Active |
+| `journal-1.md` | ~444 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 11 | 2026-09-16 | Windows LL input hooks | `6b2b7f1` | `main` |
 | 10 | 2026-09-16 | Settings HUD tab IA | `000469a`, `196bd32` | `main` |
 | 9 | 2026-09-16 | HUD presets Text Lite Full | `70db209` | `main` |
 | 8 | 2026-09-16 | Mouse click ripple (macOS) | `b62778a` | `main` |

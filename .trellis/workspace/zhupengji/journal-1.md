@@ -409,3 +409,36 @@ Split presentation into default HUD tab; Settings keeps Theme/Position/Language.
 ### Next Steps
 
 - None - task complete
+
+
+## Session 11: Windows LL input hooks
+
+**Date**: 2026-09-16
+**Task**: Windows LL input hooks
+**Branch**: `main`
+
+### Summary
+
+Added Windows WH_*_LL key/mouse hooks into the shared HudChip pipeline; removed KeyRef.label so UI resolves display from id+legend/OS; platform-specific Capture hook-failed copy; Linux remains stub; live Win smoke deferred.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6b2b7f1` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
