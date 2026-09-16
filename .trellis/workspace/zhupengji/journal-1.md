@@ -342,3 +342,36 @@ Separate primary-monitor ripple layer with peer mouseClickRipple toggle; cast://
 ### Next Steps
 
 - None - task complete
+
+
+## Session 9: HUD presets Text Lite Full
+
+**Date**: 2026-09-16
+**Task**: HUD presets Text Lite Full
+**Branch**: `main`
+
+### Summary
+
+Grilled and shipped three HUD presets (Text/Lite/Full): single hudPreset, HudChip phase down/up always emitted, Full pinned held-set, Text/Lite down+dwell; archived 09-16-hud-presets.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `70db209` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
