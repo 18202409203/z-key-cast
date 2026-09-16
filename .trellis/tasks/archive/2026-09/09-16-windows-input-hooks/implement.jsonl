@@ -1,0 +1,4 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/tauri/index.md", "reason": "Tauri layer checklist; no Win hooks without dedicated task — this is that task"}
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "HudChip/hook-status/ripple contracts to preserve"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Frontend HUD/legend contracts for label ownership"}
