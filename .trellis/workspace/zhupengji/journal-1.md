@@ -309,3 +309,36 @@ Capture ignore via shared KeyboardMap click-toggle; Add key for off-board ids; m
 ### Next Steps
 
 - None - task complete
+
+
+## Session 8: Mouse click ripple (macOS)
+
+**Date**: 2026-09-16
+**Task**: Mouse click ripple (macOS)
+**Branch**: `main`
+
+### Summary
+
+Separate primary-monitor ripple layer with peer mouseClickRipple toggle; cast://mouse-ripple; Y coord fix (no Quartz flip).
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b62778a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
