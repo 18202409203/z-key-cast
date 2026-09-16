@@ -82,3 +82,15 @@ impl HookStatus {
 pub const EVENT_CHANNEL: &str = "cast://event";
 pub const HOOK_STATUS_CHANNEL: &str = "cast://hook-status";
 pub const IGNORE_KEY_CAPTURED_CHANNEL: &str = "cast://ignore-key-captured";
+/// Primary-monitor click rings — separate from `cast://event` / HudChip.
+pub const MOUSE_RIPPLE_CHANNEL: &str = "cast://mouse-ripple";
+
+/// Payload for `cast://mouse-ripple` (mouse **down** only; primary-monitor local).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MouseRippleEvent {
+    /// Logical/CSS px from the primary monitor's top-left (CGEvent global, no Y flip).
+    pub x: f64,
+    pub y: f64,
+    pub button: MouseButton,
+}

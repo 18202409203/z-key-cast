@@ -10,8 +10,8 @@ mod stub;
 
 #[allow(unused_imports)]
 pub use event::{
-    HookStatus, HudChip, KeyRef, MouseButton, Phase, EVENT_CHANNEL, HOOK_STATUS_CHANNEL,
-    IGNORE_KEY_CAPTURED_CHANNEL,
+    HookStatus, HudChip, KeyRef, MouseButton, MouseRippleEvent, Phase, EVENT_CHANNEL,
+    HOOK_STATUS_CHANNEL, IGNORE_KEY_CAPTURED_CHANNEL, MOUSE_RIPPLE_CHANNEL,
 };
 
 use tauri::AppHandle;

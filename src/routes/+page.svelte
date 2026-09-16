@@ -90,6 +90,7 @@
   let stickToBottom = $state(true);
   let captureKeyboard = $state(true);
   let captureMouse = $state(true);
+  let mouseClickRipple = $state(false);
   let ignoredKeyIds = $state<string[]>([]);
   let ignoredKeyLabels = $state<Record<string, string>>({});
   let ignoreCapturing = $state(false);
@@ -164,16 +165,19 @@
   ) {
     captureKeyboard = next.captureKeyboard;
     captureMouse = next.captureMouse;
+    mouseClickRipple = next.mouseClickRipple;
     ignoredKeyIds = [...next.ignoredKeyIds];
     captureSaving = true;
     try {
       const saved = await setCaptureSettings(next);
       captureKeyboard = saved.captureKeyboard;
       captureMouse = saved.captureMouse;
+      mouseClickRipple = saved.mouseClickRipple;
       ignoredKeyIds = [...saved.ignoredKeyIds];
     } catch (err) {
       captureKeyboard = previous.captureKeyboard;
       captureMouse = previous.captureMouse;
+      mouseClickRipple = previous.mouseClickRipple;
       ignoredKeyIds = [...previous.ignoredKeyIds];
       appendLog(`settings save failed: ${String(err)}`);
     } finally {
@@ -185,6 +189,7 @@
     return {
       captureKeyboard,
       captureMouse,
+      mouseClickRipple,
       ignoredKeyIds: [...ignoredKeyIds],
     };
   }
@@ -202,6 +207,15 @@
     const checked = (event.currentTarget as HTMLInputElement).checked;
     const previous = currentCapture();
     void persistCapture({ ...previous, captureMouse: checked }, previous);
+  }
+
+  function onMouseClickRippleChange(event: Event) {
+    const checked = (event.currentTarget as HTMLInputElement).checked;
+    const previous = currentCapture();
+    void persistCapture(
+      { ...previous, mouseClickRipple: checked },
+      previous,
+    );
   }
 
   function onIgnoreCategoryChange(categoryId: IgnoreCategoryId, event: Event) {
@@ -534,6 +548,7 @@
         if (cancelled) return;
         captureKeyboard = settings.captureKeyboard;
         captureMouse = settings.captureMouse;
+        mouseClickRipple = settings.mouseClickRipple;
         ignoredKeyIds = [...settings.ignoredKeyIds];
       } catch (err) {
         if (!cancelled) {
@@ -993,6 +1008,21 @@
               >{t("settings.listenMouse", locale)}</label
             >
           </div>
+          <div class="field field-toggle">
+            <input
+              id="mouse-click-ripple"
+              type="checkbox"
+              checked={mouseClickRipple}
+              disabled={!captureReady || captureSaving}
+              onchange={onMouseClickRippleChange}
+            />
+            <label for="mouse-click-ripple"
+              >{t("settings.mouseClickRipple", locale)}</label
+            >
+          </div>
+          <p class="muted ignore-hint">
+            {t("settings.mouseClickRippleHint", locale)}
+          </p>
 
           <div class="ignore-block">
             <p class="field-label">{t("settings.ignoreKeys", locale)}</p>

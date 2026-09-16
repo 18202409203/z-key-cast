@@ -25,9 +25,13 @@ Rust core
   ├─ raw 归一化 → ChipReducer → HudChip
   ├─ 节流（autorepeat / 短 debounce）
   └─ emit → Overlay + Main
+       └─ （可选）mouse down → cast://mouse-ripple → Ripple 窗
 
 Overlay window（透明、置顶、点击穿透）
   └─ 角落 HUD 渲染与动画
+
+Ripple window（独立主屏全屏、透明、点击穿透；默认不创建）
+  └─ 点击圆环动画（macOS 一期）
 
 Settings + Tray
   └─ 位置、样式、开关、权限引导
@@ -53,10 +57,10 @@ type HudChip =
 ## HUD 约定
 
 - 默认右下角，可改左下 / 左上 / 右上；避开 Dock / 任务栏
-- Overlay：透明 + always-on-top + click-through
+- Overlay：透明 + always-on-top + click-through（角落 HUD；**不**全屏化）
 - 键、鼠各最多 1 条可见；可同时显示（竖排：键盘在上、鼠标在下）；同类新事件替换同侧并重置该侧空闲淡出；两侧独立计时（共享 `dwellMs`）
 - Status（如 hook offline）独占：清掉键/鼠两槽后单独 dwell
-- 不做光标涟漪
+- 点击涟漪（可选）：独立主屏全屏透明层（非 HUD overlay）；默认关；与 `captureMouse` 解耦；一期仅 macOS
 
 ## MVP
 
@@ -66,11 +70,12 @@ type HudChip =
 - 角落 HUD + 基础样式
 - 托盘开关 / 退出
 - macOS Accessibility 引导；Win/Linux 失败时有明确提示
+- macOS 主屏点击涟漪（独立开关 + 独立层；Windows 另开任务）
 
 **不做（二期）**
 
 - 皮肤市场、按应用过滤、历史回放
-- 鼠标轨迹 / 点击涟漪
+- 鼠标轨迹 / 位置指示器；外接屏涟漪；Windows/Linux 涟漪
 - 输入法候选与死键完美还原
 - 滚轮滚动事件（避免刷屏）
 

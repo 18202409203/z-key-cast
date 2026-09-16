@@ -34,6 +34,7 @@ This layer owns Rust-side modules under `src-tauri/` and the wire contracts shar
 - [ ] Key autorepeat / spam filtering happens before `cast://event` emit
 - [ ] Chip reducer: bare mods no emit; primary/mouse down only
 - [ ] Capture toggles filter **after** reduce via `allows_chip`, not by skipping reduce
+- [ ] `mouseClickRipple` is a peer of capture toggles; `cast://mouse-ripple` stays off `HudChip`; ripple window gated only by that flag
 - [ ] Capture / HUD style / HUD position commands have ACL permissions; saves preserve sibling `settings.json` fields
 - [ ] `cast://hud-style` hot-updates overlay dwell, `persistVisible` pin surfaces, and chip CSS without restart
 - [ ] `cast://hud-place-mode` drives overlay drag affordance; non-place mode stays click-through

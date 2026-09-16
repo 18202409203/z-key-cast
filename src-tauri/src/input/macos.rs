@@ -3,16 +3,17 @@
 use std::sync::Mutex;
 
 use core_foundation::runloop::{kCFRunLoopCommonModes, CFRunLoop};
+use core_graphics::display::CGDisplay;
 use core_graphics::event::{
     CGEvent, CGEventFlags, CGEventTap, CGEventTapLocation, CGEventTapOptions,
     CGEventTapPlacement, CGEventType, EventField,
 };
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 
 use super::chip::{modifier_transition, ChipReducer};
 use super::event::{
-    HookStatus, KeyRef, MouseButton, Phase, RawInput, EVENT_CHANNEL, HOOK_STATUS_CHANNEL,
-    IGNORE_KEY_CAPTURED_CHANNEL,
+    HookStatus, KeyRef, MouseButton, MouseRippleEvent, Phase, RawInput, EVENT_CHANNEL,
+    HOOK_STATUS_CHANNEL, IGNORE_KEY_CAPTURED_CHANNEL, MOUSE_RIPPLE_CHANNEL,
 };
 use super::filter::EventFilter;
 use crate::settings;
@@ -82,6 +83,15 @@ fn run_tap(app: AppHandle) -> Result<(), HookStatus> {
                             let _ = app_for_cb.emit(IGNORE_KEY_CAPTURED_CHANNEL, key);
                             suppress_emit = true;
                         }
+                    }
+
+                    // Ripple is independent of captureMouse / allows_chip / HudChip.
+                    if let RawInput::Mouse {
+                        button,
+                        phase: Phase::Down,
+                    } = &raw
+                    {
+                        maybe_emit_mouse_ripple(&app_for_cb, event, *button);
                     }
 
                     let chip = reducer
@@ -245,6 +255,40 @@ fn normalize_flags_changed(
 
 fn mouse(button: MouseButton, phase: Phase) -> RawInput {
     RawInput::Mouse { button, phase }
+}
+
+fn maybe_emit_mouse_ripple(app: &AppHandle, event: &CGEvent, button: MouseButton) {
+    if !settings::mouse_click_ripple_enabled() {
+        return;
+    }
+    let Some((x, y)) = primary_local_click(event) else {
+        return;
+    };
+    let Some(win) = app.get_webview_window(settings::RIPPLE_WINDOW_LABEL) else {
+        return;
+    };
+    let _ = win.emit(
+        MOUSE_RIPPLE_CHANNEL,
+        MouseRippleEvent { x, y, button },
+    );
+}
+
+/// Map CGEvent location into primary-monitor top-left local coords; drop external screens.
+fn primary_local_click(event: &CGEvent) -> Option<(f64, f64)> {
+    let loc = event.location();
+    let bounds = CGDisplay::main().bounds();
+    let min_x = bounds.origin.x;
+    let min_y = bounds.origin.y;
+    let width = bounds.size.width;
+    let height = bounds.size.height;
+    if loc.x < min_x || loc.y < min_y || loc.x >= min_x + width || loc.y >= min_y + height {
+        return None;
+    }
+    // CGEvent location + CGDisplay bounds share global coords with origin at the
+    // upper-left of the main display — same as CSS top-left; do not flip Y.
+    let local_x = loc.x - min_x;
+    let local_y = loc.y - min_y;
+    Some((local_x, local_y))
 }
 
 fn modifier_key_ref(keycode: i64) -> Option<(KeyRef, CGEventFlags)> {

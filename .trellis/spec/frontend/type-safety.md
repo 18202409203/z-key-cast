@@ -24,10 +24,12 @@ See also: [Tauri Cast Events](../tauri/cast-events.md).
 
 ## Validation
 
-- Decode Tauri event payloads with `isHudChip` / `isHookStatus` / `isHudStyleSettings` before use
+- Decode Tauri event payloads with `isHudChip` / `isHookStatus` / `isHudStyleSettings` / `isMouseRippleEvent` before use
 - Do not trust `listen<T>(...)` generics alone — they are compile-time only
 - Call capture / HUD style APIs only through `$lib/settings.ts`; do not inline invoke command names in routes
 - Keep `HUD_STYLE_CHANNEL` (`cast://hud-style`) in `$lib/settings.ts` aligned with Rust `settings::HUD_STYLE_CHANNEL`
+- Keep `MOUSE_RIPPLE_CHANNEL` (`cast://mouse-ripple`) in `$lib/cast.ts` aligned with Rust `input::MOUSE_RIPPLE_CHANNEL`; ripple page must use `isMouseRippleEvent`
+- `mouseClickRipple` (omit → `false`) is a peer of `captureKeyboard` / `captureMouse`; Settings checkbox always visible under mouse listen; does not gate HUD mouse chips
 - Key-card / full-keyboard rendering uses `hudCards()` + layout `id`s from `$lib/cast.ts` / `$lib/keyboard-layout.ts`; do not invent labels in the overlay
 - Key-card / full-keyboard / text / schematic all use HUD `textColor` + `backgroundColor`/`backgroundOpacity` (presets Black/White or custom)
 - `MouseSchematic` is a cropped pebble mouse-head (`src/lib/MouseSchematic.svelte`); resting body uses HUD `backgroundColor`/`backgroundOpacity` (same as keycaps); pressed L/R/wheel fills with `textColor`. Do not evenodd-punch wheel wells — the overlay is transparent, so holes show the desktop
@@ -55,5 +57,6 @@ listen(EVENT_CHANNEL, (event) => {
 ## Forbidden Patterns
 
 - Inline `as HudChip` / field fishing on `event.payload` in routes
-- Duplicating channel string literals outside `$lib/cast.ts` / Rust `EVENT_CHANNEL`
+- Duplicating channel string literals outside `$lib/cast.ts` / Rust `EVENT_CHANNEL` (and sibling channel consts)
 - Assuming a public `phase` field on `cast://event` payloads
+- Putting click coordinates on `HudChip` / `cast://event` instead of `cast://mouse-ripple`

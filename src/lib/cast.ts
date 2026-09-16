@@ -9,6 +9,13 @@ export type HudChip =
   | { kind: "key"; mods: KeyRef[]; key: KeyRef }
   | { kind: "mouse"; button: "left" | "right" | "middle" };
 
+export type MouseRippleEvent = {
+  /** Logical/CSS px from primary monitor top-left. */
+  x: number;
+  y: number;
+  button: "left" | "right" | "middle";
+};
+
 export type HookStatus = {
   ok: boolean;
   reason?: string;
@@ -17,6 +24,7 @@ export type HookStatus = {
 export const EVENT_CHANNEL = "cast://event";
 export const HOOK_STATUS_CHANNEL = "cast://hook-status";
 export const IGNORE_KEY_CAPTURED_CHANNEL = "cast://ignore-key-captured";
+export const MOUSE_RIPPLE_CHANNEL = "cast://mouse-ripple";
 
 function isKeyRef(value: unknown): value is KeyRef {
   if (!value || typeof value !== "object") return false;
@@ -60,6 +68,16 @@ export function isHookStatus(value: unknown): value is HookStatus {
 /** Payload for `cast://ignore-key-captured` (next key/mod down while armed). */
 export function isIgnoreKeyCaptured(value: unknown): value is KeyRef {
   return isKeyRef(value);
+}
+
+export function isMouseRippleEvent(value: unknown): value is MouseRippleEvent {
+  if (!value || typeof value !== "object") return false;
+  const ev = value as Record<string, unknown>;
+  if (typeof ev.x !== "number" || typeof ev.y !== "number") return false;
+  if (!Number.isFinite(ev.x) || !Number.isFinite(ev.y)) return false;
+  return (
+    ev.button === "left" || ev.button === "right" || ev.button === "middle"
+  );
 }
 
 export function formatHudLabel(chip: HudChip): string {

@@ -7,12 +7,14 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter, Manager, PhysicalPosition};
+use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, WebviewUrl, WebviewWindowBuilder};
 
 use crate::input::HudChip;
 
 static CAPTURE_KEYBOARD: AtomicBool = AtomicBool::new(true);
 static CAPTURE_MOUSE: AtomicBool = AtomicBool::new(true);
+/// Independent of `capture_mouse` — gates ripple window + emit only.
+static MOUSE_CLICK_RIPPLE: AtomicBool = AtomicBool::new(false);
 static IGNORE_KEY_CAPTURE_ARMED: AtomicBool = AtomicBool::new(false);
 static HUD_PLACE_MODE: AtomicBool = AtomicBool::new(false);
 static HUD: OnceLock<Mutex<HudStyleSettings>> = OnceLock::new();
@@ -23,6 +25,7 @@ static UI_LOCALE: OnceLock<Mutex<Option<UiLocale>>> = OnceLock::new();
 pub const HUD_STYLE_CHANNEL: &str = "cast://hud-style";
 pub const HUD_PLACE_MODE_CHANNEL: &str = "cast://hud-place-mode";
 pub const UI_LOCALE_CHANNEL: &str = "cast://ui-locale";
+pub const RIPPLE_WINDOW_LABEL: &str = "ripple";
 
 #[derive(Debug, Default)]
 struct IgnoredKeys {
@@ -244,6 +247,9 @@ fn is_hex_color(value: &str) -> bool {
 pub struct CaptureSettings {
     pub capture_keyboard: bool,
     pub capture_mouse: bool,
+    /// Separate fullscreen click rings; omit → false. Independent of `capture_mouse`.
+    #[serde(default)]
+    pub mouse_click_ripple: bool,
     #[serde(default)]
     pub ignored_key_ids: Vec<String>,
 }
@@ -253,6 +259,7 @@ impl Default for CaptureSettings {
         Self {
             capture_keyboard: true,
             capture_mouse: true,
+            mouse_click_ripple: false,
             ignored_key_ids: Vec::new(),
         }
     }
@@ -267,6 +274,7 @@ impl CaptureSettings {
         Self {
             capture_keyboard: CAPTURE_KEYBOARD.load(Ordering::Relaxed),
             capture_mouse: CAPTURE_MOUSE.load(Ordering::Relaxed),
+            mouse_click_ripple: MOUSE_CLICK_RIPPLE.load(Ordering::Relaxed),
             ignored_key_ids,
         }
     }
@@ -277,6 +285,8 @@ impl CaptureSettings {
 pub struct AppSettings {
     pub capture_keyboard: bool,
     pub capture_mouse: bool,
+    #[serde(default)]
+    pub mouse_click_ripple: bool,
     #[serde(default)]
     pub ignored_key_ids: Vec<String>,
     #[serde(default)]
@@ -293,6 +303,7 @@ impl Default for AppSettings {
         Self {
             capture_keyboard: true,
             capture_mouse: true,
+            mouse_click_ripple: false,
             ignored_key_ids: Vec::new(),
             hud: HudStyleSettings::default(),
             hud_position: HudPositionSettings::default(),
@@ -322,6 +333,7 @@ impl AppSettings {
         Self {
             capture_keyboard: CAPTURE_KEYBOARD.load(Ordering::Relaxed),
             capture_mouse: CAPTURE_MOUSE.load(Ordering::Relaxed),
+            mouse_click_ripple: MOUSE_CLICK_RIPPLE.load(Ordering::Relaxed),
             ignored_key_ids,
             hud,
             hud_position,
@@ -332,6 +344,7 @@ impl AppSettings {
     fn apply_runtime(self) {
         CAPTURE_KEYBOARD.store(self.capture_keyboard, Ordering::Relaxed);
         CAPTURE_MOUSE.store(self.capture_mouse, Ordering::Relaxed);
+        MOUSE_CLICK_RIPPLE.store(self.mouse_click_ripple, Ordering::Relaxed);
         if let Ok(mut guard) = ignored_lock().lock() {
             *guard = IgnoredKeys::from_ids(self.ignored_key_ids);
         }
@@ -353,6 +366,11 @@ pub fn allows_chip(chip: &HudChip) -> bool {
         HudChip::Key { .. } => CAPTURE_KEYBOARD.load(Ordering::Relaxed),
         HudChip::Mouse { .. } => CAPTURE_MOUSE.load(Ordering::Relaxed),
     }
+}
+
+/// Gates `cast://mouse-ripple` emit + ripple window visibility (not HUD chips).
+pub fn mouse_click_ripple_enabled() -> bool {
+    MOUSE_CLICK_RIPPLE.load(Ordering::Relaxed)
 }
 
 /// Drop key chips whose primary id is ignored; strip ignored mods. Mouse unchanged.
@@ -493,6 +511,62 @@ pub fn apply_hud_position(app: &AppHandle) {
     }
 }
 
+/// Lazy-create / show or hide the primary-monitor ripple layer from `mouseClickRipple`.
+pub fn sync_ripple_window(app: &AppHandle) {
+    if mouse_click_ripple_enabled() {
+        ensure_ripple_window(app);
+    } else if let Some(win) = app.get_webview_window(RIPPLE_WINDOW_LABEL) {
+        let _ = win.hide();
+    }
+}
+
+fn ensure_ripple_window(app: &AppHandle) {
+    let Ok(Some(monitor)) = app.primary_monitor() else {
+        eprintln!("[z-key-cast] ripple: primary monitor unavailable");
+        return;
+    };
+    let pos = *monitor.position();
+    let size = *monitor.size();
+    let scale = monitor.scale_factor();
+    let logical_w = size.width as f64 / scale;
+    let logical_h = size.height as f64 / scale;
+    let logical_x = pos.x as f64 / scale;
+    let logical_y = pos.y as f64 / scale;
+
+    if let Some(win) = app.get_webview_window(RIPPLE_WINDOW_LABEL) {
+        let _ = win.set_position(PhysicalPosition::new(pos.x, pos.y));
+        let _ = win.set_size(PhysicalSize::new(size.width, size.height));
+        let _ = win.set_ignore_cursor_events(true);
+        let _ = win.show();
+        return;
+    }
+
+    match WebviewWindowBuilder::new(
+        app,
+        RIPPLE_WINDOW_LABEL,
+        WebviewUrl::App("/ripple".into()),
+    )
+    .title("z-key-cast-ripple")
+    .decorations(false)
+    .transparent(true)
+    .always_on_top(true)
+    .skip_taskbar(true)
+    .shadow(false)
+    .focused(false)
+    .visible(true)
+    .position(logical_x, logical_y)
+    .inner_size(logical_w, logical_h)
+    .build()
+    {
+        Ok(win) => {
+            let _ = win.set_ignore_cursor_events(true);
+        }
+        Err(err) => {
+            eprintln!("[z-key-cast] ripple window create failed: {err}");
+        }
+    }
+}
+
 fn persist_app_settings(app: &AppHandle, next: AppSettings) -> Result<AppSettings, String> {
     let previous = AppSettings::from_runtime();
     next.clone().apply_runtime();
@@ -518,15 +592,18 @@ pub fn set_capture_settings(
     let next = AppSettings {
         capture_keyboard: settings.capture_keyboard,
         capture_mouse: settings.capture_mouse,
+        mouse_click_ripple: settings.mouse_click_ripple,
         ignored_key_ids: ignored_key_ids.clone(),
         hud: previous.hud.clone(),
         hud_position: previous.hud_position.clone(),
         ui_locale: previous.ui_locale,
     };
     persist_app_settings(&app, next)?;
+    sync_ripple_window(&app);
     Ok(CaptureSettings {
         capture_keyboard: settings.capture_keyboard,
         capture_mouse: settings.capture_mouse,
+        mouse_click_ripple: settings.mouse_click_ripple,
         ignored_key_ids,
     })
 }
@@ -559,6 +636,7 @@ pub fn set_hud_style_settings(
     let next = AppSettings {
         capture_keyboard: previous.capture_keyboard,
         capture_mouse: previous.capture_mouse,
+        mouse_click_ripple: previous.mouse_click_ripple,
         ignored_key_ids: previous.ignored_key_ids.clone(),
         hud: hud.clone(),
         hud_position: previous.hud_position.clone(),
@@ -586,6 +664,7 @@ pub fn set_hud_position_settings(
     let next = AppSettings {
         capture_keyboard: previous.capture_keyboard,
         capture_mouse: previous.capture_mouse,
+        mouse_click_ripple: previous.mouse_click_ripple,
         ignored_key_ids: previous.ignored_key_ids.clone(),
         hud: previous.hud.clone(),
         hud_position: settings.clone(),
@@ -613,6 +692,7 @@ pub fn set_ui_locale_settings(
     let next = AppSettings {
         capture_keyboard: previous.capture_keyboard,
         capture_mouse: previous.capture_mouse,
+        mouse_click_ripple: previous.mouse_click_ripple,
         ignored_key_ids: previous.ignored_key_ids.clone(),
         hud: previous.hud.clone(),
         hud_position: previous.hud_position.clone(),
@@ -667,6 +747,7 @@ pub fn end_hud_place_mode(app: AppHandle) -> Result<HudPositionSettings, String>
     let next = AppSettings {
         capture_keyboard: previous.capture_keyboard,
         capture_mouse: previous.capture_mouse,
+        mouse_click_ripple: previous.mouse_click_ripple,
         ignored_key_ids: previous.ignored_key_ids.clone(),
         hud: previous.hud.clone(),
         hud_position: custom.clone(),
@@ -738,6 +819,26 @@ mod tests {
 
         CAPTURE_KEYBOARD.store(true, Ordering::Relaxed);
         CAPTURE_MOUSE.store(true, Ordering::Relaxed);
+    }
+
+    #[test]
+    fn mouse_click_ripple_does_not_gate_mouse_chips() {
+        let mouse = HudChip::Mouse {
+            button: MouseButton::Left,
+        };
+
+        CAPTURE_MOUSE.store(false, Ordering::Relaxed);
+        MOUSE_CLICK_RIPPLE.store(true, Ordering::Relaxed);
+        assert!(!allows_chip(&mouse));
+        assert!(mouse_click_ripple_enabled());
+
+        CAPTURE_MOUSE.store(true, Ordering::Relaxed);
+        MOUSE_CLICK_RIPPLE.store(false, Ordering::Relaxed);
+        assert!(allows_chip(&mouse));
+        assert!(!mouse_click_ripple_enabled());
+
+        CAPTURE_MOUSE.store(true, Ordering::Relaxed);
+        MOUSE_CLICK_RIPPLE.store(false, Ordering::Relaxed);
     }
 
     #[test]
@@ -861,6 +962,7 @@ mod tests {
         let parsed: AppSettings = serde_json::from_str(raw).unwrap();
         assert!(!parsed.capture_keyboard);
         assert!(parsed.capture_mouse);
+        assert!(!parsed.mouse_click_ripple);
         assert!(parsed.ignored_key_ids.is_empty());
         assert_eq!(parsed.hud.dwell_ms, 1000);
         assert!(!parsed.hud.persist_visible);
@@ -875,6 +977,18 @@ mod tests {
             }
         );
         assert_eq!(parsed.ui_locale, None);
+    }
+
+    #[test]
+    fn mouse_click_ripple_omitted_defaults_false() {
+        let raw = r#"{"captureKeyboard":true,"captureMouse":true}"#;
+        let parsed: AppSettings = serde_json::from_str(raw).unwrap();
+        assert!(!parsed.mouse_click_ripple);
+
+        let enabled = r#"{"captureKeyboard":true,"captureMouse":false,"mouseClickRipple":true}"#;
+        let parsed: AppSettings = serde_json::from_str(enabled).unwrap();
+        assert!(parsed.mouse_click_ripple);
+        assert!(!parsed.capture_mouse);
     }
 
     #[test]
@@ -915,6 +1029,7 @@ mod tests {
         let settings = AppSettings {
             capture_keyboard: false,
             capture_mouse: true,
+            mouse_click_ripple: true,
             ignored_key_ids: vec!["Escape".into(), "KeyA".into()],
             hud: HudStyleSettings {
                 persist_visible: true,
@@ -931,6 +1046,7 @@ mod tests {
         let parsed: AppSettings = serde_json::from_str(&raw).unwrap();
         assert!(!parsed.capture_keyboard);
         assert!(parsed.capture_mouse);
+        assert!(parsed.mouse_click_ripple);
         assert_eq!(parsed.ignored_key_ids, vec!["Escape", "KeyA"]);
         assert!(parsed.hud.persist_visible);
         assert_eq!(

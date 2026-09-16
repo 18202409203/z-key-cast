@@ -12,6 +12,8 @@ export const UI_LOCALE_CHANNEL = "cast://ui-locale";
 export type CaptureSettings = {
   captureKeyboard: boolean;
   captureMouse: boolean;
+  /** Separate primary-monitor click rings; omit → false. Independent of captureMouse. */
+  mouseClickRipple: boolean;
   /** Key ids omitted from HUD chips (primary drop / mod strip). Default []. */
   ignoredKeyIds: string[];
 };
@@ -236,6 +238,7 @@ export async function getCaptureSettings(): Promise<CaptureSettings> {
   return {
     captureKeyboard: raw.captureKeyboard,
     captureMouse: raw.captureMouse,
+    mouseClickRipple: Boolean(raw.mouseClickRipple),
     ignoredKeyIds: Array.isArray(raw.ignoredKeyIds) ? [...raw.ignoredKeyIds] : [],
   };
 }
@@ -247,12 +250,14 @@ export async function setCaptureSettings(
     settings: {
       captureKeyboard: settings.captureKeyboard,
       captureMouse: settings.captureMouse,
+      mouseClickRipple: settings.mouseClickRipple,
       ignoredKeyIds: settings.ignoredKeyIds,
     },
   });
   return {
     captureKeyboard: saved.captureKeyboard,
     captureMouse: saved.captureMouse,
+    mouseClickRipple: Boolean(saved.mouseClickRipple),
     ignoredKeyIds: Array.isArray(saved.ignoredKeyIds)
       ? [...saved.ignoredKeyIds]
       : [],

@@ -30,6 +30,9 @@ pub fn run() {
                 settings::apply_hud_position(app.handle());
             }
 
+            // Ripple is lazy: only create when the persisted toggle is already on.
+            settings::sync_ripple_window(app.handle());
+
             // Give webviews a moment to subscribe before the first hook-status emit.
             let handle = app.handle().clone();
             std::thread::spawn(move || {

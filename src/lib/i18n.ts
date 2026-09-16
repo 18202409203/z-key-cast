@@ -71,6 +71,9 @@ const en = {
   "settings.hookWaiting": "Waiting for hook status…",
   "settings.listenKeyboard": "Listen to keyboard",
   "settings.listenMouse": "Listen to mouse",
+  "settings.mouseClickRipple": "Click ripple (primary screen)",
+  "settings.mouseClickRippleHint":
+    "Shows a brief ring at click locations on the main display. Independent of mouse HUD listening. macOS only for now.",
   "settings.ignoreKeys": "Ignore keys",
   "settings.ignoreHint":
     "Click keys on the board to ignore them. Ignored primaries never show; ignored modifiers are stripped from chords. Use Add key for keys not on the board.",
@@ -166,6 +169,9 @@ const zh: Record<MessageKey, string> = {
   "settings.hookWaiting": "正在等待钩子状态…",
   "settings.listenKeyboard": "监听键盘",
   "settings.listenMouse": "监听鼠标",
+  "settings.mouseClickRipple": "点击涟漪（主屏）",
+  "settings.mouseClickRippleHint":
+    "在主显示器点击位置显示短暂圆环。与鼠标 HUD 监听互不影响。目前仅 macOS 生效。",
   "settings.ignoreKeys": "忽略按键",
   "settings.ignoreHint":
     "点击键盘上的按键即可忽略。被忽略的主键不会显示；被忽略的修饰键会从组合中剥离。不在键盘图上的按键请用「添加按键」。",

@@ -10,8 +10,8 @@
 
 - Trigger: Cross-layer payload (`HudChip` / `HookStatus` / ignore-capture `KeyRef`) crosses Rust emit and Svelte listen
 - Owners:
-  - Rust: `src-tauri/src/input/event.rs` (+ `chip.rs` / `macos.rs` / `stub.rs` / `filter.rs`) + `settings.rs` (ignore list + arm)
-  - TS: `src/lib/cast.ts` (types, channel constants, formatters, type guards); `$lib/settings.ts`; `$lib/key-ignore-presets.ts`
+  - Rust: `src-tauri/src/input/event.rs` (+ `chip.rs` / `macos.rs` / `stub.rs` / `filter.rs`) + `settings.rs` (ignore list + arm + `mouseClickRipple` / ripple window)
+  - TS: `src/lib/cast.ts` (types, channel constants, formatters, type guards); `$lib/settings.ts`; `$lib/key-ignore-presets.ts`; `/ripple` listens to `cast://mouse-ripple` only
 - Do **not** redefine the payload inline in route components
 
 ### 2. Signatures
@@ -24,6 +24,7 @@ pub fn start(app: AppHandle);
 pub const EVENT_CHANNEL: &str = "cast://event";
 pub const HOOK_STATUS_CHANNEL: &str = "cast://hook-status";
 pub const IGNORE_KEY_CAPTURED_CHANNEL: &str = "cast://ignore-key-captured";
+pub const MOUSE_RIPPLE_CHANNEL: &str = "cast://mouse-ripple";
 ```
 
 ```ts
@@ -31,9 +32,11 @@ pub const IGNORE_KEY_CAPTURED_CHANNEL: &str = "cast://ignore-key-captured";
 export const EVENT_CHANNEL = "cast://event";
 export const HOOK_STATUS_CHANNEL = "cast://hook-status";
 export const IGNORE_KEY_CAPTURED_CHANNEL = "cast://ignore-key-captured";
+export const MOUSE_RIPPLE_CHANNEL = "cast://mouse-ripple";
 export function isHudChip(value: unknown): value is HudChip;
 export function isHookStatus(value: unknown): value is HookStatus;
 export function isIgnoreKeyCaptured(value: unknown): value is KeyRef;
+export function isMouseRippleEvent(value: unknown): value is MouseRippleEvent;
 export function formatHudLabel(chip: HudChip): string;
 ```
 
@@ -50,6 +53,19 @@ export function formatHudLabel(chip: HudChip): string;
 
 - `id`: stable logical name (`MetaLeft`, `ShiftRight`, `KeyS`, `Digit1`, `Numpad1`, `Backspace`, `ForwardDelete`, …)
 - `label`: short text-HUD display (left/right Meta both `"⌘"`)
+
+**`cast://mouse-ripple` → `MouseRippleEvent`** (not part of `HudChip`; do not put coords on mouse chips)
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `x` | `number` | Logical/CSS px from **primary** monitor top-left |
+| `y` | `number` | Same top-left space as `x` (CGEvent global; no Y flip) |
+| `button` | `"left" \| "right" \| "middle"` | Mouse **down** only |
+
+- Emit only when `mouseClickRipple` is on; **ignores** `captureMouse` / `allows_chip`
+- Drop clicks whose CG location is outside the primary display bounds
+- macOS emit path only for now; Windows/Linux follow-up reuses the same channel
+- Frontend: `$lib/cast` `isMouseRippleEvent`; route `/ripple` listens — do not redefine in other routes
 
 **`cast://hook-status` → `HookStatus`**
 
@@ -77,14 +93,14 @@ export function formatHudLabel(chip: HudChip): string;
 | Ignore list + mouse | Mouse chips ignore `ignoredKeyIds` |
 | Ignore-key capture armed + key/mod **down** | Emit `cast://ignore-key-captured` (`KeyRef`); suppress that raw’s `cast://event`; still `reduce` held mods; Escape adds Escape (does not cancel) |
 | Ignore-key capture + mouse | Mouse still follows normal emit path; does not disarm |
-| Frontend receives unknown payload | `isHudChip` / `isHookStatus` / `isIgnoreKeyCaptured` reject; ignore |
+| Frontend receives unknown payload | `isHudChip` / `isHookStatus` / `isIgnoreKeyCaptured` / `isMouseRippleEvent` reject; ignore |
 
 ### Capture settings commands
 
 | Command | Args | Returns | Notes |
 |---------|------|---------|-------|
 | `get_capture_settings` | — | `CaptureSettings` | Reads process atomics + ignored-id list (loaded from `app_config_dir/settings.json` at setup) |
-| `set_capture_settings` | `{ settings: CaptureSettings }` | `CaptureSettings` | Apply runtime **then** persist; dedupe `ignoredKeyIds` (preserve order, drop empties); on disk failure revert and return `Err` |
+| `set_capture_settings` | `{ settings: CaptureSettings }` | `CaptureSettings` | Apply runtime **then** persist; dedupe `ignoredKeyIds` (preserve order, drop empties); sync ripple window show/hide; on disk failure revert and return `Err` |
 | `arm_ignore_key_capture` | — | — | Arm next key/mod down for ignore list |
 | `cancel_ignore_key_capture` | — | — | Disarm without changing the list |
 
@@ -92,6 +108,7 @@ export function formatHudLabel(chip: HudChip): string;
 type CaptureSettings = {
   captureKeyboard: boolean; // default true
   captureMouse: boolean; // default true
+  mouseClickRipple: boolean; // default false; omit → false; independent of captureMouse
   ignoredKeyIds: string[]; // default []; flat id list only (category presets are frontend sugar)
 };
 ```
@@ -154,6 +171,13 @@ void listen(EVENT_CHANNEL, (event) => {
 - **Decision**: Independent `captureKeyboard` / `captureMouse` atomics; filter with `allows_chip` only at emit
 - **Why**: Reducer must keep seeing raw downs so held-mod state stays correct while one side is off
 - **Forbidden**: Skipping `reduce` when a toggle is off; filtering only on the frontend (overlay would still show chips)
+
+### Mouse click ripple (separate layer)
+
+- **Decision**: Peer toggle `mouseClickRipple` (omit → false); lazy primary-monitor fullscreen `ripple` webview; channel `cast://mouse-ripple` with `{ x, y, button }`
+- **Why**: Keep HUD overlay at corner size; keep `HudChip` free of coordinates; allow rings while mouse HUD is off
+- **Forbidden**: Extending `HudChip::Mouse` with coords; gating ripple on `captureMouse`; making the existing `overlay` window fullscreen for rings
+- **Platform**: macOS emit only in this task; non-macOS stub unchanged (toggle may persist but no rings)
 
 ### Ignore key list (filter after reduce)
 
