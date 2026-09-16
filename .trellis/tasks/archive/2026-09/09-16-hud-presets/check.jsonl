@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "Verify HudChip phase emit and preset-derived HUD behavior against spec"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Verify settings/types no longer expose dual display modes or persistVisible"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Quality checklist for review"}
+{"file": ".trellis/tasks/09-16-hud-presets/prd.md", "reason": "Acceptance criteria AC1–AC8"}
+{"file": ".trellis/tasks/09-16-hud-presets/design.md", "reason": "Design contracts to verify against implementation"}

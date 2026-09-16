@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "HudChip channel, HUD style settings, persist/pin rules being replaced by presets + phase"}
+{"file": ".trellis/spec/tauri/index.md", "reason": "Tauri layer index for settings/commands conventions"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "HUD display-mode and persist typing notes to rewrite for hudPreset"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend layer index"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Check/implement quality bar"}
+{"file": ".trellis/tasks/09-16-hud-presets/prd.md", "reason": "Requirements and acceptance for presets + phase"}
+{"file": ".trellis/tasks/09-16-hud-presets/design.md", "reason": "Contracts, held-set, MouseSchematic multi-button"}
+{"file": ".trellis/tasks/09-16-hud-presets/implement.md", "reason": "Ordered checklist and validation"}
