@@ -4,6 +4,10 @@
   import { fade } from "svelte/transition";
   import { onMount } from "svelte";
   import KeyboardMap from "$lib/KeyboardMap.svelte";
+  import {
+    KEYBOARD_MAP_FONT_PX,
+    KEYBOARD_MAP_WIDTH_PX,
+  } from "$lib/keyboard-layout";
   import KeyCard from "$lib/KeyCard.svelte";
   import MouseSchematic from "$lib/MouseSchematic.svelte";
   import { toKeyCardVisual } from "$lib/key-card";
@@ -408,12 +412,17 @@
       {#if showKeySide}
         <div class="km-key">
           {#if showKeyboardMap}
-            <div transition:fade={{ duration: 200 }}>
+            <div
+              class="full-board"
+              style:width={`${KEYBOARD_MAP_WIDTH_PX}px`}
+              style:max-width="100%"
+              transition:fade={{ duration: 200 }}
+            >
               <KeyboardMap
                 activeIds={activeKeyIds}
                 textColor={style.textColor}
                 backgroundCss={chipBackground}
-                fontSizePx={style.fontSizePx}
+                fontSizePx={KEYBOARD_MAP_FONT_PX}
                 legendLayout={legendLayout}
               />
             </div>

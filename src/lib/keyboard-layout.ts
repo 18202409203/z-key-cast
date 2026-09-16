@@ -1,5 +1,11 @@
 /** Compact Mac-like layout keyed by HudChip `id` values from macOS normalize. */
 
+/** Shared `KeyboardMap` scale (Capture ignore board + Overlay Full). Not HUD chip `fontSizePx`. */
+export const KEYBOARD_MAP_FONT_PX = 20;
+
+/** Target board width so Overlay Full matches Capture’s ~shell column. */
+export const KEYBOARD_MAP_WIDTH_PX = 560;
+
 export type LayoutKey = {
   id: string;
   label: string;

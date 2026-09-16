@@ -46,7 +46,7 @@
     resolveKeyboardLegendLayout,
     type KeyboardLegendPreference,
   } from "$lib/key-legends";
-  import { LAYOUT_KEY_IDS } from "$lib/keyboard-layout";
+  import { KEYBOARD_MAP_FONT_PX, LAYOUT_KEY_IDS } from "$lib/keyboard-layout";
   import KeyboardMap from "$lib/KeyboardMap.svelte";
   import {
     IGNORE_CATEGORIES,
@@ -1045,7 +1045,7 @@
                 disabled={ignoreBoardDisabled}
                 textColor={hudStyle.textColor}
                 backgroundCss={ignoreBoardBackground}
-                fontSizePx={20}
+                fontSizePx={KEYBOARD_MAP_FONT_PX}
                 legendLayout={ignoreBoardLegendLayout}
                 onToggleKey={onToggleIgnoredKey}
               />
