@@ -43,3 +43,20 @@
   - docs(task): plan drag HUD position
   - docs(task): plan key-filter ignore list
 
+
+## 1.2.0 (2026-09-16)
+
+### Features
+
+  - split HUD tab from Settings shell
+  - replace display modes with Text/Lite/Full presets
+  - add macOS primary-screen click rings
+  - pick ignore keys on shared board
+
+### Bug Fixes
+
+  - pin Full mouse size; show dwell range
+  - size Full keyboard like Capture board
+  - clarify special-key legends with glyphs
+  - align mouse schematic with keycap colors
+
