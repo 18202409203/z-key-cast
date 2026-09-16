@@ -375,3 +375,37 @@ Grilled and shipped three HUD presets (Text/Lite/Full): single hudPreset, HudChi
 ### Next Steps
 
 - None - task complete
+
+
+## Session 10: Settings HUD tab IA
+
+**Date**: 2026-09-16
+**Task**: Settings HUD tab IA
+**Branch**: `main`
+
+### Summary
+
+Split presentation into default HUD tab; Settings keeps Theme/Position/Language. Also pinned Full mouse scale and documented dwell 200–5000 in hints.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `000469a` | (see git log) |
+| `196bd32` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
