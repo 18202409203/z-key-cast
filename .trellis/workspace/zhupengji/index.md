@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 6
-- **Last Active**: 2026-09-15
+- **Total Sessions**: 7
+- **Last Active**: 2026-09-16
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~231 | Active |
+| `journal-1.md` | ~311 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 7 | 2026-09-16 | Ignore keys keyboard picker | `f540f69`, `8a12b3e` | `main` |
 | 6 | 2026-09-15 | HUD key/mouse layout presets | `b6973e8` | `main` |
 | 5 | 2026-09-15 | i18n done; archive filter/drag/i18n; log-export backlog | `54bb082`, `a2cb71f` | `main` |
 | 4 | 2026-09-15 | key-filter + drag HUD position | `5b681c1`, `c91a73f`, `7c92b3e`, `8552a2f` | `main` |

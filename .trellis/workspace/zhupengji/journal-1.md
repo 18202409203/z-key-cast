@@ -266,3 +266,46 @@ Added Settings checkbox to pin full keyboard / mouse schematic as a recording re
 ### Next Steps
 
 - Persist mode key up/down so highlights track physical hold
+
+
+## Session 7: Ignore keys keyboard picker
+
+**Date**: 2026-09-16
+**Task**: Ignore keys keyboard picker
+**Branch**: `main`
+
+### Summary
+
+Capture ignore via shared KeyboardMap click-toggle; Add key for off-board ids; main window 600x680 centered shell; archived 09-16-ignore-keys-keyboard.
+
+### Main Changes
+
+### Done
+- Shared KeyboardMap: interactive + muted ignored; Overlay display-only
+- Capture stack: categories → board → Add key → off-board list only
+- Window/shell: 600×680, minWidth 600, content max 560px centered; numpad flex with main
+- Hidden scrollbars; specs updated (cast-events + type-safety)
+- Archived `09-16-ignore-keys-keyboard`
+
+### Testing
+- [OK] npm run check; trellis-check AC1–AC5
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f540f69` | (see git log) |
+| `8a12b3e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
