@@ -23,14 +23,17 @@ This layer owns Rust-side modules under `src-tauri/` and the wire contracts shar
 - [ ] Read [Cast Events](./cast-events.md) before changing emit payloads, channel names, or capture toggles
 - [ ] Keep TypeScript `$lib/cast.ts` aligned with Rust `input/event.rs`
 - [ ] Keep `$lib/settings.ts` aligned with Rust `settings.rs` (capture + `HudStyleSettings` + `HudPositionSettings` + `uiLocale`)
-- [ ] Do not implement Windows/Linux hooks without a dedicated task
+- [ ] Windows hooks live in `input/windows.rs` (LL); Linux/other stay on `stub` unless a dedicated task says otherwise
+- [ ] `KeyRef` is `{ id }` only — display labels are frontend (`displayLabelForKeyId` / legend layout)
 
 ---
 
 ## Quality Check
 
 - [ ] Payload shape matches `design/index.md` (`HudChip` with public `phase`)
-- [ ] Non-macOS path is an explicit stub (`unsupported_platform`), not a fake hook
+- [ ] Non-macOS non-Windows path is an explicit stub (`unsupported_platform`), not a fake hook
+- [ ] Windows path uses `WH_KEYBOARD_LL` + `WH_MOUSE_LL` → same filter/reducer; no Win ripple emit until a dedicated task
+- [ ] `KeyRef` wire shape is `{ id }` only (no `label`)
 - [ ] Key autorepeat / spam filtering happens before `cast://event` emit
 - [ ] Chip reducer: emit bare mods + ups with `phase`; consumers filter
 - [ ] Capture toggles filter **after** reduce via `allows_chip`, not by skipping reduce

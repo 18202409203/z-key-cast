@@ -17,18 +17,15 @@ pub enum HudChip {
     },
 }
 
+/// Stable logical key identity on the wire. Display labels are resolved in the UI.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct KeyRef {
     pub id: String,
-    pub label: String,
 }
 
 impl KeyRef {
-    pub fn new(id: impl Into<String>, label: impl Into<String>) -> Self {
-        Self {
-            id: id.into(),
-            label: label.into(),
-        }
+    pub fn new(id: impl Into<String>) -> Self {
+        Self { id: id.into() }
     }
 }
 

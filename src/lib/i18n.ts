@@ -65,8 +65,12 @@ const en = {
 
   "settings.capture": "Capture",
   "settings.hookActive": "Input hook is active.",
-  "settings.hookFailed":
+  "settings.hookFailedMac":
     "Input hook failed — enable Accessibility permission for this app in System Settings, then fully restart the app.",
+  "settings.hookFailedWin":
+    "Input hook failed — the low-level keyboard/mouse hook could not be installed. Restart the app. Capturing elevated (Administrator) apps may require running as Administrator; normal apps do not need elevation.",
+  "settings.hookFailedOther":
+    "Input hook failed — this platform is not supported yet.",
   "settings.hookWaiting": "Waiting for hook status…",
   "settings.listenKeyboard": "Listen to keyboard",
   "settings.listenMouse": "Listen to mouse",
@@ -162,8 +166,11 @@ const zh: Record<MessageKey, string> = {
 
   "settings.capture": "捕获",
   "settings.hookActive": "输入钩子已启用。",
-  "settings.hookFailed":
+  "settings.hookFailedMac":
     "输入钩子失败 — 请在系统设置中为本应用开启辅助功能权限，然后完全退出并重新打开应用。",
+  "settings.hookFailedWin":
+    "输入钩子失败 — 无法安装底层键盘/鼠标钩子。请重启应用。捕获以管理员运行的应用可能需要以管理员身份运行本应用；普通应用无需提权。",
+  "settings.hookFailedOther": "输入钩子失败 — 当前平台暂不支持。",
   "settings.hookWaiting": "正在等待钩子状态…",
   "settings.listenKeyboard": "监听键盘",
   "settings.listenMouse": "监听鼠标",

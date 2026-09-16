@@ -1,8 +1,12 @@
 /** Wire contract — keep aligned with `design/index.md` and Rust `input/event.rs`. */
 
+import {
+  displayLabelForKeyId,
+  type KeyboardLegendLayoutId,
+} from "$lib/key-legends";
+
 export type KeyRef = {
   id: string;
-  label: string;
 };
 
 export type HudPhase = "down" | "up";
@@ -31,7 +35,8 @@ export const MOUSE_RIPPLE_CHANNEL = "cast://mouse-ripple";
 function isKeyRef(value: unknown): value is KeyRef {
   if (!value || typeof value !== "object") return false;
   const ref = value as Record<string, unknown>;
-  return typeof ref.id === "string" && typeof ref.label === "string";
+  // Id-only contract: reject leftover `label` requirement; ignore unknown extra fields.
+  return typeof ref.id === "string" && ref.id.length > 0;
 }
 
 function isHudPhase(value: unknown): value is HudPhase {
@@ -95,9 +100,15 @@ export function isMouseRippleEvent(value: unknown): value is MouseRippleEvent {
   );
 }
 
-export function formatHudLabel(chip: HudChip): string {
+export function formatHudLabel(
+  chip: HudChip,
+  legendLayout: KeyboardLegendLayoutId = "mac-us",
+): string {
   if (chip.kind === "key") {
-    const parts = [...chip.mods.map((m) => m.label), chip.key.label];
+    const parts = [
+      ...chip.mods.map((m) => displayLabelForKeyId(m.id, legendLayout)),
+      displayLabelForKeyId(chip.key.id, legendLayout),
+    ];
     return parts.join(" + ");
   }
 
@@ -113,16 +124,19 @@ export function hudCards(chip: HudChip): KeyRef[] {
   }
   const label =
     chip.button === "left" ? "Left" : chip.button === "right" ? "Right" : "Middle";
-  return [{ id: `Mouse${label}`, label }];
+  return [{ id: `Mouse${label}` }];
 }
 
-export function summarizeHudChip(chip: HudChip): string {
+export function summarizeHudChip(
+  chip: HudChip,
+  legendLayout: KeyboardLegendLayoutId = "mac-us",
+): string {
   if (chip.kind === "key") {
     const modIds = chip.mods.map((m) => m.id).join(",");
     const modPart = modIds ? ` mods=[${modIds}]` : "";
-    return `key ${chip.phase}${modPart} key=${chip.key.id} · ${formatHudLabel(chip)}`;
+    return `key ${chip.phase}${modPart} key=${chip.key.id} · ${formatHudLabel(chip, legendLayout)}`;
   }
-  return `mouse ${chip.phase} button=${chip.button} · ${formatHudLabel(chip)}`;
+  return `mouse ${chip.phase} button=${chip.button} · ${formatHudLabel(chip, legendLayout)}`;
 }
 
 export function summarizeHookStatus(status: HookStatus): string {

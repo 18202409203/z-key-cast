@@ -1,5 +1,6 @@
 import type { KeyRef } from "$lib/cast";
 import {
+  displayLabelForKeyId,
   legendForKeyId,
   type KeyboardLegendLayoutId,
 } from "$lib/key-legends";
@@ -102,7 +103,7 @@ export function toKeyCardVisual(
     return {
       id: ref.id,
       layout: "modifier",
-      caption: ref.label.toLowerCase(),
+      caption: displayLabelForKeyId(ref.id, layout).toLowerCase(),
       wide: true,
     };
   }
@@ -120,6 +121,6 @@ export function toKeyCardVisual(
   return {
     id: ref.id,
     layout: "character",
-    main: ref.label,
+    main: displayLabelForKeyId(ref.id, layout),
   };
 }

@@ -5,7 +5,10 @@ mod filter;
 #[cfg(target_os = "macos")]
 mod macos;
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "windows")]
+mod windows;
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
 mod stub;
 
 #[allow(unused_imports)]
@@ -16,11 +19,14 @@ pub use event::{
 
 use tauri::AppHandle;
 
-/// Start the platform input hook (macOS CGEventTap; stub elsewhere).
+/// Start the platform input hook (macOS CGEventTap; Windows LL hooks; stub elsewhere).
 pub fn start(app: AppHandle) {
     #[cfg(target_os = "macos")]
     macos::start(app);
 
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "windows")]
+    windows::start(app);
+
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     stub::start(app);
 }

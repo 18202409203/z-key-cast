@@ -1,5 +1,12 @@
 /** Category → key id lists for ignore-list presets (frontend only). */
 
+import {
+  displayLabelForKeyId,
+  resolveKeyboardLegendLayout,
+  type KeyboardLegendLayoutId,
+  type KeyboardLegendPreference,
+} from "$lib/key-legends";
+
 export type IgnoreCategoryId =
   | "letters"
   | "digits"
@@ -128,37 +135,14 @@ export function offBoardIgnoredIds(
   return ignoredIds.filter((id) => !layoutIds.has(id));
 }
 
-/** Short display label when we only have an id (category bulk-add). */
-export function labelForKeyId(id: string): string {
-  if (id.startsWith("Key") && id.length === 4) return id.slice(3);
-  if (id.startsWith("Digit") && id.length === 6) return id.slice(5);
-  if (id.startsWith("Numpad") && id.length > 6) {
-    const rest = id.slice(6);
-    if (/^\d$/.test(rest)) return `Num${rest}`;
-    return id;
-  }
-  const known: Record<string, string> = {
-    ArrowLeft: "←",
-    ArrowRight: "→",
-    ArrowUp: "↑",
-    ArrowDown: "↓",
-    MetaLeft: "⌘",
-    MetaRight: "⌘",
-    ShiftLeft: "⇧",
-    ShiftRight: "⇧",
-    AltLeft: "⌥",
-    AltRight: "⌥",
-    ControlLeft: "⌃",
-    ControlRight: "⌃",
-    Escape: "Esc",
-    Backspace: "⌫",
-    ForwardDelete: "⌦",
-    Enter: "↵",
-    Space: "Space",
-    Tab: "⇥",
-    CapsLock: "Caps",
-    NumLock: "Clr",
-    NumpadEnter: "↵",
-  };
-  return known[id] ?? id;
+/** Short display label when we only have an id (category bulk-add / ignore rows). */
+export function labelForKeyId(
+  id: string,
+  legendLayout?: KeyboardLegendLayoutId | KeyboardLegendPreference,
+): string {
+  const layout =
+    legendLayout === "mac-us" || legendLayout === "win-us"
+      ? legendLayout
+      : resolveKeyboardLegendLayout(legendLayout);
+  return displayLabelForKeyId(id, layout);
 }

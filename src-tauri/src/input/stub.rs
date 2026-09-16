@@ -2,7 +2,7 @@ use tauri::{AppHandle, Emitter};
 
 use super::event::{HookStatus, HOOK_STATUS_CHANNEL};
 
-/// Non-macOS placeholder — keeps the module boundary for a future Windows hook.
+/// Non-macOS / non-Windows placeholder — keeps the module boundary.
 pub fn start(app: AppHandle) {
     eprintln!("[z-key-cast] input hooks are not implemented on this platform");
     let _ = app.emit(

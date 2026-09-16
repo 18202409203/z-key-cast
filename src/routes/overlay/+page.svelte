@@ -262,11 +262,11 @@
   }
 
   function keyText(): string {
-    return keySlot ? formatHudLabel(keySlot) : "";
+    return keySlot ? formatHudLabel(keySlot, legendLayout) : "";
   }
 
   function mouseText(): string {
-    return mouseSlot ? formatHudLabel(mouseSlot) : "";
+    return mouseSlot ? formatHudLabel(mouseSlot, legendLayout) : "";
   }
 
   async function onPlacePointerDown(event: PointerEvent) {

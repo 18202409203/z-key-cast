@@ -116,15 +116,15 @@ mod tests {
     use super::*;
     use crate::input::event::MouseButton;
 
-    fn key(id: &str, label: &str) -> KeyRef {
-        KeyRef::new(id, label)
+    fn key(id: &str) -> KeyRef {
+        KeyRef::new(id)
     }
 
     #[test]
     fn bare_modifier_down_emits_with_phase() {
         let mut r = ChipReducer::default();
         let chip = r.reduce(&RawInput::Key {
-            key: key("MetaLeft", "⌘"),
+            key: key("MetaLeft"),
             phase: Phase::Down,
             is_modifier: true,
         });
@@ -146,12 +146,12 @@ mod tests {
     fn bare_modifier_up_emits() {
         let mut r = ChipReducer::default();
         let _ = r.reduce(&RawInput::Key {
-            key: key("MetaLeft", "⌘"),
+            key: key("MetaLeft"),
             phase: Phase::Down,
             is_modifier: true,
         });
         let chip = r.reduce(&RawInput::Key {
-            key: key("MetaLeft", "⌘"),
+            key: key("MetaLeft"),
             phase: Phase::Up,
             is_modifier: true,
         });
@@ -172,17 +172,17 @@ mod tests {
     fn primary_down_snapshots_mods() {
         let mut r = ChipReducer::default();
         let _ = r.reduce(&RawInput::Key {
-            key: key("MetaLeft", "⌘"),
+            key: key("MetaLeft"),
             phase: Phase::Down,
             is_modifier: true,
         });
         let _ = r.reduce(&RawInput::Key {
-            key: key("ShiftLeft", "⇧"),
+            key: key("ShiftLeft"),
             phase: Phase::Down,
             is_modifier: true,
         });
         let chip = r.reduce(&RawInput::Key {
-            key: key("KeyS", "S"),
+            key: key("KeyS"),
             phase: Phase::Down,
             is_modifier: false,
         });
@@ -203,7 +203,7 @@ mod tests {
     fn key_up_and_mouse_up_emit() {
         let mut r = ChipReducer::default();
         let key_up = r.reduce(&RawInput::Key {
-            key: key("KeyA", "A"),
+            key: key("KeyA"),
             phase: Phase::Up,
             is_modifier: false,
         });
@@ -247,12 +247,12 @@ mod tests {
     fn bare_mod_excludes_self_from_mods() {
         let mut r = ChipReducer::default();
         let _ = r.reduce(&RawInput::Key {
-            key: key("ShiftLeft", "⇧"),
+            key: key("ShiftLeft"),
             phase: Phase::Down,
             is_modifier: true,
         });
         let chip = r.reduce(&RawInput::Key {
-            key: key("MetaLeft", "⌘"),
+            key: key("MetaLeft"),
             phase: Phase::Down,
             is_modifier: true,
         });
@@ -281,19 +281,19 @@ mod tests {
     fn releasing_one_meta_while_other_held_clears_only_that_side() {
         let mut r = ChipReducer::default();
         let _ = r.reduce(&RawInput::Key {
-            key: key("MetaLeft", "⌘"),
+            key: key("MetaLeft"),
             phase: Phase::Down,
             is_modifier: true,
         });
         let _ = r.reduce(&RawInput::Key {
-            key: key("MetaRight", "⌘"),
+            key: key("MetaRight"),
             phase: Phase::Down,
             is_modifier: true,
         });
         // Shared Command flag still on → still Up for the released side.
         let phase = modifier_transition(true, r.is_holding("MetaLeft"));
         let _ = r.reduce(&RawInput::Key {
-            key: key("MetaLeft", "⌘"),
+            key: key("MetaLeft"),
             phase,
             is_modifier: true,
         });

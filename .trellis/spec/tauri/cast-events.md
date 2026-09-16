@@ -4,21 +4,22 @@
 
 ---
 
-## Scenario: macOS input hooks emit HudChip
+## Scenario: platform input hooks emit HudChip
 
 ### 1. Scope / Trigger
 
 - Trigger: Cross-layer payload (`HudChip` / `HookStatus` / ignore-capture `KeyRef`) crosses Rust emit and Svelte listen
 - Owners:
-  - Rust: `src-tauri/src/input/event.rs` (+ `chip.rs` / `macos.rs` / `stub.rs` / `filter.rs`) + `settings.rs` (ignore list + arm + `mouseClickRipple` / ripple window)
-  - TS: `src/lib/cast.ts` (types, channel constants, formatters, type guards); `$lib/settings.ts`; `$lib/key-ignore-presets.ts`; `/ripple` listens to `cast://mouse-ripple` only
+  - Rust: `src-tauri/src/input/event.rs` (+ `chip.rs` / `macos.rs` / `windows.rs` / `stub.rs` / `filter.rs`) + `settings.rs` (ignore list + arm + `mouseClickRipple` / ripple window)
+  - TS: `src/lib/cast.ts` (types, channel constants, formatters, type guards); `$lib/settings.ts`; `$lib/key-ignore-presets.ts`; `$lib/key-legends.ts` (`displayLabelForKeyId`); `/ripple` listens to `cast://mouse-ripple` only
 - Do **not** redefine the payload inline in route components
 
 ### 2. Signatures
 
 ```rust
 // src-tauri/src/input/mod.rs
-pub fn start(app: AppHandle);
+pub fn start(AppHandle);
+// cfg: macos | windows | stub (non-macOS non-Windows)
 
 // Channels
 pub const EVENT_CHANNEL: &str = "cast://event";
@@ -37,7 +38,7 @@ export function isHudChip(value: unknown): value is HudChip;
 export function isHookStatus(value: unknown): value is HookStatus;
 export function isIgnoreKeyCaptured(value: unknown): value is KeyRef;
 export function isMouseRippleEvent(value: unknown): value is MouseRippleEvent;
-export function formatHudLabel(chip: HudChip): string;
+export function formatHudLabel(chip: HudChip, legendLayout?: KeyboardLegendLayoutId): string;
 ```
 
 ### 3. Contracts
@@ -49,10 +50,10 @@ export function formatHudLabel(chip: HudChip): string;
 | `key` | `mods: KeyRef[]`, `key: KeyRef`, `phase: "down" \| "up"` | Bare modifiers and primary keys both emit; consumers filter |
 | `mouse` | `button: "left" \| "right" \| "middle"`, `phase: "down" \| "up"` | Button down **and** up |
 
-`KeyRef = { id: string; label: string }`
+`KeyRef = { id: string }` (**breaking** — no `label` on the wire)
 
-- `id`: stable logical name (`MetaLeft`, `ShiftRight`, `KeyS`, `Digit1`, `Numpad1`, `Backspace`, `ForwardDelete`, …)
-- `label`: short text-HUD display (left/right Meta both `"⌘"`)
+- `id`: stable logical name (`MetaLeft`, `ShiftRight`, `KeyS`, `Digit1`, `Numpad1`, `Backspace`, `ForwardDelete`, …). Never OS-specific ids like `WinLeft`.
+- Display: Svelte resolves all user-visible strings via `displayLabelForKeyId(id, legendLayout)` / `formatHudLabel(chip, legendLayout)` (`keyboardLegendLayout` auto → Mac vs Win glyphs; Meta → `⌘` vs `Win`)
 - Bare mod: `key` = that modifier; `mods` = other currently held modifiers (**exclude self**)
 
 **`cast://mouse-ripple` → `MouseRippleEvent`** (not part of `HudChip`; do not put coords on mouse chips)
@@ -65,7 +66,7 @@ export function formatHudLabel(chip: HudChip): string;
 
 - Emit only when `mouseClickRipple` is on; **ignores** `captureMouse` / `allows_chip`
 - Drop clicks whose CG location is outside the primary display bounds
-- macOS emit path only for now; Windows/Linux follow-up reuses the same channel
+- **macOS emit path only**; Windows does **not** emit ripple in the Windows hooks task (reuse channel later)
 - Frontend: `$lib/cast` `isMouseRippleEvent`; route `/ripple` listens — do not redefine in other routes
 
 **`cast://hook-status` → `HookStatus`**
@@ -73,7 +74,7 @@ export function formatHudLabel(chip: HudChip): string;
 | Field | Type | Notes |
 |-------|------|-------|
 | `ok` | `boolean` | Required |
-| `reason` | `string?` | Omit when ok; examples: `accessibility_denied`, `tap_create_failed`, `unsupported_platform` |
+| `reason` | `string?` | Omit when ok; examples: `accessibility_denied`, `tap_create_failed`, `keyboard_hook_failed`, `mouse_hook_failed`, `unsupported_platform` |
 
 ### 4. Validation & Error Matrix
 
@@ -81,18 +82,19 @@ export function formatHudLabel(chip: HudChip): string;
 |-----------|----------|
 | macOS, Accessibility denied | Emit `{ ok: false, reason: "accessibility_denied" }`; do not start tap; app stays up |
 | macOS, tap create / runloop fails | Emit failed status with reason; log to stderr |
-| Non-macOS | Stub emits `{ ok: false, reason: "unsupported_platform" }` |
-| Key autorepeat (`KEYBOARD_EVENT_AUTOREPEAT`) | Drop before chip reduce |
+| Windows, `SetWindowsHookEx` fails | Emit `{ ok: false, reason: "keyboard_hook_failed" \| "mouse_hook_failed" }` |
+| Non-macOS non-Windows | Stub emits `{ ok: false, reason: "unsupported_platform" }` |
+| Key autorepeat | Drop before chip reduce (macOS autorepeat field; Windows held-primary set) |
 | Same primary key-down within ~35ms | Drop in `EventFilter` |
 | Modifier-only down/up | Update held-mod state **and** emit `HudChip::Key` with `phase` |
-| Left/right same-mod FlagsChanged (shared flag bit) | Phase via `modifier_transition(flag_on, was_held)` so releasing one side while the other stays held clears only that `KeyRef` |
+| Left/right same-mod FlagsChanged (shared flag bit, macOS) | Phase via `modifier_transition(flag_on, was_held)` so releasing one side while the other stays held clears only that `KeyRef` |
 | Key / mouse up | Emit with `phase: "up"` (same shape as down) |
 | `captureKeyboard == false` | After reduce, drop `HudChip::Key` before emit (held-mod state still updates) |
 | `captureMouse == false` | After reduce, drop `HudChip::Mouse` before emit |
 | Primary `key.id` ∈ `ignoredKeyIds` | After reduce, drop whole key chip before emit |
 | Mod `id` ∈ `ignoredKeyIds` | Strip that mod from `mods` (may leave empty `mods`); primary still emits |
 | Ignore list + mouse | Mouse chips ignore `ignoredKeyIds` |
-| Ignore-key capture armed + key/mod **down** | Emit `cast://ignore-key-captured` (`KeyRef`); suppress that raw’s `cast://event`; still `reduce` held mods; Escape adds Escape (does not cancel) |
+| Ignore-key capture armed + key/mod **down** | Emit `cast://ignore-key-captured` (`KeyRef` id-only); suppress that raw’s `cast://event`; still `reduce` held mods; Escape adds Escape (does not cancel) |
 | Ignore-key capture + mouse | Mouse still follows normal emit path; does not disarm |
 | Frontend receives unknown payload | `isHudChip` / `isHookStatus` / `isIgnoreKeyCaptured` / `isMouseRippleEvent` reject; ignore |
 
@@ -114,23 +116,23 @@ type CaptureSettings = {
 };
 ```
 
-**`cast://ignore-key-captured` → `KeyRef`** — once per successful arm consume.
+**`cast://ignore-key-captured` → `KeyRef`** — once per successful arm consume (`{ id }` only).
 
 - Owners: Rust `src-tauri/src/settings.rs`; TS `$lib/settings.ts` + `$lib/key-ignore-presets.ts` (category → id[])
-- Hot path (macOS tap, after `EventFilter`, after/around `ChipReducer::reduce`): ignore-capture consume → `filter_key_chip` → `allows_chip` → `emit(EVENT_CHANNEL)`
+- Hot path (macOS tap / Windows LL hooks, after `EventFilter`, after/around `ChipReducer::reduce`): ignore-capture consume → `filter_key_chip` → `allows_chip` → `emit(EVENT_CHANNEL)`
 - Forbidden: gating reduce on capture toggles or ignore list (would desync held mods); filtering only on the frontend; cancelling capture with Escape
 
 ### 5. Good / Base / Bad Cases
 
-- **Good**: `{ "kind":"key","mods":[{"id":"MetaLeft","label":"⌘"},{"id":"ShiftLeft","label":"⇧"}],"key":{"id":"KeyS","label":"S"},"phase":"down" }`
+- **Good**: `{ "kind":"key","mods":[{"id":"MetaLeft"},{"id":"ShiftLeft"}],"key":{"id":"KeyS"},"phase":"down" }`
 - **Base**: `{ "kind":"mouse","button":"left","phase":"down" }`
-- **Bad**: missing `phase`; scroll/wheel; inventing `kind:"combo"`; Win/Linux fake success without a real hook
+- **Bad**: missing `phase`; scroll/wheel; inventing `kind:"combo"`; shipping `label` as required; Win/Linux fake success without a real hook; `WinLeft` ids
 
 ### 6. Tests Required
 
-- `cargo check` (+ `cargo test` for chip reducer + `settings::{allows_chip,filter_key_chip,ignore capture}` unit tests)
-- `npm run check` (guards + listeners + `$lib/settings` / `$lib/key-ignore-presets` typecheck)
-- Manual: denied Accessibility → main log shows failed hook-status; grant → key + mouse HUD slots can show together; bare mods silent on Text/Lite bar but light Full board; each Text/Lite side idle-fades on its own `dwellMs`; Full pin ignores dwell; hold key → no repeat spam; toggle keyboard/mouse independently → only that side’s chips stop/resume without restart; ignore primary / strip ignored mod; category toggles; Add key (incl. Escape) + Cancel-only exit; capture press neither HUD nor log; hook-status fail → clears both slots and shows exclusive status banner; Log lists down and up
+- `cargo check` (+ Windows target when toolchain available) (+ `cargo test` for chip reducer + `settings::{allows_chip,filter_key_chip,ignore capture}` unit tests)
+- `pnpm check` (guards + listeners + `$lib/settings` / `$lib/key-ignore-presets` typecheck)
+- Manual: denied Accessibility → main log shows failed hook-status; grant → key + mouse HUD slots can show together; bare mods silent on Text/Lite bar but light Full board; each Text/Lite side idle-fades on its own `dwellMs`; Full pin ignores dwell; hold key → no repeat spam; toggle keyboard/mouse independently → only that side’s chips stop/resume without restart; ignore primary / strip ignored mod; category toggles; Add key (incl. Escape) + Cancel-only exit; capture press neither HUD nor log; hook-status fail → clears both slots and shows exclusive status banner; Log lists down and up; **Windows live smoke deferred**
 
 ### 7. Wrong vs Correct
 
@@ -148,7 +150,7 @@ void listen(EVENT_CHANNEL, (event) => {
 ```ts
 void listen(EVENT_CHANNEL, (event) => {
   if (!isHudChip(event.payload)) return;
-  showChip(formatHudLabel(event.payload));
+  showChip(formatHudLabel(event.payload, legendLayout));
 });
 ```
 
@@ -158,9 +160,9 @@ void listen(EVENT_CHANNEL, (event) => {
 
 ### Platform boundary
 
-- **Decision**: CGEventTap on macOS only; `stub.rs` elsewhere
-- **Why**: Permission model is clear; Windows Raw Input lands later without changing `HudChip`
-- **Forbidden**: Shipping a no-op that reports `ok: true` on unsupported platforms
+- **Decision**: CGEventTap on macOS; `WH_KEYBOARD_LL` + `WH_MOUSE_LL` on Windows; `stub.rs` elsewhere (`unsupported_platform`)
+- **Why**: Shared `RawInput` → filter → `ChipReducer` → `cast://event`; display stays in Svelte
+- **Forbidden**: Shipping a no-op that reports `ok: true` on unsupported platforms; inventing `WinLeft` ids
 
 ### Chip reduce scope
 
@@ -179,12 +181,12 @@ void listen(EVENT_CHANNEL, (event) => {
 - **Decision**: Peer toggle `mouseClickRipple` (omit → false); lazy primary-monitor fullscreen `ripple` webview; channel `cast://mouse-ripple` with `{ x, y, button }`
 - **Why**: Keep HUD overlay at corner size; keep `HudChip` free of coordinates; allow rings while mouse HUD is off
 - **Forbidden**: Extending `HudChip::Mouse` with coords; gating ripple on `captureMouse`; making the existing `overlay` window fullscreen for rings
-- **Platform**: macOS emit only in this task; non-macOS stub unchanged (toggle may persist but no rings)
+- **Platform**: macOS emit only; Windows hooks intentionally do **not** emit ripple yet
 
 ### Ignore key list (filter after reduce)
 
 - **Decision**: Flat persisted `ignoredKeyIds`; runtime `HashSet` lookup; `filter_key_chip` drops ignored primaries and strips ignored mods; category presets expand on the frontend only
-- **Add-key capture**: Arm via command; next key/mod down emits `cast://ignore-key-captured` and suppresses that raw’s `cast://event`; Cancel disarms; Escape is data
+- **Add-key capture**: Arm via command; next key/mod down emits `cast://ignore-key-captured` (`{ id }`) and suppresses that raw’s `cast://event`; Cancel disarms; Escape is data
 - **Capture UI (frontend only)**: Shared `$lib/KeyboardMap.svelte` — Overlay is display-only (`activeIds` / `.key.active`); Capture uses `interactive` + muted `.key.ignored` click-toggle. Main ignore path is board click; **Add key** discovers ids not in `LAYOUT_KEY_IDS`; under-board list shows only that off-board set difference. Do not reuse `.active` for ignore state. Rust contract unchanged.
 - **Forbidden**: Skipping `reduce` while armed; using Escape to cancel; wiping non-category ids when a category is unchecked
 
@@ -203,7 +205,7 @@ void listen(EVENT_CHANNEL, (event) => {
 - **Settings UI**: one segmented Text·Lite·Full; **hide** dwell when Full
 - **`MouseSchematic`**: `activeButtons` iterable (multi-button for Full; Lite usually 0–1)
 - **Clamp**: font 10–48, dwell 200–5000, opacity 0–1, colors `#rgb`/`#rrggbb`
-- **`keyboardLegendLayout`**: `auto` (OS guess) | `mac-us` | `win-us` — dual-glyph legends from `$lib/key-legends.ts` (US ANSI `!`/`1` etc.); key-card + full keyboard consume the resolved layout. Prefer glyphs (`↵` enter, `⌫`/`⌦` delete pair, `⇥` tab, `⇧` shift); Caps is text `Caps` (avoid `⇪` vs `⇧` confusion at small size). `NumLock` → Clr/Num by layout.
+- **`keyboardLegendLayout`**: `auto` (OS guess) | `mac-us` | `win-us` — dual-glyph legends from `$lib/key-legends.ts` (US ANSI `!`/`1` etc.); key-card + full keyboard + Text/Log consume the resolved layout. Prefer glyphs (`↵` enter, `⌫`/`⌦` delete pair, `⇥` tab, `⇧` shift); Caps is text `Caps` (avoid `⇪` vs `⇧` confusion at small size). `NumLock` → Clr/Num by layout. Meta → `⌘` (mac-us) / `Win` (win-us).
 
 ### HUD position settings
 
@@ -221,9 +223,9 @@ void listen(EVENT_CHANNEL, (event) => {
 - **Commands**: `get_ui_locale_settings` → `Option<"en"|"zh">`; `set_ui_locale_settings` → persist + emit
 - **Channel**: `cast://ui-locale` → `{ locale: "en" | "zh" }` so overlay hot-updates status/place chrome
 - **Boot**: if unset, frontend guesses from `navigator.language` (`zh*` → `zh`, else `en`) and persists once; user choice then sticks
-- **Scope**: main Settings/Log/About + overlay status/place strings via `$lib/i18n` `t()`; do **not** translate `HudChip.id` / `label` or `summarizeHudChip` log lines
+- **Scope**: main Settings/Log/About + overlay status/place strings via `$lib/i18n` `t()`; do **not** translate `HudChip.id` or `summarizeHudChip` log lines; Capture hook-failed copy is platform-specific (`settings.hookFailedMac` / `hookFailedWin` / `hookFailedOther`)
 
 ### Mods encoding
 
-- **Decision**: `KeyRef` with left/right `id` and HUD-friendly `label` symbols
-- **Keep aligned**: Rust `ChipReducer` held-mods ↔ TS `formatHudLabel`
+- **Decision**: `KeyRef` is id-only; left/right `Meta*` / `Shift*` / …; HUD glyphs from legend/OS helpers
+- **Keep aligned**: Rust `ChipReducer` held-mods ↔ TS `formatHudLabel(…, legendLayout)`

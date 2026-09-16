@@ -42,20 +42,20 @@ Settings + Tray
 `cast://event` 载荷为 **`HudChip`**（含 `phase`；raw 仅内部）：
 
 ```ts
-type KeyRef = { id: string; label: string };
+type KeyRef = { id: string };
 
 type HudChip =
   | { kind: "key"; mods: KeyRef[]; key: KeyRef; phase: "down" | "up" }
   | { kind: "mouse"; button: "left" | "right" | "middle"; phase: "down" | "up" };
 ```
 
-- `id`：稳定逻辑名（如 `MetaLeft`, `KeyS`, `Digit1`, `Numpad1`, `Backspace`, `ForwardDelete`）
-- `label`：text HUD 短展示（左右 Meta 均可 `"⌘"`）
+- `id`：稳定逻辑名（如 `MetaLeft`, `KeyS`, `Digit1`, `Numpad1`, `Backspace`, `ForwardDelete`）；不发 OS 专用 id（如 `WinLeft`）
+- 展示：UI 用 `id` + `keyboardLegendLayout`（auto → Mac/Win）解析短文案（Meta → `⌘` / `Win`）
 - 发射端：主键 / 裸修饰 / 鼠标均发 down 与 up；消费者决定如何展示
 - Text/Lite：忽略 `up` 与裸修饰；down 占条 + dwell
 - Full：held-set 驱动全键盘 / 多键鼠标高亮；忽略 dwell
 - Log：记录 down 与 up
-
+- 平台：macOS CGEventTap；Windows `WH_*_LL`（本期无 Win ripple）；其它 stub `unsupported_platform`
 ## HUD 约定
 
 - 默认右下角，可改左下 / 左上 / 右上；避开 Dock / 任务栏

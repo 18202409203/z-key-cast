@@ -33,7 +33,8 @@ See also: [Tauri Cast Events](../tauri/cast-events.md).
 - Key-card / full-keyboard rendering uses `hudCards()` + layout `id`s from `$lib/cast.ts` / `$lib/keyboard-layout.ts`; do not invent labels in the overlay
 - Key-card / full-keyboard / text / schematic all use HUD `textColor` + `backgroundColor`/`backgroundOpacity` (presets Black/White or custom)
 - `MouseSchematic` is a cropped pebble mouse-head (`src/lib/MouseSchematic.svelte`); resting body uses HUD `backgroundColor`/`backgroundOpacity` (same as keycaps); pressed L/R/wheel fills with `textColor` via `activeButtons` (multi-button OK). Do not evenodd-punch wheel wells — the overlay is transparent, so holes show the desktop
-- Legend layout preference: `keyboardLegendLayout` `auto|mac-us|win-us` (OS guess when auto). Prefer keycap glyphs (`↵`/`⌫`/`⌦`/`⇥`/`⇧`); Caps uses text `Caps` (not `⇪` — too similar to Shift `⇧` at HUD sizes). Word labels Title Case. `NumLock` legend is `Clr` (mac-us) / `Num` (win-us). Enter mark is unified as `↵` (U+21B5), not `⏎`.
+- Legend layout preference: `keyboardLegendLayout` `auto|mac-us|win-us` (OS guess when auto). Prefer keycap glyphs (`↵`/`⌫`/`⌦`/`⇥`/`⇧`); Caps uses text `Caps` (not `⇪` — too similar to Shift `⇧` at HUD sizes). Word labels Title Case. `NumLock` legend is `Clr` (mac-us) / `Num` (win-us). Enter mark is unified as `↵` (U+21B5), not `⏎`. Meta Text/Log glyphs: `⌘` (mac-us) / `Win` (win-us) via `displayLabelForKeyId` — never read a payload `label`.
+- `KeyRef` wire type is `{ id: string }` only; `isKeyRef` / `isIgnoreKeyCaptured` require `id`; all HUD/Log/ignore display strings come from id + resolved legend layout.
 - Key/mouse relative arrangement: `keyMouseLayout` (`key-left-mouse-right` default; also `key-right-mouse-left`, `key-top-mouse-bottom`, `key-bottom-mouse-top`). Overlay keeps stable key→mouse DOM and uses CSS `flex-direction`/`order`; omit field → normalize/default. Do not mirror by HUD dock corner.
 - `hudPreset` (`text`|`lite`|`full`, default `text`): replaces independent keyboard/mouse display modes and `persistVisible`. Text = text+text down+dwell; Lite = key-card+schematic down+dwell; Full = keyboard+schematic always pinned with held-sets from up/down (ignore dwell). Main shell: HUD tab owns presentation (preset, km layout, legend, font, dwell); Settings owns Theme/Position/Language. Hide font size and dwell controls when Full (values persist).
 - `KeyboardMap` is shared: Overlay passes `activeIds` only (no click handlers). Capture ignore uses `interactive` + `ignoredIds` + muted `.key.ignored` (never `.active` for ignore). Off-board ignore rows = `ignoredKeyIds` minus `LAYOUT_KEY_IDS`; Add-key capture remains the discovery path. Overlay Full and Capture both use `KEYBOARD_MAP_FONT_PX` / `KEYBOARD_MAP_WIDTH_PX` (not HUD chip `fontSizePx`) so the Full board matches Capture scale.
@@ -49,7 +50,7 @@ import { EVENT_CHANNEL, isHudChip, formatHudLabel } from "$lib/cast";
 
 listen(EVENT_CHANNEL, (event) => {
   if (!isHudChip(event.payload)) return;
-  showChip(formatHudLabel(event.payload));
+  showChip(formatHudLabel(event.payload, legendLayout));
 });
 ```
 

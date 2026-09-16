@@ -158,6 +158,80 @@ export function legendForKeyId(
   return US_ANSI_BASE[id];
 }
 
+/** Compact Text-HUD / Log glyphs for modifiers (OS-aware). */
+const HUD_MOD_LABEL: Record<
+  KeyboardLegendLayoutId,
+  Record<string, string>
+> = {
+  "mac-us": {
+    ControlLeft: "⌃",
+    ControlRight: "⌃",
+    AltLeft: "⌥",
+    AltRight: "⌥",
+    MetaLeft: "⌘",
+    MetaRight: "⌘",
+    ShiftLeft: "⇧",
+    ShiftRight: "⇧",
+    Fn: "Fn",
+  },
+  "win-us": {
+    ControlLeft: "Ctrl",
+    ControlRight: "Ctrl",
+    AltLeft: "Alt",
+    AltRight: "Alt",
+    MetaLeft: "Win",
+    MetaRight: "Win",
+    ShiftLeft: "⇧",
+    ShiftRight: "⇧",
+    Fn: "Fn",
+  },
+};
+
+/** Compact specials preferred over wordy key-card captions in Text HUD. */
+const HUD_SPECIAL_LABEL: Record<string, string> = {
+  Escape: "Esc",
+  Tab: "⇥",
+  Enter: "↵",
+  NumpadEnter: "↵",
+  Backspace: "⌫",
+  ForwardDelete: "⌦",
+  Space: "Space",
+  CapsLock: "Caps",
+  ArrowLeft: "←",
+  ArrowRight: "→",
+  ArrowUp: "↑",
+  ArrowDown: "↓",
+};
+
+/**
+ * Resolve a user-visible key string from stable `id` + legend/OS layout.
+ * Wire payloads carry id only — never trust a payload.label.
+ */
+export function displayLabelForKeyId(
+  id: string,
+  layout: KeyboardLegendLayoutId = "mac-us",
+): string {
+  const mod = HUD_MOD_LABEL[layout][id];
+  if (mod) return mod;
+
+  const special = HUD_SPECIAL_LABEL[id];
+  if (special) return special;
+
+  const legend = legendForKeyId(id, layout);
+  if (legend) return legend.main;
+
+  if (id.startsWith("Key") && id.length === 4) return id.slice(3);
+  if (id.startsWith("Digit") && id.length === 6) return id.slice(5);
+  if (id.startsWith("Numpad") && id.length > 6) {
+    const rest = id.slice(6);
+    if (/^\d$/.test(rest)) return rest;
+  }
+  if (id.startsWith("Mouse")) {
+    return id.slice("Mouse".length) || id;
+  }
+  return id;
+}
+
 export function isKeyboardLegendPreference(
   value: unknown,
 ): value is KeyboardLegendPreference {

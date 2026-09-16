@@ -92,7 +92,6 @@
   let captureMouse = $state(true);
   let mouseClickRipple = $state(false);
   let ignoredKeyIds = $state<string[]>([]);
-  let ignoredKeyLabels = $state<Record<string, string>>({});
   let ignoreCapturing = $state(false);
   let captureReady = $state(false);
   let captureSaving = $state(false);
@@ -139,6 +138,33 @@
   );
   const ignoreBoardDisabled = $derived(
     !captureReady || captureSaving || ignoreCapturing,
+  );
+
+  /** Host OS for Capture hook-failed copy (navigator best-effort). */
+  function isWindowsHost(): boolean {
+    if (typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent.toLowerCase();
+    const platform = (navigator.platform || "").toLowerCase();
+    return platform.includes("win") || ua.includes("windows");
+  }
+
+  function isMacHost(): boolean {
+    if (typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent.toLowerCase();
+    const platform = (navigator.platform || "").toLowerCase();
+    return (
+      platform.includes("mac") ||
+      ua.includes("mac os") ||
+      ua.includes("macintosh")
+    );
+  }
+
+  const hookFailedMessage = $derived(
+    isMacHost()
+      ? t("settings.hookFailedMac", locale)
+      : isWindowsHost()
+        ? t("settings.hookFailedWin", locale)
+        : t("settings.hookFailedOther", locale),
   );
 
   function isNearBottom(el: HTMLDivElement) {
@@ -587,7 +613,7 @@
 
         const unlistenEvent = await listen(EVENT_CHANNEL, (event) => {
           if (!isHudChip(event.payload)) return;
-          appendLog(summarizeHudChip(event.payload));
+          appendLog(summarizeHudChip(event.payload, ignoreBoardLegendLayout));
         });
         if (cancelled) {
           unlistenEvent();
@@ -600,8 +626,7 @@
           (event) => {
             if (!isIgnoreKeyCaptured(event.payload)) return;
             ignoreCapturing = false;
-            const { id, label } = event.payload;
-            ignoredKeyLabels = { ...ignoredKeyLabels, [id]: label };
+            const { id } = event.payload;
             const previous = currentCapture();
             if (previous.ignoredKeyIds.includes(id)) return;
             void persistCapture(
@@ -977,7 +1002,7 @@
             {#if hookOk === true}
               {t("settings.hookActive", locale)}
             {:else if hookOk === false}
-              {t("settings.hookFailed", locale)}
+              {hookFailedMessage}
             {:else}
               {t("settings.hookWaiting", locale)}
             {/if}
@@ -1090,7 +1115,7 @@
                 {#each offBoardIgnoredKeyIds as id (id)}
                   <li class="ignore-item">
                     <span class="ignore-label"
-                      >{ignoredKeyLabels[id] ?? labelForKeyId(id)}</span
+                      >{labelForKeyId(id, ignoreBoardLegendLayout)}</span
                     >
                     <code class="ignore-id">{id}</code>
                     <button

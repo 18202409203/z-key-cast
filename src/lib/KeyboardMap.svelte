@@ -7,6 +7,7 @@
     type LayoutKey,
   } from "$lib/keyboard-layout";
   import {
+    displayLabelForKeyId,
     legendForKeyId,
     type KeyboardLegendLayoutId,
   } from "$lib/key-legends";
@@ -48,7 +49,11 @@
     if (key.id.startsWith("_")) {
       return { main: key.label };
     }
-    return legendForKeyId(key.id, legendLayout) ?? { main: key.label };
+    return (
+      legendForKeyId(key.id, legendLayout) ?? {
+        main: displayLabelForKeyId(key.id, legendLayout),
+      }
+    );
   }
 
   function isSpacer(id: string) {

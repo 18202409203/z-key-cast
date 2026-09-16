@@ -824,7 +824,7 @@ mod tests {
         CAPTURE_MOUSE.store(true, Ordering::Relaxed);
         let key = HudChip::Key {
             mods: vec![],
-            key: KeyRef::new("KeyA", "A"),
+            key: KeyRef::new("KeyA"),
             phase: crate::input::Phase::Down,
         };
         let mouse = HudChip::Mouse {
@@ -841,7 +841,7 @@ mod tests {
         CAPTURE_MOUSE.store(true, Ordering::Relaxed);
         let key = HudChip::Key {
             mods: vec![],
-            key: KeyRef::new("KeyA", "A"),
+            key: KeyRef::new("KeyA"),
             phase: crate::input::Phase::Down,
         };
         let mouse = HudChip::Mouse {
@@ -890,8 +890,8 @@ mod tests {
     fn filter_drops_ignored_primary() {
         set_ignored(&["KeyA"]);
         let chip = HudChip::Key {
-            mods: vec![KeyRef::new("MetaLeft", "⌘")],
-            key: KeyRef::new("KeyA", "A"),
+            mods: vec![KeyRef::new("MetaLeft")],
+            key: KeyRef::new("KeyA"),
             phase: crate::input::Phase::Down,
         };
         assert!(filter_key_chip(chip).is_none());
@@ -903,10 +903,10 @@ mod tests {
         set_ignored(&["MetaLeft"]);
         let chip = HudChip::Key {
             mods: vec![
-                KeyRef::new("MetaLeft", "⌘"),
-                KeyRef::new("ShiftLeft", "⇧"),
+                KeyRef::new("MetaLeft"),
+                KeyRef::new("ShiftLeft"),
             ],
-            key: KeyRef::new("KeyS", "S"),
+            key: KeyRef::new("KeyS"),
             phase: crate::input::Phase::Down,
         };
         let filtered = filter_key_chip(chip).expect("primary kept");
@@ -926,8 +926,8 @@ mod tests {
     fn filter_empty_ignore_passes_through() {
         set_ignored(&[]);
         let chip = HudChip::Key {
-            mods: vec![KeyRef::new("MetaLeft", "⌘")],
-            key: KeyRef::new("KeyA", "A"),
+            mods: vec![KeyRef::new("MetaLeft")],
+            key: KeyRef::new("KeyA"),
             phase: crate::input::Phase::Down,
         };
         let filtered = filter_key_chip(chip).expect("kept");
