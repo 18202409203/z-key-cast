@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "Ignore list + arm-capture contract must stay unchanged; frontend only rewires UX on ignoredKeyIds"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "KeyRef / settings typing and cast guards patterns for Capture listeners"}
+{"file": ".trellis/tasks/09-16-ignore-keys-keyboard/design.md", "reason": "KeyboardMap props, off-board set difference, muted ignore vs active"}
+{"file": ".trellis/tasks/09-16-ignore-keys-keyboard/prd.md", "reason": "Accepted requirements and AC1–AC5"}

@@ -34,6 +34,8 @@ See also: [Tauri Cast Events](../tauri/cast-events.md).
 - Legend layout preference: `keyboardLegendLayout` `auto|mac-us|win-us` (OS guess when auto)
 - Key/mouse relative arrangement: `keyMouseLayout` (`key-left-mouse-right` default; also `key-right-mouse-left`, `key-top-mouse-bottom`, `key-bottom-mouse-top`). Overlay keeps stable key→mouse DOM and uses CSS `flex-direction`/`order`; omit field → normalize/default. Do not mirror by HUD dock corner.
 - `persistVisible` (omit → `false`): pin full-keyboard / mouse-schematic surfaces; highlights still come from `keySlot` / `mouseSlot` and idle-clear. `MouseSchematic.button` is optional (`null` = unpressed). Text / key-card keep the last chip when persist is on.
+- `KeyboardMap` is shared: Overlay passes `activeIds` only (no click handlers). Capture ignore uses `interactive` + `ignoredIds` + muted `.key.ignored` (never `.active` for ignore). Off-board ignore rows = `ignoredKeyIds` minus `LAYOUT_KEY_IDS`; Add-key capture remains the discovery path.
+- Main Settings shell: content column `--shell-max: 560px` centered (`margin-inline: auto`); default window `600×680` / `minWidth: 600`. Numpad and main board flex by `MAIN_LAYOUT_UNITS`:`NUMPAD_LAYOUT_UNITS` (not a fixed numpad px width).
 
 ---
 

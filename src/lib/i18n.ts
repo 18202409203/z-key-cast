@@ -73,7 +73,7 @@ const en = {
   "settings.listenMouse": "Listen to mouse",
   "settings.ignoreKeys": "Ignore keys",
   "settings.ignoreHint":
-    "Ignored primaries never show; ignored modifiers are stripped from chords.",
+    "Click keys on the board to ignore them. Ignored primaries never show; ignored modifiers are stripped from chords. Use Add key for keys not on the board.",
   "settings.ignoreCategories": "Ignore categories",
   "settings.addKey": "Add key",
   "settings.cancel": "Cancel",
@@ -167,7 +167,8 @@ const zh: Record<MessageKey, string> = {
   "settings.listenKeyboard": "监听键盘",
   "settings.listenMouse": "监听鼠标",
   "settings.ignoreKeys": "忽略按键",
-  "settings.ignoreHint": "被忽略的主键不会显示；被忽略的修饰键会从组合中剥离。",
+  "settings.ignoreHint":
+    "点击键盘上的按键即可忽略。被忽略的主键不会显示；被忽略的修饰键会从组合中剥离。不在键盘图上的按键请用「添加按键」。",
   "settings.ignoreCategories": "忽略分类",
   "settings.addKey": "添加按键",
   "settings.cancel": "取消",

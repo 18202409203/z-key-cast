@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "Verify ignore filter / Add key arm behavior still matches after UI change"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Typecheck expectations for settings and cast payloads"}
+{"file": ".trellis/tasks/09-16-ignore-keys-keyboard/prd.md", "reason": "Acceptance criteria AC1–AC5"}
+{"file": ".trellis/tasks/09-16-ignore-keys-keyboard/design.md", "reason": "Overlay must not gain click handlers; muted ≠ active"}

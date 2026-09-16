@@ -133,3 +133,29 @@ export const NUMPAD_ROWS: LayoutRow[] = [
     { id: "ForwardDelete", label: "⌦" },
   ],
 ];
+
+function collectNonSpacerIds(rows: LayoutRow[]): string[] {
+  const ids: string[] = [];
+  for (const row of rows) {
+    for (const key of row) {
+      if (!key.id.startsWith("_")) ids.push(key.id);
+    }
+  }
+  return ids;
+}
+
+/** Non-spacer ids drawn on the shared KeyboardMap (main + numpad). */
+export const LAYOUT_KEY_IDS: ReadonlySet<string> = new Set([
+  ...collectNonSpacerIds(MAIN_ROWS),
+  ...collectNonSpacerIds(NUMPAD_ROWS),
+]);
+
+function rowUnitSum(row: LayoutRow): number {
+  return row.reduce((sum, key) => sum + (key.w ?? 1), 0);
+}
+
+/** Widest main-board row in relative key units (bottom modifier/arrow row). */
+export const MAIN_LAYOUT_UNITS = Math.max(...MAIN_ROWS.map(rowUnitSum));
+
+/** Numpad column span in relative key units (standard 4-wide block). */
+export const NUMPAD_LAYOUT_UNITS = Math.max(...NUMPAD_ROWS.map(rowUnitSum));

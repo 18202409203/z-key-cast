@@ -25,6 +25,7 @@
     getHudPositionSettings,
     getHudStyleSettings,
     getUiLocaleSettings,
+    hudBackgroundCss,
     isHudCorner,
     isHudPositionSettings,
     isKeyMouseLayout,
@@ -42,12 +43,18 @@
     type KeyboardDisplayMode,
     type MouseDisplayMode,
   } from "$lib/settings";
-  import type { KeyboardLegendPreference } from "$lib/key-legends";
+  import {
+    resolveKeyboardLegendLayout,
+    type KeyboardLegendPreference,
+  } from "$lib/key-legends";
+  import { LAYOUT_KEY_IDS } from "$lib/keyboard-layout";
+  import KeyboardMap from "$lib/KeyboardMap.svelte";
   import {
     IGNORE_CATEGORIES,
     addCategoryIds,
     categoryToggleState,
     labelForKeyId,
+    offBoardIgnoredIds,
     removeCategoryIds,
     type IgnoreCategoryId,
   } from "$lib/key-ignore-presets";
@@ -117,6 +124,19 @@
     placeModeActive || hudPosition.mode === "custom"
       ? "custom"
       : cornerSelectValue(hudPosition),
+  );
+  const ignoredIdSet = $derived(new Set(ignoredKeyIds));
+  const offBoardIgnoredKeyIds = $derived(
+    offBoardIgnoredIds(ignoredKeyIds, LAYOUT_KEY_IDS),
+  );
+  const ignoreBoardBackground = $derived(
+    hudBackgroundCss(hudStyle.backgroundColor, hudStyle.backgroundOpacity),
+  );
+  const ignoreBoardLegendLayout = $derived(
+    resolveKeyboardLegendLayout(hudStyle.keyboardLegendLayout),
+  );
+  const ignoreBoardDisabled = $derived(
+    !captureReady || captureSaving || ignoreCapturing,
   );
 
   function isNearBottom(el: HTMLDivElement) {
@@ -205,6 +225,15 @@
       },
       previous,
     );
+  }
+
+  function onToggleIgnoredKey(id: string) {
+    if (ignoreBoardDisabled) return;
+    const previous = currentCapture();
+    const nextIds = previous.ignoredKeyIds.includes(id)
+      ? previous.ignoredKeyIds.filter((x) => x !== id)
+      : [...previous.ignoredKeyIds, id];
+    void persistCapture({ ...previous, ignoredKeyIds: nextIds }, previous);
   }
 
   async function onAddIgnoreKey() {
@@ -992,6 +1021,19 @@
               {/each}
             </div>
 
+            <div class="ignore-board">
+              <KeyboardMap
+                ignoredIds={ignoredIdSet}
+                interactive={true}
+                disabled={ignoreBoardDisabled}
+                textColor={hudStyle.textColor}
+                backgroundCss={ignoreBoardBackground}
+                fontSizePx={20}
+                legendLayout={ignoreBoardLegendLayout}
+                onToggleKey={onToggleIgnoredKey}
+              />
+            </div>
+
             <div class="ignore-actions">
               {#if ignoreCapturing}
                 <button
@@ -1015,9 +1057,9 @@
               {/if}
             </div>
 
-            {#if ignoredKeyIds.length > 0}
+            {#if offBoardIgnoredKeyIds.length > 0}
               <ul class="ignore-list">
-                {#each ignoredKeyIds as id (id)}
+                {#each offBoardIgnoredKeyIds as id (id)}
                   <li class="ignore-item">
                     <span class="ignore-label"
                       >{ignoredKeyLabels[id] ?? labelForKeyId(id)}</span
@@ -1035,7 +1077,7 @@
                   </li>
                 {/each}
               </ul>
-            {:else}
+            {:else if ignoredKeyIds.length === 0}
               <p class="muted">{t("settings.noIgnoredKeys", locale)}</p>
             {/if}
           </div>
@@ -1104,10 +1146,13 @@
   .shell {
     --radius-sm: 8px;
     --radius-md: 10px;
+    /* Content column: 560 + 40 pad ≈ 600 default window; stays centered if wider / fullscreen. */
+    --shell-max: 560px;
     box-sizing: border-box;
     height: 100%;
     width: 100%;
-    max-width: 100%;
+    max-width: var(--shell-max);
+    margin-inline: auto;
     padding: 20px 20px 24px;
     display: flex;
     flex-direction: column;
@@ -1180,7 +1225,13 @@
     gap: 24px;
     overflow-x: hidden;
     overflow-y: auto;
-    padding-right: 4px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .panel::-webkit-scrollbar {
+    width: 0;
+    height: 0;
   }
 
   .settings-panel section {
@@ -1242,6 +1293,11 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px 14px;
+  }
+
+  .ignore-board {
+    overflow-x: auto;
+    max-width: 100%;
   }
 
   .category-toggle {
@@ -1388,6 +1444,8 @@
     flex: 1;
     min-height: 0;
     overflow: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     border: 1px solid #334155;
     border-radius: var(--radius-md);
     background: rgba(15, 23, 42, 0.9);
@@ -1395,6 +1453,11 @@
     font-family: "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
     font-size: 12px;
     line-height: 1.45;
+  }
+
+  .log::-webkit-scrollbar {
+    width: 0;
+    height: 0;
   }
 
   .log-line {

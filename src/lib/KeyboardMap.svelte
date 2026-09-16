@@ -1,24 +1,40 @@
 <script lang="ts">
-  import { MAIN_ROWS, NUMPAD_ROWS, type LayoutKey } from "$lib/keyboard-layout";
+  import {
+    MAIN_LAYOUT_UNITS,
+    MAIN_ROWS,
+    NUMPAD_LAYOUT_UNITS,
+    NUMPAD_ROWS,
+    type LayoutKey,
+  } from "$lib/keyboard-layout";
   import {
     legendForKeyId,
     type KeyboardLegendLayoutId,
   } from "$lib/key-legends";
 
+  const EMPTY_IDS: ReadonlySet<string> = new Set();
+
   type Props = {
-    activeIds: ReadonlySet<string>;
+    activeIds?: ReadonlySet<string>;
+    ignoredIds?: ReadonlySet<string>;
+    interactive?: boolean;
     textColor: string;
     backgroundCss: string;
     fontSizePx: number;
     legendLayout?: KeyboardLegendLayoutId;
+    disabled?: boolean;
+    onToggleKey?: (id: string) => void;
   };
 
   let {
-    activeIds,
+    activeIds = EMPTY_IDS,
+    ignoredIds = EMPTY_IDS,
+    interactive = false,
     textColor,
     backgroundCss,
     fontSizePx,
     legendLayout = "mac-us",
+    disabled = false,
+    onToggleKey,
   }: Props = $props();
 
   const unit = $derived(Math.max(14, Math.min(22, fontSizePx * 0.85)));
@@ -34,34 +50,74 @@
     }
     return legendForKeyId(key.id, legendLayout) ?? { main: key.label };
   }
+
+  function isSpacer(id: string) {
+    return id.startsWith("_");
+  }
+
+  function isIgnored(id: string) {
+    return !isSpacer(id) && ignoredIds.has(id);
+  }
+
+  function handleToggle(id: string) {
+    if (!interactive || disabled || isSpacer(id)) return;
+    onToggleKey?.(id);
+  }
 </script>
 
 <div
   class="board"
+  class:interactive
+  class:disabled={interactive && disabled}
   style:--kb-fg={textColor}
   style:--kb-bg={backgroundCss}
   style:--kb-unit={`${unit}px`}
   style:--kb-gap={`${Math.max(3, unit * 0.18)}px`}
+  style:--kb-main-flex={MAIN_LAYOUT_UNITS}
+  style:--kb-num-flex={NUMPAD_LAYOUT_UNITS}
 >
   <div class="main">
     {#each MAIN_ROWS as row, ri (ri)}
       <div class="row">
         {#each row as key (key.id + String(ri))}
           {@const legend = face(key)}
-          <div
-            class="key"
-            class:active={activeIds.has(key.id)}
-            class:dual={Boolean(legend.shift)}
-            data-key-id={key.id}
-            style={keyStyle(key)}
-          >
-            {#if legend.shift}
-              <span class="face-shift">{legend.shift}</span>
-              <span class="face-main">{legend.main}</span>
-            {:else}
-              <span class="face-single">{legend.main}</span>
-            {/if}
-          </div>
+          {@const spacer = isSpacer(key.id)}
+          {#if interactive && !spacer}
+            <button
+              type="button"
+              class="key"
+              class:ignored={isIgnored(key.id)}
+              class:dual={Boolean(legend.shift)}
+              data-key-id={key.id}
+              style={keyStyle(key)}
+              disabled={disabled}
+              aria-pressed={isIgnored(key.id)}
+              onclick={() => handleToggle(key.id)}
+            >
+              {#if legend.shift}
+                <span class="face-shift">{legend.shift}</span>
+                <span class="face-main">{legend.main}</span>
+              {:else}
+                <span class="face-single">{legend.main}</span>
+              {/if}
+            </button>
+          {:else}
+            <div
+              class="key"
+              class:active={activeIds.has(key.id)}
+              class:ignored={isIgnored(key.id)}
+              class:dual={Boolean(legend.shift)}
+              data-key-id={key.id}
+              style={keyStyle(key)}
+            >
+              {#if legend.shift}
+                <span class="face-shift">{legend.shift}</span>
+                <span class="face-main">{legend.main}</span>
+              {:else}
+                <span class="face-single">{legend.main}</span>
+              {/if}
+            </div>
+          {/if}
         {/each}
       </div>
     {/each}
@@ -71,20 +127,43 @@
       <div class="row">
         {#each row as key (`np-${key.id}-${ri}`)}
           {@const legend = face(key)}
-          <div
-            class="key"
-            class:active={activeIds.has(key.id)}
-            class:dual={Boolean(legend.shift)}
-            data-key-id={key.id}
-            style={keyStyle(key)}
-          >
-            {#if legend.shift}
-              <span class="face-shift">{legend.shift}</span>
-              <span class="face-main">{legend.main}</span>
-            {:else}
-              <span class="face-single">{legend.main}</span>
-            {/if}
-          </div>
+          {@const spacer = isSpacer(key.id)}
+          {#if interactive && !spacer}
+            <button
+              type="button"
+              class="key"
+              class:ignored={isIgnored(key.id)}
+              class:dual={Boolean(legend.shift)}
+              data-key-id={key.id}
+              style={keyStyle(key)}
+              disabled={disabled}
+              aria-pressed={isIgnored(key.id)}
+              onclick={() => handleToggle(key.id)}
+            >
+              {#if legend.shift}
+                <span class="face-shift">{legend.shift}</span>
+                <span class="face-main">{legend.main}</span>
+              {:else}
+                <span class="face-single">{legend.main}</span>
+              {/if}
+            </button>
+          {:else}
+            <div
+              class="key"
+              class:active={activeIds.has(key.id)}
+              class:ignored={isIgnored(key.id)}
+              class:dual={Boolean(legend.shift)}
+              data-key-id={key.id}
+              style={keyStyle(key)}
+            >
+              {#if legend.shift}
+                <span class="face-shift">{legend.shift}</span>
+                <span class="face-main">{legend.main}</span>
+              {:else}
+                <span class="face-single">{legend.main}</span>
+              {/if}
+            </div>
+          {/if}
         {/each}
       </div>
     {/each}
@@ -96,7 +175,9 @@
     display: flex;
     align-items: flex-end;
     gap: calc(var(--kb-gap) * 2);
+    width: 100%;
     max-width: 100%;
+    box-sizing: border-box;
     padding: 10px;
     border-radius: 14px;
     background: color-mix(in srgb, var(--kb-bg) 42%, transparent);
@@ -109,15 +190,15 @@
     flex-direction: column;
     gap: var(--kb-gap);
     min-width: 0;
-    flex: 1 1 auto;
+    flex: var(--kb-main-flex) 1 0;
   }
 
   .numpad {
     display: flex;
     flex-direction: column;
     gap: var(--kb-gap);
-    flex: 0 0 auto;
-    width: calc(var(--kb-unit) * 5.2);
+    min-width: 0;
+    flex: var(--kb-num-flex) 1 0;
   }
 
   .row {
@@ -145,7 +226,21 @@
       background 120ms ease,
       color 120ms ease,
       border-color 120ms ease,
-      box-shadow 120ms ease;
+      box-shadow 120ms ease,
+      opacity 120ms ease;
+  }
+
+  button.key {
+    margin: 0;
+    font: inherit;
+    font-family: inherit;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  button.key:disabled {
+    cursor: not-allowed;
   }
 
   .key.dual {
@@ -174,5 +269,13 @@
     color: var(--kb-fg);
     border-color: color-mix(in srgb, var(--kb-fg) 35%, transparent);
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--kb-fg) 28%, transparent);
+  }
+
+  .key.ignored {
+    opacity: 0.4;
+    border-color: color-mix(in srgb, var(--kb-fg) 8%, transparent);
+    background: color-mix(in srgb, var(--kb-bg) 32%, transparent);
+    color: color-mix(in srgb, var(--kb-fg) 30%, transparent);
+    box-shadow: none;
   }
 </style>

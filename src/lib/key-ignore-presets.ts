@@ -120,6 +120,14 @@ export function removeCategoryIds(
   return ignoredIds.filter((id) => !drop.has(id));
 }
 
+/** Ignored ids that are not drawn on the shared keyboard layout. */
+export function offBoardIgnoredIds(
+  ignoredIds: readonly string[],
+  layoutIds: ReadonlySet<string>,
+): string[] {
+  return ignoredIds.filter((id) => !layoutIds.has(id));
+}
+
 /** Short display label when we only have an id (category bulk-add). */
 export function labelForKeyId(id: string): string {
   if (id.startsWith("Key") && id.length === 4) return id.slice(3);
