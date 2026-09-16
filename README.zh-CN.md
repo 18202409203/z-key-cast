@@ -1,0 +1,50 @@
+# z-key-cast
+
+[English](./README.md) | 简体中文
+
+录屏时在屏幕角落显示键盘与鼠标操作的跨平台 HUD。
+
+- **仓库：** https://gitee.com/zhupengji/z-key-cast
+- **发布：** https://gitee.com/zhupengji/z-key-cast/releases
+
+## 功能
+
+- **角落 HUD** — Text · Lite · Full 三档预设；可改四角位置，支持拖拽放置
+- **全局捕获** — 键盘与鼠标（macOS / Windows；Linux 视平台能力）
+- **托盘** — 开关 HUD、打开设置、退出
+- **点击涟漪** — macOS 主屏可选点击圆环
+- **多语言** — 界面中英切换
+
+## 技术栈
+
+- Tauri 2
+- SvelteKit + TypeScript
+- pnpm
+
+## 开发
+
+```bash
+pnpm install
+pnpm tauri dev
+```
+
+| 窗口 | 路由 | 用途 |
+|---|---|---|
+| `main` | `/` | 设置 / 日志 / 关于 |
+| `overlay` | `/overlay` | 透明角落 HUD |
+
+打包：
+
+```bash
+pnpm tauri build
+```
+
+## 文档
+
+- 产品与架构 → [`design/index.md`](./design/index.md)
+- UI 说明 → [`design/02-ui.md`](./design/02-ui.md)
+- 更新日志 → [`CHANGELOG.md`](./CHANGELOG.md)
+
+## 许可
+
+MIT
