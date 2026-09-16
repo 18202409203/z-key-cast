@@ -229,3 +229,40 @@ Fixed overlay key/mouse fighting with four persisted layout presets in Settings 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 7: HUD persist never-fade
+
+**Date**: 2026-09-16
+**Task**: HUD persist never-fade
+**Branch**: `main`
+
+### Summary
+
+Added Settings checkbox to pin full keyboard / mouse schematic as a recording reference. Highlights still follow dwell (chips are down-only). Spec records pin-vs-slot so later persist up/down can keep writing slots.
+
+### Main Changes
+
+### Done
+- `persistVisible` on HudStyleSettings (TS + Rust); omit → false
+- Overlay pin vs slot; MouseSchematic unpressed; Settings checkbox + i18n
+- Spec: cast-events.md + type-safety.md + tauri quality checklist
+- Archived 09-15-hud-persist
+
+### Testing
+- [OK] npm run check; cargo test (25)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0246453` | feat(hud): add persist-visible HUD pin |
+| `21c0027` | chore(task): archive 09-15-hud-persist |
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Persist mode key up/down so highlights track physical hold
