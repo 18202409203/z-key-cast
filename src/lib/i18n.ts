@@ -5,6 +5,7 @@ export type UiLocale = "en" | "zh";
 export type MessageKey = keyof typeof en;
 
 const en = {
+  "nav.hud": "HUD",
   "nav.settings": "Settings",
   "nav.capture": "Capture",
   "nav.log": "Log",
@@ -32,7 +33,7 @@ const en = {
   "settings.done": "Done",
   "settings.placeHint": "Drag the overlay, then press Done.",
 
-  "settings.hudAppearance": "Appearance",
+  "settings.theme": "Theme",
   "settings.hudPreset": "HUD preset",
   "settings.hudPreset.text": "Text",
   "settings.hudPreset.lite": "Lite",
@@ -103,6 +104,7 @@ const en = {
 } as const;
 
 const zh: Record<MessageKey, string> = {
+  "nav.hud": "呈现",
   "nav.settings": "设置",
   "nav.capture": "捕获",
   "nav.log": "日志",
@@ -129,7 +131,7 @@ const zh: Record<MessageKey, string> = {
   "settings.done": "完成",
   "settings.placeHint": "拖动浮层，然后点击完成。",
 
-  "settings.hudAppearance": "外观",
+  "settings.theme": "主题",
   "settings.hudPreset": "HUD 预设",
   "settings.hudPreset.text": "文本",
   "settings.hudPreset.lite": "精简",

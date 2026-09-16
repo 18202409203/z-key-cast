@@ -64,7 +64,7 @@
     t,
     type UiLocale,
   } from "$lib/i18n";
-  type MainTab = "settings" | "capture" | "log" | "about";
+  type MainTab = "hud" | "settings" | "capture" | "log" | "about";
 
   const MAX_LOG_LINES = 100;
   const STICK_BOTTOM_PX = 48;
@@ -76,13 +76,14 @@
   let localeSaving = $state(false);
 
   const TABS = $derived<{ id: MainTab; label: string }[]>([
+    { id: "hud", label: t("nav.hud", locale) },
     { id: "settings", label: t("nav.settings", locale) },
     { id: "capture", label: t("nav.capture", locale) },
     { id: "log", label: t("nav.log", locale) },
     { id: "about", label: t("nav.about", locale) },
   ]);
 
-  let activeTab = $state<MainTab>("log");
+  let activeTab = $state<MainTab>("hud");
   let logLines = $state<string[]>([]);
   let hookOk = $state<boolean | null>(null);
   let logEl = $state<HTMLDivElement | null>(null);
@@ -117,6 +118,7 @@
     hudStyle.hudPreset === "lite" || hudStyle.hudPreset === "full",
   );
   const showDwellMs = $derived(hudStyle.hudPreset !== "full");
+  const showFontSize = $derived(showDwellMs);
   const showPlaceControls = $derived(
     placeModeActive || hudPosition.mode === "custom",
   );
@@ -660,104 +662,13 @@
   </header>
 
   <div class="panels">
-    {#if activeTab === "settings"}
+    {#if activeTab === "hud"}
       <div
         class="panel settings-panel"
-        id="panel-settings"
+        id="panel-hud"
         role="tabpanel"
-        aria-labelledby="tab-settings"
+        aria-labelledby="tab-hud"
       >
-        <section>
-          <h2>{t("settings.hudAppearance", locale)}</h2>
-          <div class="field">
-            <span class="field-label" id="hud-font-size-label"
-              >{t("settings.fontSize", locale, {
-                n: hudStyle.fontSizePx,
-              })}</span
-            >
-            <input
-              id="hud-font-size"
-              type="range"
-              min="12"
-              max="48"
-              step="1"
-              value={hudStyle.fontSizePx}
-              disabled={!hudReady || hudSaving}
-              aria-labelledby="hud-font-size-label"
-              onchange={onFontSizeChange}
-            />
-          </div>
-          <div class="field">
-            <span class="field-label" id="hud-color-preset-label"
-              >{t("settings.colorPreset", locale)}</span
-            >
-            <select
-              id="hud-color-preset"
-              value={colorPresetSelect}
-              disabled={!hudReady || hudSaving}
-              aria-labelledby="hud-color-preset-label"
-              onchange={onColorPresetChange}
-            >
-              {#each HUD_COLOR_PRESETS as preset (preset.id)}
-                <option value={preset.id}
-                  >{preset.id === "dark"
-                    ? t("settings.colorPreset.dark", locale)
-                    : t("settings.colorPreset.light", locale)}</option
-                >
-              {/each}
-              <option value="custom"
-                >{t("settings.colorPreset.custom", locale)}</option
-              >
-            </select>
-          </div>
-          {#if showCustomColors}
-            <div class="field">
-              <span class="field-label" id="hud-text-color-label"
-                >{t("settings.textColor", locale)}</span
-              >
-              <input
-                id="hud-text-color"
-                type="color"
-                value={hudStyle.textColor}
-                disabled={!hudReady || hudSaving}
-                aria-labelledby="hud-text-color-label"
-                onchange={onTextColorChange}
-              />
-            </div>
-            <div class="field">
-              <span class="field-label" id="hud-bg-color-label"
-                >{t("settings.bgColor", locale)}</span
-              >
-              <input
-                id="hud-bg-color"
-                type="color"
-                value={hudStyle.backgroundColor}
-                disabled={!hudReady || hudSaving}
-                aria-labelledby="hud-bg-color-label"
-                onchange={onBackgroundColorChange}
-              />
-            </div>
-            <div class="field">
-              <span class="field-label" id="hud-bg-opacity-label"
-                >{t("settings.bgOpacity", locale, {
-                  n: hudStyle.backgroundOpacity.toFixed(2),
-                })}</span
-              >
-              <input
-                id="hud-bg-opacity"
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={hudStyle.backgroundOpacity}
-                disabled={!hudReady || hudSaving}
-                aria-labelledby="hud-bg-opacity-label"
-                onchange={onBackgroundOpacityChange}
-              />
-            </div>
-          {/if}
-        </section>
-
         <section>
           <h2>{t("settings.presentation", locale)}</h2>
           <div class="field">
@@ -862,6 +773,26 @@
               </select>
             </div>
           {/if}
+          {#if showFontSize}
+            <div class="field">
+              <span class="field-label" id="hud-font-size-label"
+                >{t("settings.fontSize", locale, {
+                  n: hudStyle.fontSizePx,
+                })}</span
+              >
+              <input
+                id="hud-font-size"
+                type="range"
+                min="12"
+                max="48"
+                step="1"
+                value={hudStyle.fontSizePx}
+                disabled={!hudReady || hudSaving}
+                aria-labelledby="hud-font-size-label"
+                onchange={onFontSizeChange}
+              />
+            </div>
+          {/if}
           {#if showDwellMs}
             <div class="field">
               <span class="field-label" id="hud-dwell-ms-label"
@@ -883,6 +814,86 @@
               <p class="field-hint" id="hud-dwell-ms-hint"
                 >{t("settings.dwellMsHint", locale)}</p
               >
+            </div>
+          {/if}
+        </section>
+      </div>
+    {:else if activeTab === "settings"}
+      <div
+        class="panel settings-panel"
+        id="panel-settings"
+        role="tabpanel"
+        aria-labelledby="tab-settings"
+      >
+        <section>
+          <h2>{t("settings.theme", locale)}</h2>
+          <div class="field">
+            <span class="field-label" id="hud-color-preset-label"
+              >{t("settings.colorPreset", locale)}</span
+            >
+            <select
+              id="hud-color-preset"
+              value={colorPresetSelect}
+              disabled={!hudReady || hudSaving}
+              aria-labelledby="hud-color-preset-label"
+              onchange={onColorPresetChange}
+            >
+              {#each HUD_COLOR_PRESETS as preset (preset.id)}
+                <option value={preset.id}
+                  >{preset.id === "dark"
+                    ? t("settings.colorPreset.dark", locale)
+                    : t("settings.colorPreset.light", locale)}</option
+                >
+              {/each}
+              <option value="custom"
+                >{t("settings.colorPreset.custom", locale)}</option
+              >
+            </select>
+          </div>
+          {#if showCustomColors}
+            <div class="field">
+              <span class="field-label" id="hud-text-color-label"
+                >{t("settings.textColor", locale)}</span
+              >
+              <input
+                id="hud-text-color"
+                type="color"
+                value={hudStyle.textColor}
+                disabled={!hudReady || hudSaving}
+                aria-labelledby="hud-text-color-label"
+                onchange={onTextColorChange}
+              />
+            </div>
+            <div class="field">
+              <span class="field-label" id="hud-bg-color-label"
+                >{t("settings.bgColor", locale)}</span
+              >
+              <input
+                id="hud-bg-color"
+                type="color"
+                value={hudStyle.backgroundColor}
+                disabled={!hudReady || hudSaving}
+                aria-labelledby="hud-bg-color-label"
+                onchange={onBackgroundColorChange}
+              />
+            </div>
+            <div class="field">
+              <span class="field-label" id="hud-bg-opacity-label"
+                >{t("settings.bgOpacity", locale, {
+                  n: hudStyle.backgroundOpacity.toFixed(2),
+                })}</span
+              >
+              <input
+                id="hud-bg-opacity"
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={hudStyle.backgroundOpacity}
+                disabled={!hudReady || hudSaving}
+                aria-labelledby="hud-bg-opacity-label"
+                onchange={onBackgroundOpacityChange}
+              />
             </div>
           {/if}
         </section>
