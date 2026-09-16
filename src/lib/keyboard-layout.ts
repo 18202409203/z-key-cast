@@ -42,7 +42,7 @@ export const MAIN_ROWS: LayoutRow[] = [
     { id: "Backspace", label: "⌫", w: 1.6 },
   ],
   [
-    { id: "Tab", label: "tab", w: 1.4 },
+    { id: "Tab", label: "⇥", w: 1.4 },
     { id: "KeyQ", label: "Q" },
     { id: "KeyW", label: "W" },
     { id: "KeyE", label: "E" },
@@ -58,7 +58,7 @@ export const MAIN_ROWS: LayoutRow[] = [
     { id: "Backslash", label: "\\", w: 1.2 },
   ],
   [
-    { id: "_CapsLock", label: "caps", w: 1.7 },
+    { id: "_CapsLock", label: "Caps", w: 1.7 },
     { id: "KeyA", label: "A" },
     { id: "KeyS", label: "S" },
     { id: "KeyD", label: "D" },
@@ -70,7 +70,7 @@ export const MAIN_ROWS: LayoutRow[] = [
     { id: "KeyL", label: "L" },
     { id: "Semicolon", label: ";" },
     { id: "Quote", label: "'" },
-    { id: "Enter", label: "⏎", w: 1.85 },
+    { id: "Enter", label: "↵", w: 1.85 },
   ],
   [
     { id: "ShiftLeft", label: "⇧", w: 2.2 },
@@ -104,7 +104,7 @@ export const MAIN_ROWS: LayoutRow[] = [
 
 export const NUMPAD_ROWS: LayoutRow[] = [
   [
-    { id: "NumLock", label: "clr" },
+    { id: "NumLock", label: "Clr" },
     { id: "NumpadEqual", label: "=" },
     { id: "NumpadDivide", label: "/" },
     { id: "NumpadMultiply", label: "*" },
@@ -125,7 +125,7 @@ export const NUMPAD_ROWS: LayoutRow[] = [
     { id: "Numpad1", label: "1" },
     { id: "Numpad2", label: "2" },
     { id: "Numpad3", label: "3" },
-    { id: "NumpadEnter", label: "⏎" },
+    { id: "NumpadEnter", label: "↵" },
   ],
   [
     { id: "Numpad0", label: "0", w: 2 },

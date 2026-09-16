@@ -153,9 +153,12 @@ export function labelForKeyId(id: string): string {
     Escape: "Esc",
     Backspace: "⌫",
     ForwardDelete: "⌦",
-    Enter: "Return",
+    Enter: "↵",
     Space: "Space",
-    Tab: "Tab",
+    Tab: "⇥",
+    CapsLock: "Caps",
+    NumLock: "Clr",
+    NumpadEnter: "↵",
   };
   return known[id] ?? id;
 }

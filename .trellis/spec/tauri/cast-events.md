@@ -175,7 +175,7 @@ void listen(EVENT_CHANNEL, (event) => {
 - **Clamp**: font 10–48, dwell 200–5000, opacity 0–1, colors `#rgb`/`#rrggbb`
 - **`keyboardDisplayMode`**: `text` | `key-card` | `keyboard`
 - **`mouseDisplayMode`**: `text` | `schematic` (independent; schematic is a cropped pebble mouse-head with no palm stub; resting body uses HUD background like keycaps; pressed L/M/R uses HUD `textColor` solid fill on `MouseSchematic`, not stroke-only highlight)
-- **`keyboardLegendLayout`**: `auto` (OS guess) | `mac-us` | `win-us` — dual-glyph legends from `$lib/key-legends.ts` (US ANSI `!`/`1` etc.); key-card + full keyboard consume the resolved layout
+- **`keyboardLegendLayout`**: `auto` (OS guess) | `mac-us` | `win-us` — dual-glyph legends from `$lib/key-legends.ts` (US ANSI `!`/`1` etc.); key-card + full keyboard consume the resolved layout. Prefer glyphs (`↵` enter, `⌫`/`⌦` delete pair, `⇥` tab, `⇧` shift); Caps is text `Caps` (avoid `⇪` vs `⇧` confusion at small size). `NumLock` → Clr/Num by layout.
 
 ### HUD position settings
 

@@ -73,14 +73,17 @@ function letterLegends(): Record<string, KeyLegend> {
   return out;
 }
 
+/** Shared special-key glyphs (prefer symbols; word labels Title Case). */
 const US_ANSI_BASE: Record<string, KeyLegend> = {
   ...US_ANSI_DUAL,
   ...letterLegends(),
-  Escape: { main: "esc" },
-  Tab: { main: "tab" },
-  Space: { main: "space" },
-  Enter: { main: "return" },
-  Backspace: { main: "delete" },
+  Escape: { main: "Esc" },
+  Tab: { main: "⇥" },
+  CapsLock: { main: "Caps" },
+  Space: { main: "Space" },
+  // ↵ (U+21B5): mainstream PC/W3C enter mark; unified over ⏎ / ↩.
+  Enter: { main: "↵" },
+  Backspace: { main: "⌫" },
   ForwardDelete: { main: "⌦" },
   ArrowLeft: { main: "←" },
   ArrowRight: { main: "→" },
@@ -113,9 +116,14 @@ const US_ANSI_BASE: Record<string, KeyLegend> = {
   NumpadSubtract: { main: "-" },
   NumpadMultiply: { main: "*" },
   NumpadDivide: { main: "/" },
-  NumpadEnter: { main: "enter" },
+  NumpadEnter: { main: "↵" },
   NumpadEqual: { main: "=" },
-  NumLock: { main: "clear" },
+};
+
+/** Mac Clear (abbr. Clr) vs Win Num Lock on the same physical NumLock key. */
+const NUM_LOCK_BY_LAYOUT: Record<KeyboardLegendLayoutId, KeyLegend> = {
+  "mac-us": { main: "Clr" },
+  "win-us": { main: "Num" },
 };
 
 /** Guess a legend pack from the host OS (best-effort). */
@@ -145,7 +153,8 @@ export function legendForKeyId(
   id: string,
   layout: KeyboardLegendLayoutId = "mac-us",
 ): KeyLegend | undefined {
-  void layout; // US ANSI dual glyphs shared; layout mainly affects modifier captions.
+  if (id === "NumLock") return NUM_LOCK_BY_LAYOUT[layout];
+  // US ANSI dual glyphs shared; modifiers/special captions live in key-card.
   return US_ANSI_BASE[id];
 }
 
