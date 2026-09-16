@@ -2,8 +2,9 @@ use super::event::{HudChip, KeyRef, Phase, RawInput};
 
 /// Turns filtered raw downs/ups into public `HudChip` payloads.
 ///
-/// Rules: bare modifiers update held state only; primary key / mouse down emit;
-/// ups never emit.
+/// Always emits precise down/up (including bare modifiers and mouse ups).
+/// Consumers decide what to show: Text/Lite ignore ups and bare-mod downs;
+/// Full maintains held sets from every phase.
 #[derive(Debug, Default)]
 pub struct ChipReducer {
     held_mods: Vec<KeyRef>,
@@ -12,6 +13,14 @@ pub struct ChipReducer {
 impl ChipReducer {
     pub fn is_holding(&self, id: &str) -> bool {
         self.held_mods.iter().any(|m| m.id == id)
+    }
+
+    fn mods_excluding(&self, id: &str) -> Vec<KeyRef> {
+        self.held_mods
+            .iter()
+            .filter(|m| m.id != id)
+            .cloned()
+            .collect()
     }
 
     pub fn reduce(&mut self, raw: &RawInput) -> Option<HudChip> {
@@ -27,12 +36,22 @@ impl ChipReducer {
                             self.held_mods.push(key.clone());
                             sort_mods(&mut self.held_mods);
                         }
+                        // Exclude self so `key` is the actor.
+                        Some(HudChip::Key {
+                            mods: self.mods_excluding(&key.id),
+                            key: key.clone(),
+                            phase: Phase::Down,
+                        })
                     }
                     Phase::Up => {
                         self.held_mods.retain(|m| m.id != key.id);
+                        Some(HudChip::Key {
+                            mods: self.held_mods.clone(),
+                            key: key.clone(),
+                            phase: Phase::Up,
+                        })
                     }
                 }
-                None
             }
             RawInput::Key {
                 key,
@@ -41,21 +60,21 @@ impl ChipReducer {
             } => Some(HudChip::Key {
                 mods: self.held_mods.clone(),
                 key: key.clone(),
+                phase: Phase::Down,
             }),
             RawInput::Key {
+                key,
                 phase: Phase::Up,
                 is_modifier: false,
-                ..
-            } => None,
-            RawInput::Mouse {
-                button,
-                phase: Phase::Down,
-            } => Some(HudChip::Mouse {
-                button: *button,
+            } => Some(HudChip::Key {
+                mods: self.held_mods.clone(),
+                key: key.clone(),
+                phase: Phase::Up,
             }),
-            RawInput::Mouse {
-                phase: Phase::Up, ..
-            } => None,
+            RawInput::Mouse { button, phase } => Some(HudChip::Mouse {
+                button: *button,
+                phase: *phase,
+            }),
         }
     }
 }
@@ -102,14 +121,51 @@ mod tests {
     }
 
     #[test]
-    fn bare_modifier_does_not_emit() {
+    fn bare_modifier_down_emits_with_phase() {
         let mut r = ChipReducer::default();
         let chip = r.reduce(&RawInput::Key {
             key: key("MetaLeft", "⌘"),
             phase: Phase::Down,
             is_modifier: true,
         });
-        assert!(chip.is_none());
+        match chip {
+            Some(HudChip::Key {
+                mods,
+                key,
+                phase: Phase::Down,
+            }) => {
+                assert_eq!(key.id, "MetaLeft");
+                assert!(mods.is_empty());
+            }
+            other => panic!("expected bare mod down, got {other:?}"),
+        }
+        assert!(r.is_holding("MetaLeft"));
+    }
+
+    #[test]
+    fn bare_modifier_up_emits() {
+        let mut r = ChipReducer::default();
+        let _ = r.reduce(&RawInput::Key {
+            key: key("MetaLeft", "⌘"),
+            phase: Phase::Down,
+            is_modifier: true,
+        });
+        let chip = r.reduce(&RawInput::Key {
+            key: key("MetaLeft", "⌘"),
+            phase: Phase::Up,
+            is_modifier: true,
+        });
+        match chip {
+            Some(HudChip::Key {
+                key,
+                phase: Phase::Up,
+                ..
+            }) => {
+                assert_eq!(key.id, "MetaLeft");
+            }
+            other => panic!("expected bare mod up, got {other:?}"),
+        }
+        assert!(!r.is_holding("MetaLeft"));
     }
 
     #[test]
@@ -131,8 +187,9 @@ mod tests {
             is_modifier: false,
         });
         match chip {
-            Some(HudChip::Key { mods, key }) => {
+            Some(HudChip::Key { mods, key, phase }) => {
                 assert_eq!(key.id, "KeyS");
+                assert_eq!(phase, Phase::Down);
                 assert_eq!(
                     mods.iter().map(|m| m.id.as_str()).collect::<Vec<_>>(),
                     vec!["ShiftLeft", "MetaLeft"]
@@ -143,21 +200,31 @@ mod tests {
     }
 
     #[test]
-    fn key_up_and_mouse_up_do_not_emit() {
+    fn key_up_and_mouse_up_emit() {
         let mut r = ChipReducer::default();
-        assert!(r
-            .reduce(&RawInput::Key {
-                key: key("KeyA", "A"),
+        let key_up = r.reduce(&RawInput::Key {
+            key: key("KeyA", "A"),
+            phase: Phase::Up,
+            is_modifier: false,
+        });
+        assert!(matches!(
+            key_up,
+            Some(HudChip::Key {
                 phase: Phase::Up,
-                is_modifier: false,
+                ..
             })
-            .is_none());
-        assert!(r
-            .reduce(&RawInput::Mouse {
+        ));
+        let mouse_up = r.reduce(&RawInput::Mouse {
+            button: MouseButton::Left,
+            phase: Phase::Up,
+        });
+        assert!(matches!(
+            mouse_up,
+            Some(HudChip::Mouse {
                 button: MouseButton::Left,
                 phase: Phase::Up,
             })
-            .is_none());
+        ));
     }
 
     #[test]
@@ -170,9 +237,35 @@ mod tests {
         assert!(matches!(
             chip,
             Some(HudChip::Mouse {
-                button: MouseButton::Right
+                button: MouseButton::Right,
+                phase: Phase::Down,
             })
         ));
+    }
+
+    #[test]
+    fn bare_mod_excludes_self_from_mods() {
+        let mut r = ChipReducer::default();
+        let _ = r.reduce(&RawInput::Key {
+            key: key("ShiftLeft", "⇧"),
+            phase: Phase::Down,
+            is_modifier: true,
+        });
+        let chip = r.reduce(&RawInput::Key {
+            key: key("MetaLeft", "⌘"),
+            phase: Phase::Down,
+            is_modifier: true,
+        });
+        match chip {
+            Some(HudChip::Key { mods, key, .. }) => {
+                assert_eq!(key.id, "MetaLeft");
+                assert_eq!(
+                    mods.iter().map(|m| m.id.as_str()).collect::<Vec<_>>(),
+                    vec!["ShiftLeft"]
+                );
+            }
+            other => panic!("expected mod chord, got {other:?}"),
+        }
     }
 
     #[test]

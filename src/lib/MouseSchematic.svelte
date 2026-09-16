@@ -1,14 +1,28 @@
 <script lang="ts">
+  type MouseButton = "left" | "right" | "middle";
+
   type Props = {
-    button?: "left" | "right" | "middle" | null;
+    /** Pressed buttons (Full can light several; Lite usually 0–1). */
+    activeButtons?: Iterable<MouseButton>;
     textColor: string;
     backgroundCss: string;
     fontSizePx: number;
   };
 
-  let { button = null, textColor, backgroundCss, fontSizePx }: Props = $props();
+  let {
+    activeButtons = [],
+    textColor,
+    backgroundCss,
+    fontSizePx,
+  }: Props = $props();
 
+  const active = $derived(new Set(activeButtons));
   const scale = $derived(Math.max(0.85, Math.min(1.35, fontSizePx / 15)));
+  const ariaLabel = $derived(
+    active.size === 0
+      ? "Mouse"
+      : `Mouse ${[...active].join(" ")}`,
+  );
 
   const body =
     "M8 25C8 12.2 20.5 5.2 40 5.2C59.5 5.2 72 12.2 72 25C72 33.2 71.6 39.4 67.6 44.2C63.4 49.2 52.8 51.2 40 51.2C27.2 51.2 16.6 49.2 12.4 44.2C8.4 39.4 8 33.2 8 25Z";
@@ -18,7 +32,7 @@
   class="mouse-wrap"
   style:--m-fg={textColor}
   style:--m-bg={backgroundCss}
-  aria-label={button ? `Mouse ${button}` : "Mouse"}
+  aria-label={ariaLabel}
 >
   <svg
     class="mouse"
@@ -36,7 +50,7 @@
     <g clip-path="url(#ms-body)">
       <rect
         class="btn"
-        class:active={button === "left"}
+        class:active={active.has("left")}
         x="0"
         y="0"
         width="40"
@@ -44,7 +58,7 @@
       />
       <rect
         class="btn"
-        class:active={button === "right"}
+        class:active={active.has("right")}
         x="40"
         y="0"
         width="40"
@@ -59,14 +73,14 @@
     <rect class="well" x="35.05" y="10.9" width="9.9" height="22.6" rx="4.95" />
     <rect
       class="btn wheel"
-      class:active={button === "middle"}
+      class:active={active.has("middle")}
       x="36.2"
       y="12.1"
       width="7.6"
       height="20.2"
       rx="3.8"
     />
-    <g class="ticks" class:on={button === "middle"}>
+    <g class="ticks" class:on={active.has("middle")}>
       <line x1="38.15" y1="17.3" x2="41.85" y2="17.3" />
       <line x1="38.15" y1="22.2" x2="41.85" y2="22.2" />
       <line x1="38.15" y1="27.1" x2="41.85" y2="27.1" />

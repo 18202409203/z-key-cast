@@ -11,6 +11,8 @@
 
 ### Features
 
+  - replace keyboard/mouse display modes with Text · Lite · Full presets
+  - emit HudChip down/up phases (Full held-set highlights; Log both)
   - add persist-visible HUD pin
   - add key/mouse layout presets
   - add en/zh locale switching

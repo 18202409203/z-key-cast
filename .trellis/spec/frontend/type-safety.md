@@ -32,12 +32,13 @@ See also: [Tauri Cast Events](../tauri/cast-events.md).
 - `mouseClickRipple` (omit → `false`) is a peer of `captureKeyboard` / `captureMouse`; Settings checkbox always visible under mouse listen; does not gate HUD mouse chips
 - Key-card / full-keyboard rendering uses `hudCards()` + layout `id`s from `$lib/cast.ts` / `$lib/keyboard-layout.ts`; do not invent labels in the overlay
 - Key-card / full-keyboard / text / schematic all use HUD `textColor` + `backgroundColor`/`backgroundOpacity` (presets Black/White or custom)
-- `MouseSchematic` is a cropped pebble mouse-head (`src/lib/MouseSchematic.svelte`); resting body uses HUD `backgroundColor`/`backgroundOpacity` (same as keycaps); pressed L/R/wheel fills with `textColor`. Do not evenodd-punch wheel wells — the overlay is transparent, so holes show the desktop
+- `MouseSchematic` is a cropped pebble mouse-head (`src/lib/MouseSchematic.svelte`); resting body uses HUD `backgroundColor`/`backgroundOpacity` (same as keycaps); pressed L/R/wheel fills with `textColor` via `activeButtons` (multi-button OK). Do not evenodd-punch wheel wells — the overlay is transparent, so holes show the desktop
 - Legend layout preference: `keyboardLegendLayout` `auto|mac-us|win-us` (OS guess when auto). Prefer keycap glyphs (`↵`/`⌫`/`⌦`/`⇥`/`⇧`); Caps uses text `Caps` (not `⇪` — too similar to Shift `⇧` at HUD sizes). Word labels Title Case. `NumLock` legend is `Clr` (mac-us) / `Num` (win-us). Enter mark is unified as `↵` (U+21B5), not `⏎`.
 - Key/mouse relative arrangement: `keyMouseLayout` (`key-left-mouse-right` default; also `key-right-mouse-left`, `key-top-mouse-bottom`, `key-bottom-mouse-top`). Overlay keeps stable key→mouse DOM and uses CSS `flex-direction`/`order`; omit field → normalize/default. Do not mirror by HUD dock corner.
-- `persistVisible` (omit → `false`): pin full-keyboard / mouse-schematic surfaces; highlights still come from `keySlot` / `mouseSlot` and idle-clear. `MouseSchematic.button` is optional (`null` = unpressed). Text / key-card keep the last chip when persist is on.
+- `hudPreset` (`text`|`lite`|`full`, default `text`): replaces independent keyboard/mouse display modes and `persistVisible`. Text = text+text down+dwell; Lite = key-card+schematic down+dwell; Full = keyboard+schematic always pinned with held-sets from up/down (ignore dwell). Hide dwell control when Full.
 - `KeyboardMap` is shared: Overlay passes `activeIds` only (no click handlers). Capture ignore uses `interactive` + `ignoredIds` + muted `.key.ignored` (never `.active` for ignore). Off-board ignore rows = `ignoredKeyIds` minus `LAYOUT_KEY_IDS`; Add-key capture remains the discovery path.
 - Main Settings shell: content column `--shell-max: 560px` centered (`margin-inline: auto`); default window `600×680` / `minWidth: 600`. Numpad and main board flex by `MAIN_LAYOUT_UNITS`:`NUMPAD_LAYOUT_UNITS` (not a fixed numpad px width).
+- Public `HudChip` includes required `phase: "down"|"up"`; `isHudChip` rejects missing/invalid phase. Text/Lite overlay ignores ups and bare-mod downs (`isModifierKeyId`); Log shows both phases.
 
 ---
 
@@ -58,5 +59,6 @@ listen(EVENT_CHANNEL, (event) => {
 
 - Inline `as HudChip` / field fishing on `event.payload` in routes
 - Duplicating channel string literals outside `$lib/cast.ts` / Rust `EVENT_CHANNEL` (and sibling channel consts)
-- Assuming a public `phase` field on `cast://event` payloads
+- Omitting or inventing a non-`down`/`up` `phase` on `cast://event` payloads
 - Putting click coordinates on `HudChip` / `cast://event` instead of `cast://mouse-ripple`
+- Persisting or typing `keyboardDisplayMode` / `mouseDisplayMode` / `persistVisible` (use `hudPreset`)

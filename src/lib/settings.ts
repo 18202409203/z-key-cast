@@ -18,8 +18,7 @@ export type CaptureSettings = {
   ignoredKeyIds: string[];
 };
 
-export type KeyboardDisplayMode = "text" | "key-card" | "keyboard";
-export type MouseDisplayMode = "text" | "schematic";
+export type HudPreset = "text" | "lite" | "full";
 export type KeyMouseLayout =
   | "key-left-mouse-right"
   | "key-right-mouse-left"
@@ -42,14 +41,10 @@ export type HudStyleSettings = {
   backgroundColor: string;
   backgroundOpacity: number;
   dwellMs: number;
-  /** Omitted in older settings → treat as `false`. */
-  persistVisible?: boolean;
-  /** Omitted in older settings → treat as `"text"`. */
-  keyboardDisplayMode?: KeyboardDisplayMode;
+  /** Omitted / invalid → `"text"`. Legacy `keyboardDisplayMode` migrates on normalize. */
+  hudPreset?: HudPreset;
   /** Omitted → `"auto"` (guess from OS). */
   keyboardLegendLayout?: KeyboardLegendPreference;
-  /** Omitted → `"text"`. Independent of keyboard display mode. */
-  mouseDisplayMode?: MouseDisplayMode;
   /** Omitted → `"key-left-mouse-right"`. Absolute key/mouse arrangement. */
   keyMouseLayout?: KeyMouseLayout;
 };
@@ -60,10 +55,8 @@ export const DEFAULT_HUD_STYLE: HudStyleSettings = {
   backgroundColor: "#0f172a",
   backgroundOpacity: 0.82,
   dwellMs: 1000,
-  persistVisible: false,
-  keyboardDisplayMode: "text",
+  hudPreset: "text",
   keyboardLegendLayout: "auto",
-  mouseDisplayMode: "text",
   keyMouseLayout: "key-left-mouse-right",
 };
 
@@ -136,12 +129,17 @@ export function colorsFromHudPreset(
   };
 }
 
-function isKeyboardDisplayMode(value: unknown): value is KeyboardDisplayMode {
-  return value === "text" || value === "key-card" || value === "keyboard";
+function isHudPreset(value: unknown): value is HudPreset {
+  return value === "text" || value === "lite" || value === "full";
 }
 
-function isMouseDisplayMode(value: unknown): value is MouseDisplayMode {
-  return value === "text" || value === "schematic";
+function hudPresetFromLegacy(value: Record<string, unknown>): HudPreset {
+  if (isHudPreset(value.hudPreset)) return value.hudPreset;
+  // Invalid / unknown hudPreset → fall through (garbage → text unless legacy maps).
+  const legacy = value.keyboardDisplayMode;
+  if (legacy === "key-card") return "lite";
+  if (legacy === "keyboard") return "full";
+  return "text";
 }
 
 export function isKeyMouseLayout(value: unknown): value is KeyMouseLayout {
@@ -165,9 +163,10 @@ export function isHudStyleSettings(value: unknown): value is HudStyleSettings {
   ) {
     return false;
   }
+  // Invalid hudPreset is tolerated here; `normalizeHudStyleSettings` coerces to a valid preset.
   if (
-    s.keyboardDisplayMode !== undefined &&
-    !isKeyboardDisplayMode(s.keyboardDisplayMode)
+    s.hudPreset !== undefined &&
+    typeof s.hudPreset !== "string"
   ) {
     return false;
   }
@@ -178,18 +177,9 @@ export function isHudStyleSettings(value: unknown): value is HudStyleSettings {
     return false;
   }
   if (
-    s.mouseDisplayMode !== undefined &&
-    !isMouseDisplayMode(s.mouseDisplayMode)
-  ) {
-    return false;
-  }
-  if (
     s.keyMouseLayout !== undefined &&
     !isKeyMouseLayout(s.keyMouseLayout)
   ) {
-    return false;
-  }
-  if (s.persistVisible !== undefined && typeof s.persistVisible !== "boolean") {
     return false;
   }
   return true;
@@ -197,18 +187,19 @@ export function isHudStyleSettings(value: unknown): value is HudStyleSettings {
 
 /** Fill defaults for fields omitted by older settings.json / emits. */
 export function normalizeHudStyleSettings(value: HudStyleSettings): HudStyleSettings & {
-  persistVisible: boolean;
-  keyboardDisplayMode: KeyboardDisplayMode;
+  hudPreset: HudPreset;
   keyboardLegendLayout: KeyboardLegendPreference;
-  mouseDisplayMode: MouseDisplayMode;
   keyMouseLayout: KeyMouseLayout;
 } {
+  const raw = value as HudStyleSettings & Record<string, unknown>;
   return {
-    ...value,
-    persistVisible: value.persistVisible ?? false,
-    keyboardDisplayMode: value.keyboardDisplayMode ?? "text",
+    fontSizePx: value.fontSizePx,
+    textColor: value.textColor,
+    backgroundColor: value.backgroundColor,
+    backgroundOpacity: value.backgroundOpacity,
+    dwellMs: value.dwellMs,
+    hudPreset: hudPresetFromLegacy(raw),
     keyboardLegendLayout: value.keyboardLegendLayout ?? "auto",
-    mouseDisplayMode: value.mouseDisplayMode ?? "text",
     keyMouseLayout: value.keyMouseLayout ?? "key-left-mouse-right",
   };
 }

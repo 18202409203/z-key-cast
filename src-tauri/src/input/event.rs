@@ -8,9 +8,13 @@ pub enum HudChip {
     Key {
         mods: Vec<KeyRef>,
         key: KeyRef,
+        phase: Phase,
     },
     #[serde(rename = "mouse")]
-    Mouse { button: MouseButton },
+    Mouse {
+        button: MouseButton,
+        phase: Phase,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -42,7 +46,8 @@ pub enum RawInput {
     },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Phase {
     Down,
     Up,

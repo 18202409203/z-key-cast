@@ -39,9 +39,8 @@
     type CaptureSettings,
     type HudColorPresetId,
     type HudPositionSettings,
+    type HudPreset,
     type HudStyleSettings,
-    type KeyboardDisplayMode,
-    type MouseDisplayMode,
   } from "$lib/settings";
   import {
     resolveKeyboardLegendLayout,
@@ -115,9 +114,9 @@
   );
   const showCustomColors = $derived(colorPresetSelect === "custom");
   const showLegendLayout = $derived(
-    hudStyle.keyboardDisplayMode === "key-card" ||
-      hudStyle.keyboardDisplayMode === "keyboard",
+    hudStyle.hudPreset === "lite" || hudStyle.hudPreset === "full",
   );
+  const showDwellMs = $derived(hudStyle.hudPreset !== "full");
   const showPlaceControls = $derived(
     placeModeActive || hudPosition.mode === "custom",
   );
@@ -290,10 +289,11 @@
     next: HudStyleSettings,
     previous: HudStyleSettings,
   ) {
-    hudStyle = next;
+    const cleaned = normalizeHudStyleSettings(next);
+    hudStyle = cleaned;
     hudSaving = true;
     try {
-      hudStyle = await setHudStyleSettings(next);
+      hudStyle = normalizeHudStyleSettings(await setHudStyleSettings(cleaned));
     } catch (err) {
       hudStyle = previous;
       appendLog(`hud style save failed: ${String(err)}`);
@@ -335,21 +335,10 @@
     patchHud({ dwellMs: value });
   }
 
-  function onPersistVisibleChange(event: Event) {
-    const checked = (event.currentTarget as HTMLInputElement).checked;
-    patchHud({ persistVisible: checked });
-  }
-
-  function onKeyboardDisplayModeChange(event: Event) {
-    const value = (event.currentTarget as HTMLSelectElement).value;
-    if (value !== "text" && value !== "key-card" && value !== "keyboard") return;
-    patchHud({ keyboardDisplayMode: value as KeyboardDisplayMode });
-  }
-
-  function onMouseDisplayModeChange(event: Event) {
-    const value = (event.currentTarget as HTMLSelectElement).value;
-    if (value !== "text" && value !== "schematic") return;
-    patchHud({ mouseDisplayMode: value as MouseDisplayMode });
+  function onHudPresetChange(event: Event) {
+    const value = (event.currentTarget as HTMLInputElement).value;
+    if (value !== "text" && value !== "lite" && value !== "full") return;
+    patchHud({ hudPreset: value as HudPreset });
   }
 
   function onKeyMouseLayoutChange(event: Event) {
@@ -772,45 +761,57 @@
         <section>
           <h2>{t("settings.presentation", locale)}</h2>
           <div class="field">
-            <span class="field-label" id="hud-keyboard-mode-label"
-              >{t("settings.keyboardDisplay", locale)}</span
+            <span class="field-label" id="hud-preset-label"
+              >{t("settings.hudPreset", locale)}</span
             >
-            <select
-              id="hud-keyboard-mode"
-              value={hudStyle.keyboardDisplayMode}
-              disabled={!hudReady || hudSaving}
-              aria-labelledby="hud-keyboard-mode-label"
-              onchange={onKeyboardDisplayModeChange}
+            <div
+              class="segmented"
+              role="radiogroup"
+              aria-labelledby="hud-preset-label"
             >
-              <option value="text"
-                >{t("settings.keyboardDisplay.text", locale)}</option
-              >
-              <option value="key-card"
-                >{t("settings.keyboardDisplay.keyCard", locale)}</option
-              >
-              <option value="keyboard"
-                >{t("settings.keyboardDisplay.keyboard", locale)}</option
-              >
-            </select>
-          </div>
-          <div class="field">
-            <span class="field-label" id="hud-mouse-mode-label"
-              >{t("settings.mouseDisplay", locale)}</span
-            >
-            <select
-              id="hud-mouse-mode"
-              value={hudStyle.mouseDisplayMode ?? "text"}
-              disabled={!hudReady || hudSaving}
-              aria-labelledby="hud-mouse-mode-label"
-              onchange={onMouseDisplayModeChange}
-            >
-              <option value="text"
-                >{t("settings.mouseDisplay.text", locale)}</option
-              >
-              <option value="schematic"
-                >{t("settings.mouseDisplay.schematic", locale)}</option
-              >
-            </select>
+              <label class="segment">
+                <input
+                  type="radio"
+                  name="hud-preset"
+                  value="text"
+                  checked={(hudStyle.hudPreset ?? "text") === "text"}
+                  disabled={!hudReady || hudSaving}
+                  onchange={onHudPresetChange}
+                />
+                <span>{t("settings.hudPreset.text", locale)}</span>
+              </label>
+              <label class="segment">
+                <input
+                  type="radio"
+                  name="hud-preset"
+                  value="lite"
+                  checked={hudStyle.hudPreset === "lite"}
+                  disabled={!hudReady || hudSaving}
+                  onchange={onHudPresetChange}
+                />
+                <span>{t("settings.hudPreset.lite", locale)}</span>
+              </label>
+              <label class="segment">
+                <input
+                  type="radio"
+                  name="hud-preset"
+                  value="full"
+                  checked={hudStyle.hudPreset === "full"}
+                  disabled={!hudReady || hudSaving}
+                  onchange={onHudPresetChange}
+                />
+                <span>{t("settings.hudPreset.full", locale)}</span>
+              </label>
+            </div>
+            <p class="field-hint" id="hud-preset-hint">
+              {#if hudStyle.hudPreset === "lite"}
+                {t("settings.hudPreset.liteHint", locale)}
+              {:else if hudStyle.hudPreset === "full"}
+                {t("settings.hudPreset.fullHint", locale)}
+              {:else}
+                {t("settings.hudPreset.textHint", locale)}
+              {/if}
+            </p>
           </div>
           <div class="field">
             <span class="field-label" id="hud-km-layout-label"
@@ -861,43 +862,29 @@
               </select>
             </div>
           {/if}
-          <div class="field">
-            <span class="field-label" id="hud-dwell-ms-label"
-              >{t("settings.dwellMs", locale)}</span
-            >
-            <input
-              id="hud-dwell-ms"
-              type="number"
-              min="200"
-              max="5000"
-              step="50"
-              value={hudStyle.dwellMs}
-              disabled={!hudReady || hudSaving}
-              aria-labelledby="hud-dwell-ms-label"
-              aria-describedby="hud-dwell-ms-hint"
-              title={t("settings.dwellMsHint", locale)}
-              onchange={onDwellMsChange}
-            />
-            <p class="field-hint" id="hud-dwell-ms-hint"
-              >{t("settings.dwellMsHint", locale)}</p
-            >
-          </div>
-          <div class="field field-toggle">
-            <input
-              id="hud-persist-visible"
-              type="checkbox"
-              checked={hudStyle.persistVisible ?? false}
-              disabled={!hudReady || hudSaving}
-              aria-describedby="hud-persist-visible-hint"
-              onchange={onPersistVisibleChange}
-            />
-            <label for="hud-persist-visible"
-              >{t("settings.persistVisible", locale)}</label
-            >
-          </div>
-          <p class="field-hint" id="hud-persist-visible-hint"
-            >{t("settings.persistVisibleHint", locale)}</p
-          >
+          {#if showDwellMs}
+            <div class="field">
+              <span class="field-label" id="hud-dwell-ms-label"
+                >{t("settings.dwellMs", locale)}</span
+              >
+              <input
+                id="hud-dwell-ms"
+                type="number"
+                min="200"
+                max="5000"
+                step="50"
+                value={hudStyle.dwellMs}
+                disabled={!hudReady || hudSaving}
+                aria-labelledby="hud-dwell-ms-label"
+                aria-describedby="hud-dwell-ms-hint"
+                title={t("settings.dwellMsHint", locale)}
+                onchange={onDwellMsChange}
+              />
+              <p class="field-hint" id="hud-dwell-ms-hint"
+                >{t("settings.dwellMsHint", locale)}</p
+              >
+            </div>
+          {/if}
         </section>
 
         <section>
@@ -1307,6 +1294,44 @@
     width: 16px;
     height: 16px;
     accent-color: #38bdf8;
+  }
+
+  .segmented {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .segment {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: 36px;
+    padding: 6px 8px;
+    border-radius: 10px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .segment:has(input:checked) {
+    border-color: #38bdf8;
+    background: color-mix(in srgb, #0ea5e9 18%, #0f172a);
+    color: #e0f2fe;
+  }
+
+  .segment:has(input:disabled) {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .segment input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
   }
 
   .ignore-block {

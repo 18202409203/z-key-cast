@@ -15,6 +15,7 @@
     hudCards,
     isHookStatus,
     isHudChip,
+    isModifierKeyId,
     type HudChip,
     type KeyRef,
   } from "$lib/cast";
@@ -31,6 +32,7 @@
     isUiLocalePayload,
     normalizeHudStyleSettings,
     setUiLocaleSettings,
+    type HudPreset,
     type HudStyleSettings,
   } from "$lib/settings";
   import {
@@ -41,9 +43,12 @@
 
   type KeyChip = Extract<HudChip, { kind: "key" }>;
   type MouseChip = Extract<HudChip, { kind: "mouse" }>;
+  type MouseButton = MouseChip["button"];
 
   let keySlot = $state<KeyChip | null>(null);
   let mouseSlot = $state<MouseChip | null>(null);
+  let heldKeyIds = $state<Set<string>>(new Set());
+  let heldMouseButtons = $state<Set<MouseButton>>(new Set());
   /** When true, overlay shows hook-offline status (re-translated on locale change). */
   let statusActive = $state(false);
   /** Raw reason code; `null` while active → localized "denied" fallback. */
@@ -67,7 +72,12 @@
     resolveKeyboardLegendLayout(style.keyboardLegendLayout),
   );
 
+  const hudPreset = $derived<HudPreset>(style.hudPreset ?? "text");
+  const isFull = $derived(hudPreset === "full");
+  const isLite = $derived(hudPreset === "lite");
+
   const activeKeyIds = $derived.by(() => {
+    if (isFull) return heldKeyIds;
     const ids = new Set<string>();
     if (keySlot) {
       for (const card of hudCards(keySlot)) {
@@ -77,45 +87,33 @@
     return ids;
   });
 
+  const mouseActiveButtons = $derived.by(() => {
+    if (isFull) return heldMouseButtons;
+    if (mouseSlot) return new Set<MouseButton>([mouseSlot.button]);
+    return new Set<MouseButton>();
+  });
+
   const chipBackground = $derived(
     hudBackgroundCss(style.backgroundColor, style.backgroundOpacity),
   );
 
-  const persistVisible = $derived(style.persistVisible === true);
-
-  const pinKey = $derived(
-    persistVisible && style.keyboardDisplayMode === "keyboard",
-  );
-
-  const pinMouse = $derived(
-    persistVisible && style.mouseDisplayMode === "schematic",
-  );
-
-  const showKeyboardMap = $derived(
-    pinKey ||
-      (keySlot !== null && style.keyboardDisplayMode === "keyboard"),
-  );
-
-  const showKeyCards = $derived(
-    keySlot !== null && style.keyboardDisplayMode === "key-card",
-  );
-
-  const showMouseSchematic = $derived(
-    pinMouse ||
-      (mouseSlot !== null && style.mouseDisplayMode === "schematic"),
-  );
+  const showKeyboardMap = $derived(isFull);
+  const showKeyCards = $derived(isLite && keySlot !== null);
+  const showMouseSchematic = $derived(isFull || (isLite && mouseSlot !== null));
 
   const showKeySide = $derived(
-    showKeyboardMap || showKeyCards || keySlot !== null,
+    showKeyboardMap || showKeyCards || (!isFull && !isLite && keySlot !== null),
   );
 
   const showMouseSide = $derived(
-    showMouseSchematic || mouseSlot !== null,
+    showMouseSchematic || (!isFull && !isLite && mouseSlot !== null),
   );
 
   const showKmGroup = $derived(
     !statusActive &&
-      (keySlot !== null || mouseSlot !== null || pinKey || pinMouse),
+      (isFull ||
+        keySlot !== null ||
+        mouseSlot !== null),
   );
 
   function clearTimer(timer: ReturnType<typeof setTimeout> | null) {
@@ -143,10 +141,14 @@
     clearStatusIdleTimer();
   }
 
+  function clearHeldSets() {
+    heldKeyIds = new Set();
+    heldMouseButtons = new Set();
+  }
+
   function armKeyIdle() {
     clearKeyIdleTimer();
-    // Persist + text/key-card: keep the last chip; do not idle-hide.
-    if (persistVisible && !pinKey) return;
+    if (isFull) return;
     keyIdleTimer = setTimeout(() => {
       keySlot = null;
       keyIdleTimer = null;
@@ -155,8 +157,7 @@
 
   function armMouseIdle() {
     clearMouseIdleTimer();
-    // Persist + text: keep the last chip; schematic still clears highlights.
-    if (persistVisible && !pinMouse) return;
+    if (isFull) return;
     mouseIdleTimer = setTimeout(() => {
       mouseSlot = null;
       mouseIdleTimer = null;
@@ -177,13 +178,56 @@
   }
 
   function applyStyle(next: HudStyleSettings) {
-    style = normalizeHudStyleSettings(next);
-    if (keySlot !== null) armKeyIdle();
-    if (mouseSlot !== null) armMouseIdle();
+    const previousPreset = style.hudPreset ?? "text";
+    const normalized = normalizeHudStyleSettings(next);
+    style = normalized;
+    const nextPreset = normalized.hudPreset;
+
+    if (previousPreset === "full" && nextPreset !== "full") {
+      clearHeldSets();
+    }
+    if (previousPreset !== "full" && nextPreset === "full") {
+      clearHeldSets();
+      keySlot = null;
+      mouseSlot = null;
+      clearKeyIdleTimer();
+      clearMouseIdleTimer();
+    }
+
+    // Use nextPreset (not derived `isFull`) so re-arming is deterministic in this sync path.
+    if (nextPreset !== "full") {
+      if (keySlot !== null) armKeyIdle();
+      if (mouseSlot !== null) armMouseIdle();
+    }
     if (statusActive) armStatusIdle();
   }
 
+  function applyFullHeld(chip: HudChip) {
+    if (chip.kind === "key") {
+      const next = new Set(heldKeyIds);
+      if (chip.phase === "down") next.add(chip.key.id);
+      else next.delete(chip.key.id);
+      heldKeyIds = next;
+      return;
+    }
+    const next = new Set(heldMouseButtons);
+    if (chip.phase === "down") next.add(chip.button);
+    else next.delete(chip.button);
+    heldMouseButtons = next;
+  }
+
   function showChip(chip: HudChip) {
+    if (isFull) {
+      clearStatusIdleTimer();
+      clearStatus();
+      applyFullHeld(chip);
+      return;
+    }
+
+    // Text / Lite: ignore ups and bare-modifier downs.
+    if (chip.phase === "up") return;
+    if (chip.kind === "key" && isModifierKeyId(chip.key.id)) return;
+
     if (chip.kind === "key") {
       clearStatusIdleTimer();
       clearStatus();
@@ -200,6 +244,7 @@
   function showHookOffline(reason: string | undefined) {
     keySlot = null;
     mouseSlot = null;
+    clearHeldSets();
     clearKeyIdleTimer();
     clearMouseIdleTimer();
     statusActive = true;
@@ -406,7 +451,7 @@
           {#if showMouseSchematic}
             <div transition:fade={{ duration: 200 }}>
               <MouseSchematic
-                button={mouseSlot?.button}
+                activeButtons={mouseActiveButtons}
                 textColor={style.textColor}
                 backgroundCss={chipBackground}
                 fontSizePx={style.fontSizePx}

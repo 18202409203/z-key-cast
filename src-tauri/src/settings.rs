@@ -80,14 +80,14 @@ fn dedupe_preserve_order(ids: Vec<String>) -> Vec<String> {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "kebab-case")]
-pub enum KeyboardDisplayMode {
+#[serde(rename_all = "lowercase")]
+pub enum HudPreset {
     Text,
-    KeyCard,
-    Keyboard,
+    Lite,
+    Full,
 }
 
-impl Default for KeyboardDisplayMode {
+impl Default for HudPreset {
     fn default() -> Self {
         Self::Text
     }
@@ -104,19 +104,6 @@ pub enum KeyboardLegendLayout {
 impl Default for KeyboardLegendLayout {
     fn default() -> Self {
         Self::Auto
-    }
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "kebab-case")]
-pub enum MouseDisplayMode {
-    Text,
-    Schematic,
-}
-
-impl Default for MouseDisplayMode {
-    fn default() -> Self {
-        Self::Text
     }
 }
 
@@ -184,7 +171,7 @@ pub struct HudPlaceModePayload {
     pub active: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct HudStyleSettings {
     pub font_size_px: u32,
@@ -193,13 +180,9 @@ pub struct HudStyleSettings {
     pub background_opacity: f64,
     pub dwell_ms: u32,
     #[serde(default)]
-    pub persist_visible: bool,
-    #[serde(default)]
-    pub keyboard_display_mode: KeyboardDisplayMode,
+    pub hud_preset: HudPreset,
     #[serde(default)]
     pub keyboard_legend_layout: KeyboardLegendLayout,
-    #[serde(default)]
-    pub mouse_display_mode: MouseDisplayMode,
     #[serde(default)]
     pub key_mouse_layout: KeyMouseLayout,
 }
@@ -212,12 +195,69 @@ impl Default for HudStyleSettings {
             background_color: "#0f172a".into(),
             background_opacity: 0.82,
             dwell_ms: 1000,
-            persist_visible: false,
-            keyboard_display_mode: KeyboardDisplayMode::Text,
+            hud_preset: HudPreset::Text,
             keyboard_legend_layout: KeyboardLegendLayout::Auto,
-            mouse_display_mode: MouseDisplayMode::Text,
             key_mouse_layout: KeyMouseLayout::KeyLeftMouseRight,
         }
+    }
+}
+
+/// Intermediate deserialize shape that accepts legacy dual display modes.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct HudStyleSettingsDe {
+    font_size_px: u32,
+    text_color: String,
+    background_color: String,
+    background_opacity: f64,
+    dwell_ms: u32,
+    /// Parsed as string so garbage values become `Text` instead of failing the file.
+    #[serde(default)]
+    hud_preset: Option<String>,
+    /// Legacy → maps to `hud_preset` when preset absent.
+    #[serde(default)]
+    keyboard_display_mode: Option<String>,
+    #[serde(default)]
+    keyboard_legend_layout: KeyboardLegendLayout,
+    #[serde(default)]
+    key_mouse_layout: KeyMouseLayout,
+}
+
+fn hud_preset_from_raw(
+    hud_preset: Option<&str>,
+    keyboard_display_mode: Option<&str>,
+) -> HudPreset {
+    match hud_preset {
+        Some("text") => HudPreset::Text,
+        Some("lite") => HudPreset::Lite,
+        Some("full") => HudPreset::Full,
+        Some(_) => HudPreset::Text, // garbage → text
+        None => match keyboard_display_mode {
+            Some("key-card") => HudPreset::Lite,
+            Some("keyboard") => HudPreset::Full,
+            _ => HudPreset::Text,
+        },
+    }
+}
+
+impl<'de> Deserialize<'de> for HudStyleSettings {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = HudStyleSettingsDe::deserialize(deserializer)?;
+        let hud_preset =
+            hud_preset_from_raw(raw.hud_preset.as_deref(), raw.keyboard_display_mode.as_deref());
+        Ok(Self {
+            font_size_px: raw.font_size_px,
+            text_color: raw.text_color,
+            background_color: raw.background_color,
+            background_opacity: raw.background_opacity,
+            dwell_ms: raw.dwell_ms,
+            hud_preset,
+            keyboard_legend_layout: raw.keyboard_legend_layout,
+            key_mouse_layout: raw.key_mouse_layout,
+        })
     }
 }
 
@@ -377,7 +417,7 @@ pub fn mouse_click_ripple_enabled() -> bool {
 pub fn filter_key_chip(chip: HudChip) -> Option<HudChip> {
     match chip {
         HudChip::Mouse { .. } => Some(chip),
-        HudChip::Key { mods, key } => {
+        HudChip::Key { mods, key, phase } => {
             let ignored = ignored_lock().lock().ok();
             let is_ignored = |id: &str| {
                 ignored
@@ -392,7 +432,7 @@ pub fn filter_key_chip(chip: HudChip) -> Option<HudChip> {
                 .into_iter()
                 .filter(|m| !is_ignored(&m.id))
                 .collect();
-            Some(HudChip::Key { mods, key })
+            Some(HudChip::Key { mods, key, phase })
         }
     }
 }
@@ -785,9 +825,11 @@ mod tests {
         let key = HudChip::Key {
             mods: vec![],
             key: KeyRef::new("KeyA", "A"),
+            phase: crate::input::Phase::Down,
         };
         let mouse = HudChip::Mouse {
             button: MouseButton::Left,
+            phase: crate::input::Phase::Down,
         };
         assert!(allows_chip(&key));
         assert!(allows_chip(&mouse));
@@ -800,9 +842,11 @@ mod tests {
         let key = HudChip::Key {
             mods: vec![],
             key: KeyRef::new("KeyA", "A"),
+            phase: crate::input::Phase::Down,
         };
         let mouse = HudChip::Mouse {
             button: MouseButton::Left,
+            phase: crate::input::Phase::Down,
         };
         assert!(!allows_chip(&key));
         assert!(allows_chip(&mouse));
@@ -825,6 +869,7 @@ mod tests {
     fn mouse_click_ripple_does_not_gate_mouse_chips() {
         let mouse = HudChip::Mouse {
             button: MouseButton::Left,
+            phase: crate::input::Phase::Down,
         };
 
         CAPTURE_MOUSE.store(false, Ordering::Relaxed);
@@ -847,6 +892,7 @@ mod tests {
         let chip = HudChip::Key {
             mods: vec![KeyRef::new("MetaLeft", "⌘")],
             key: KeyRef::new("KeyA", "A"),
+            phase: crate::input::Phase::Down,
         };
         assert!(filter_key_chip(chip).is_none());
         set_ignored(&[]);
@@ -861,13 +907,15 @@ mod tests {
                 KeyRef::new("ShiftLeft", "⇧"),
             ],
             key: KeyRef::new("KeyS", "S"),
+            phase: crate::input::Phase::Down,
         };
         let filtered = filter_key_chip(chip).expect("primary kept");
         match filtered {
-            HudChip::Key { mods, key } => {
+            HudChip::Key { mods, key, phase } => {
                 assert_eq!(key.id, "KeyS");
                 assert_eq!(mods.len(), 1);
                 assert_eq!(mods[0].id, "ShiftLeft");
+                assert_eq!(phase, crate::input::Phase::Down);
             }
             HudChip::Mouse { .. } => panic!("expected key chip"),
         }
@@ -880,10 +928,11 @@ mod tests {
         let chip = HudChip::Key {
             mods: vec![KeyRef::new("MetaLeft", "⌘")],
             key: KeyRef::new("KeyA", "A"),
+            phase: crate::input::Phase::Down,
         };
         let filtered = filter_key_chip(chip).expect("kept");
         match filtered {
-            HudChip::Key { mods, key } => {
+            HudChip::Key { mods, key, .. } => {
                 assert_eq!(key.id, "KeyA");
                 assert_eq!(mods.len(), 1);
             }
@@ -896,11 +945,13 @@ mod tests {
         set_ignored(&["KeyA", "MetaLeft"]);
         let mouse = HudChip::Mouse {
             button: MouseButton::Left,
+            phase: crate::input::Phase::Down,
         };
         assert!(matches!(
             filter_key_chip(mouse),
             Some(HudChip::Mouse {
-                button: MouseButton::Left
+                button: MouseButton::Left,
+                phase: crate::input::Phase::Down,
             })
         ));
         set_ignored(&[]);
@@ -942,10 +993,8 @@ mod tests {
             background_color: "#0f172a".into(),
             background_opacity: 2.0,
             dwell_ms: 10,
-            persist_visible: true,
-            keyboard_display_mode: KeyboardDisplayMode::Text,
+            hud_preset: HudPreset::Full,
             keyboard_legend_layout: KeyboardLegendLayout::Auto,
-            mouse_display_mode: MouseDisplayMode::Text,
             key_mouse_layout: KeyMouseLayout::KeyLeftMouseRight,
         }
         .clamp();
@@ -953,7 +1002,7 @@ mod tests {
         assert_eq!(clamped.dwell_ms, 200);
         assert_eq!(clamped.background_opacity, 1.0);
         assert_eq!(clamped.text_color, "#f8fafc");
-        assert!(clamped.persist_visible);
+        assert_eq!(clamped.hud_preset, HudPreset::Full);
     }
 
     #[test]
@@ -965,7 +1014,7 @@ mod tests {
         assert!(!parsed.mouse_click_ripple);
         assert!(parsed.ignored_key_ids.is_empty());
         assert_eq!(parsed.hud.dwell_ms, 1000);
-        assert!(!parsed.hud.persist_visible);
+        assert_eq!(parsed.hud.hud_preset, HudPreset::Text);
         assert_eq!(
             parsed.hud.key_mouse_layout,
             KeyMouseLayout::KeyLeftMouseRight
@@ -992,16 +1041,16 @@ mod tests {
     }
 
     #[test]
-    fn persist_visible_omitted_defaults_false() {
+    fn hud_preset_omitted_defaults_text() {
         let omitted = r##"{
             "captureKeyboard":true,
             "captureMouse":true,
             "hud":{"fontSizePx":15,"textColor":"#f8fafc","backgroundColor":"#0f172a","backgroundOpacity":0.82,"dwellMs":1000}
         }"##;
         let parsed: AppSettings = serde_json::from_str(omitted).unwrap();
-        assert!(!parsed.hud.persist_visible);
+        assert_eq!(parsed.hud.hud_preset, HudPreset::Text);
 
-        let enabled = r##"{
+        let full = r##"{
             "captureKeyboard":true,
             "captureMouse":true,
             "hud":{
@@ -1010,31 +1059,81 @@ mod tests {
                 "backgroundColor":"#0f172a",
                 "backgroundOpacity":0.82,
                 "dwellMs":1000,
-                "persistVisible":true
+                "hudPreset":"full"
             }
         }"##;
-        let parsed: AppSettings = serde_json::from_str(enabled).unwrap();
-        assert!(parsed.hud.persist_visible);
+        let parsed: AppSettings = serde_json::from_str(full).unwrap();
+        assert_eq!(parsed.hud.hud_preset, HudPreset::Full);
         assert!(parsed.capture_keyboard);
         assert!(parsed.capture_mouse);
         assert_eq!(parsed.hud.dwell_ms, 1000);
-        assert_eq!(
-            parsed.hud.keyboard_display_mode,
-            KeyboardDisplayMode::Text
-        );
     }
 
     #[test]
-    fn persist_visible_roundtrip_keeps_sibling_fields() {
+    fn hud_preset_migrates_from_legacy_keyboard_mode() {
+        let legacy = r##"{
+            "captureKeyboard":true,
+            "captureMouse":true,
+            "hud":{
+                "fontSizePx":15,
+                "textColor":"#f8fafc",
+                "backgroundColor":"#0f172a",
+                "backgroundOpacity":0.82,
+                "dwellMs":1000,
+                "keyboardDisplayMode":"key-card",
+                "mouseDisplayMode":"schematic",
+                "persistVisible":true
+            }
+        }"##;
+        let parsed: AppSettings = serde_json::from_str(legacy).unwrap();
+        assert_eq!(parsed.hud.hud_preset, HudPreset::Lite);
+
+        let keyboard = r##"{
+            "captureKeyboard":true,
+            "captureMouse":true,
+            "hud":{
+                "fontSizePx":15,
+                "textColor":"#f8fafc",
+                "backgroundColor":"#0f172a",
+                "backgroundOpacity":0.82,
+                "dwellMs":1000,
+                "keyboardDisplayMode":"keyboard"
+            }
+        }"##;
+        let parsed: AppSettings = serde_json::from_str(keyboard).unwrap();
+        assert_eq!(parsed.hud.hud_preset, HudPreset::Full);
+    }
+
+    #[test]
+    fn hud_preset_garbage_defaults_text_without_wiping_siblings() {
+        let raw = r##"{
+            "captureKeyboard":false,
+            "captureMouse":true,
+            "ignoredKeyIds":["Escape"],
+            "hud":{
+                "fontSizePx":15,
+                "textColor":"#f8fafc",
+                "backgroundColor":"#0f172a",
+                "backgroundOpacity":0.82,
+                "dwellMs":1000,
+                "hudPreset":"not-a-preset"
+            }
+        }"##;
+        let parsed: AppSettings = serde_json::from_str(raw).unwrap();
+        assert_eq!(parsed.hud.hud_preset, HudPreset::Text);
+        assert!(!parsed.capture_keyboard);
+        assert_eq!(parsed.ignored_key_ids, vec!["Escape"]);
+    }
+
+    #[test]
+    fn hud_preset_roundtrip_keeps_sibling_fields() {
         let settings = AppSettings {
             capture_keyboard: false,
             capture_mouse: true,
             mouse_click_ripple: true,
             ignored_key_ids: vec!["Escape".into(), "KeyA".into()],
             hud: HudStyleSettings {
-                persist_visible: true,
-                keyboard_display_mode: KeyboardDisplayMode::Keyboard,
-                mouse_display_mode: MouseDisplayMode::Schematic,
+                hud_preset: HudPreset::Full,
                 ..HudStyleSettings::default()
             },
             hud_position: HudPositionSettings::Corner {
@@ -1048,15 +1147,10 @@ mod tests {
         assert!(parsed.capture_mouse);
         assert!(parsed.mouse_click_ripple);
         assert_eq!(parsed.ignored_key_ids, vec!["Escape", "KeyA"]);
-        assert!(parsed.hud.persist_visible);
-        assert_eq!(
-            parsed.hud.keyboard_display_mode,
-            KeyboardDisplayMode::Keyboard
-        );
-        assert_eq!(
-            parsed.hud.mouse_display_mode,
-            MouseDisplayMode::Schematic
-        );
+        assert_eq!(parsed.hud.hud_preset, HudPreset::Full);
+        assert!(!raw.contains("persistVisible"));
+        assert!(!raw.contains("keyboardDisplayMode"));
+        assert!(!raw.contains("mouseDisplayMode"));
         assert_eq!(
             parsed.hud_position,
             HudPositionSettings::Corner {

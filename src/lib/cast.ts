@@ -5,9 +5,11 @@ export type KeyRef = {
   label: string;
 };
 
+export type HudPhase = "down" | "up";
+
 export type HudChip =
-  | { kind: "key"; mods: KeyRef[]; key: KeyRef }
-  | { kind: "mouse"; button: "left" | "right" | "middle" };
+  | { kind: "key"; mods: KeyRef[]; key: KeyRef; phase: HudPhase }
+  | { kind: "mouse"; button: "left" | "right" | "middle"; phase: HudPhase };
 
 export type MouseRippleEvent = {
   /** Logical/CSS px from primary monitor top-left. */
@@ -32,11 +34,24 @@ function isKeyRef(value: unknown): value is KeyRef {
   return typeof ref.id === "string" && typeof ref.label === "string";
 }
 
+function isHudPhase(value: unknown): value is HudPhase {
+  return value === "down" || value === "up";
+}
+
+/** Modifier ids used by ChipReducer / Full held-set (bare-mod chips). */
+export function isModifierKeyId(id: string): boolean {
+  return (
+    id.startsWith("Control") ||
+    id.startsWith("Alt") ||
+    id.startsWith("Shift") ||
+    id.startsWith("Meta")
+  );
+}
+
 export function isHudChip(value: unknown): value is HudChip {
   if (!value || typeof value !== "object") return false;
   const chip = value as Record<string, unknown>;
-  // Public wire contract has no `phase` (raw downs/ups stay internal).
-  if ("phase" in chip) return false;
+  if (!isHudPhase(chip.phase)) return false;
 
   if (chip.kind === "key") {
     return (
@@ -105,9 +120,9 @@ export function summarizeHudChip(chip: HudChip): string {
   if (chip.kind === "key") {
     const modIds = chip.mods.map((m) => m.id).join(",");
     const modPart = modIds ? ` mods=[${modIds}]` : "";
-    return `key${modPart} key=${chip.key.id} · ${formatHudLabel(chip)}`;
+    return `key ${chip.phase}${modPart} key=${chip.key.id} · ${formatHudLabel(chip)}`;
   }
-  return `mouse button=${chip.button} · ${formatHudLabel(chip)}`;
+  return `mouse ${chip.phase} button=${chip.button} · ${formatHudLabel(chip)}`;
 }
 
 export function summarizeHookStatus(status: HookStatus): string {

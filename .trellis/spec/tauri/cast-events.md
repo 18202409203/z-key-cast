@@ -42,17 +42,18 @@ export function formatHudLabel(chip: HudChip): string;
 
 ### 3. Contracts
 
-**`cast://event` → `HudChip`** (breaking vs older raw `CastEvent`; no `phase`)
+**`cast://event` → `HudChip`** (includes `phase`; emitter always sends precise down/up)
 
 | Variant | Fields | Notes |
 |---------|--------|-------|
-| `key` | `mods: KeyRef[]`, `key: KeyRef` | Emitted on primary key **down** only; bare modifiers do not emit |
-| `mouse` | `button: "left" \| "right" \| "middle"` | Emitted on button **down** only |
+| `key` | `mods: KeyRef[]`, `key: KeyRef`, `phase: "down" \| "up"` | Bare modifiers and primary keys both emit; consumers filter |
+| `mouse` | `button: "left" \| "right" \| "middle"`, `phase: "down" \| "up"` | Button down **and** up |
 
 `KeyRef = { id: string; label: string }`
 
 - `id`: stable logical name (`MetaLeft`, `ShiftRight`, `KeyS`, `Digit1`, `Numpad1`, `Backspace`, `ForwardDelete`, …)
 - `label`: short text-HUD display (left/right Meta both `"⌘"`)
+- Bare mod: `key` = that modifier; `mods` = other currently held modifiers (**exclude self**)
 
 **`cast://mouse-ripple` → `MouseRippleEvent`** (not part of `HudChip`; do not put coords on mouse chips)
 
@@ -83,9 +84,9 @@ export function formatHudLabel(chip: HudChip): string;
 | Non-macOS | Stub emits `{ ok: false, reason: "unsupported_platform" }` |
 | Key autorepeat (`KEYBOARD_EVENT_AUTOREPEAT`) | Drop before chip reduce |
 | Same primary key-down within ~35ms | Drop in `EventFilter` |
-| Modifier-only down/up | Update held-mod state; **no** `HudChip` emit |
+| Modifier-only down/up | Update held-mod state **and** emit `HudChip::Key` with `phase` |
 | Left/right same-mod FlagsChanged (shared flag bit) | Phase via `modifier_transition(flag_on, was_held)` so releasing one side while the other stays held clears only that `KeyRef` |
-| Key / mouse up | No emit |
+| Key / mouse up | Emit with `phase: "up"` (same shape as down) |
 | `captureKeyboard == false` | After reduce, drop `HudChip::Key` before emit (held-mod state still updates) |
 | `captureMouse == false` | After reduce, drop `HudChip::Mouse` before emit |
 | Primary `key.id` ∈ `ignoredKeyIds` | After reduce, drop whole key chip before emit |
@@ -121,15 +122,15 @@ type CaptureSettings = {
 
 ### 5. Good / Base / Bad Cases
 
-- **Good**: `{ "kind":"key","mods":[{"id":"MetaLeft","label":"⌘"},{"id":"ShiftLeft","label":"⇧"}],"key":{"id":"KeyS","label":"S"} }`
-- **Base**: `{ "kind":"mouse","button":"left" }`
-- **Bad**: payloads with `phase`; scroll/wheel; inventing `kind:"combo"`; emitting bare `MetaLeft` as a chip; Win/Linux fake success without a real hook
+- **Good**: `{ "kind":"key","mods":[{"id":"MetaLeft","label":"⌘"},{"id":"ShiftLeft","label":"⇧"}],"key":{"id":"KeyS","label":"S"},"phase":"down" }`
+- **Base**: `{ "kind":"mouse","button":"left","phase":"down" }`
+- **Bad**: missing `phase`; scroll/wheel; inventing `kind:"combo"`; Win/Linux fake success without a real hook
 
 ### 6. Tests Required
 
 - `cargo check` (+ `cargo test` for chip reducer + `settings::{allows_chip,filter_key_chip,ignore capture}` unit tests)
 - `npm run check` (guards + listeners + `$lib/settings` / `$lib/key-ignore-presets` typecheck)
-- Manual: denied Accessibility → main log shows failed hook-status; grant → key + mouse HUD slots can show together (keyboard above mouse); bare mods silent; each side idle-fades on its own `dwellMs`; hold key → no repeat spam; toggle keyboard/mouse independently → only that side’s chips stop/resume without restart; ignore primary / strip ignored mod; category toggles; Add key (incl. Escape) + Cancel-only exit; capture press neither HUD nor log; hook-status fail → clears both slots and shows exclusive status banner
+- Manual: denied Accessibility → main log shows failed hook-status; grant → key + mouse HUD slots can show together; bare mods silent on Text/Lite bar but light Full board; each Text/Lite side idle-fades on its own `dwellMs`; Full pin ignores dwell; hold key → no repeat spam; toggle keyboard/mouse independently → only that side’s chips stop/resume without restart; ignore primary / strip ignored mod; category toggles; Add key (incl. Escape) + Cancel-only exit; capture press neither HUD nor log; hook-status fail → clears both slots and shows exclusive status banner; Log lists down and up
 
 ### 7. Wrong vs Correct
 
@@ -163,8 +164,9 @@ void listen(EVENT_CHANNEL, (event) => {
 
 ### Chip reduce scope
 
-- **Decision**: Primary/mouse down → one chip; drop ups; bare mods update state only
-- **Out of scope**: Multi-chip history, display skins
+- **Decision**: Emit precise down/up for primary keys, bare modifiers, and mouse; autorepeat / short debounce still drop before reduce
+- **Consumers**: Text/Lite ignore `up` and bare-mod-only downs for the bar; Full maintains held-sets; Log records both phases
+- **Out of scope**: Multi-chip history, display skins beyond presets
 
 ### Capture toggles (filter after reduce)
 
@@ -188,17 +190,19 @@ void listen(EVENT_CHANNEL, (event) => {
 
 ### HUD style settings
 
-- **Channel**: `cast://hud-style` → `HudStyleSettings` (`fontSizePx`, `textColor`, `backgroundColor`, `backgroundOpacity`, `dwellMs`, `persistVisible`)
+- **Channel**: `cast://hud-style` → `HudStyleSettings` (`fontSizePx`, `textColor`, `backgroundColor`, `backgroundOpacity`, `dwellMs`, `hudPreset`)
 - **Commands**: `get_hud_style_settings` / `set_hud_style_settings` (persist in same `settings.json` as capture; never wipe sibling fields)
-- **Overlay**: load on mount + `listen`; dual slots (`keySlot` / `mouseSlot`) with independent idle timers sharing `dwellMs`; status message is exclusive (clears both slots); defaults match MVP (`dwellMs=1000`, `persistVisible=false`)
-- **`persistVisible`**: omit → `false`. Pins full-keyboard / mouse-schematic **surfaces** (empty board/mouse can show); idle still clears slots so highlights follow `dwellMs`. Text / key-card skip hide timers (last chip stays). Status still exclusive (covers pins while shown).
-- **`persistVisible` pin vs slot**: `pinKey = persist && keyboardDisplayMode==="keyboard"`; `pinMouse = persist && mouseDisplayMode==="schematic"`. Idle timeout sets `keySlot`/`mouseSlot` to `null` (unhighlight) but does not unmount a pin. `MouseSchematic.button` is optional (`null` = unpressed).
-- **`persistVisible` follow-on**: later persist up/down must keep writing slots — do **not** fork a second highlight store. This task does not emit key/mouse up (`HudChip` still down-only).
-- **`persistVisible` tests**: omit JSON → `false`; clamp must not reset `true` → `false`; serialize/parse roundtrip keeps sibling capture/position/locale fields.
-- **Wrong**: persist hides the schematic after dwell, or persist keeps last key highlighted forever on the full keyboard. **Correct**: board/mouse stay; highlights follow `dwellMs`.
+- **`hudPreset`**: `"text"` | `"lite"` | `"full"` (default `"text"`). Replaces `keyboardDisplayMode` × `mouseDisplayMode` × `persistVisible`.
+  | Preset | Keyboard | Mouse | Pin | Highlight |
+  |--------|----------|-------|-----|-----------|
+  | `text` | text chip | text chip | no | last down + `dwellMs` |
+  | `lite` | key-card | schematic | no | last down + `dwellMs` |
+  | `full` | keyboard map | schematic | always | held-set from down/up; ignore dwell |
+- **Migration**: if `hudPreset` absent, map legacy `keyboardDisplayMode` (`text`→text, `key-card`→lite, `keyboard`→full); else `"text"`. Strip legacy fields on next write.
+- **Overlay**: load on mount + `listen`; Text/Lite dual slots with independent idle timers sharing `dwellMs`; Full held key-id / mouse-button sets; status message is exclusive (clears slots + held sets); defaults `dwellMs=1000`, `hudPreset="text"`
+- **Settings UI**: one segmented Text·Lite·Full; **hide** dwell when Full
+- **`MouseSchematic`**: `activeButtons` iterable (multi-button for Full; Lite usually 0–1)
 - **Clamp**: font 10–48, dwell 200–5000, opacity 0–1, colors `#rgb`/`#rrggbb`
-- **`keyboardDisplayMode`**: `text` | `key-card` | `keyboard`
-- **`mouseDisplayMode`**: `text` | `schematic` (independent; schematic is a cropped pebble mouse-head with no palm stub; resting body uses HUD background like keycaps; pressed L/M/R uses HUD `textColor` solid fill on `MouseSchematic`, not stroke-only highlight)
 - **`keyboardLegendLayout`**: `auto` (OS guess) | `mac-us` | `win-us` — dual-glyph legends from `$lib/key-legends.ts` (US ANSI `!`/`1` etc.); key-card + full keyboard consume the resolved layout. Prefer glyphs (`↵` enter, `⌫`/`⌦` delete pair, `⇥` tab, `⇧` shift); Caps is text `Caps` (avoid `⇪` vs `⇧` confusion at small size). `NumLock` → Clr/Num by layout.
 
 ### HUD position settings
