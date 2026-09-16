@@ -292,6 +292,11 @@
     patchHud({ dwellMs: value });
   }
 
+  function onPersistVisibleChange(event: Event) {
+    const checked = (event.currentTarget as HTMLInputElement).checked;
+    patchHud({ persistVisible: checked });
+  }
+
   function onKeyboardDisplayModeChange(event: Event) {
     const value = (event.currentTarget as HTMLSelectElement).value;
     if (value !== "text" && value !== "key-card" && value !== "keyboard") return;
@@ -833,6 +838,22 @@
               >{t("settings.dwellMsHint", locale)}</p
             >
           </div>
+          <div class="field field-toggle">
+            <input
+              id="hud-persist-visible"
+              type="checkbox"
+              checked={hudStyle.persistVisible ?? false}
+              disabled={!hudReady || hudSaving}
+              aria-describedby="hud-persist-visible-hint"
+              onchange={onPersistVisibleChange}
+            />
+            <label for="hud-persist-visible"
+              >{t("settings.persistVisible", locale)}</label
+            >
+          </div>
+          <p class="field-hint" id="hud-persist-visible-hint"
+            >{t("settings.persistVisibleHint", locale)}</p
+          >
         </section>
 
         <section>

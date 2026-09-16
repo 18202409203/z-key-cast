@@ -35,5 +35,5 @@ This layer owns Rust-side modules under `src-tauri/` and the wire contracts shar
 - [ ] Chip reducer: bare mods no emit; primary/mouse down only
 - [ ] Capture toggles filter **after** reduce via `allows_chip`, not by skipping reduce
 - [ ] Capture / HUD style / HUD position commands have ACL permissions; saves preserve sibling `settings.json` fields
-- [ ] `cast://hud-style` hot-updates overlay dwell + chip CSS without restart
+- [ ] `cast://hud-style` hot-updates overlay dwell, `persistVisible` pin surfaces, and chip CSS without restart
 - [ ] `cast://hud-place-mode` drives overlay drag affordance; non-place mode stays click-through

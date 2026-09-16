@@ -163,9 +163,14 @@ void listen(EVENT_CHANNEL, (event) => {
 
 ### HUD style settings
 
-- **Channel**: `cast://hud-style` → `HudStyleSettings` (`fontSizePx`, `textColor`, `backgroundColor`, `backgroundOpacity`, `dwellMs`)
+- **Channel**: `cast://hud-style` → `HudStyleSettings` (`fontSizePx`, `textColor`, `backgroundColor`, `backgroundOpacity`, `dwellMs`, `persistVisible`)
 - **Commands**: `get_hud_style_settings` / `set_hud_style_settings` (persist in same `settings.json` as capture; never wipe sibling fields)
-- **Overlay**: load on mount + `listen`; dual slots (`keySlot` / `mouseSlot`) with independent idle timers sharing `dwellMs`; status message is exclusive (clears both slots); defaults match MVP (`dwellMs=1000`)
+- **Overlay**: load on mount + `listen`; dual slots (`keySlot` / `mouseSlot`) with independent idle timers sharing `dwellMs`; status message is exclusive (clears both slots); defaults match MVP (`dwellMs=1000`, `persistVisible=false`)
+- **`persistVisible`**: omit → `false`. Pins full-keyboard / mouse-schematic **surfaces** (empty board/mouse can show); idle still clears slots so highlights follow `dwellMs`. Text / key-card skip hide timers (last chip stays). Status still exclusive (covers pins while shown).
+- **`persistVisible` pin vs slot**: `pinKey = persist && keyboardDisplayMode==="keyboard"`; `pinMouse = persist && mouseDisplayMode==="schematic"`. Idle timeout sets `keySlot`/`mouseSlot` to `null` (unhighlight) but does not unmount a pin. `MouseSchematic.button` is optional (`null` = unpressed).
+- **`persistVisible` follow-on**: later persist up/down must keep writing slots — do **not** fork a second highlight store. This task does not emit key/mouse up (`HudChip` still down-only).
+- **`persistVisible` tests**: omit JSON → `false`; clamp must not reset `true` → `false`; serialize/parse roundtrip keeps sibling capture/position/locale fields.
+- **Wrong**: persist hides the schematic after dwell, or persist keeps last key highlighted forever on the full keyboard. **Correct**: board/mouse stay; highlights follow `dwellMs`.
 - **Clamp**: font 10–48, dwell 200–5000, opacity 0–1, colors `#rgb`/`#rrggbb`
 - **`keyboardDisplayMode`**: `text` | `key-card` | `keyboard`
 - **`mouseDisplayMode`**: `text` | `schematic` (independent; schematic is a cropped pebble mouse-head with no palm stub; pressed L/M/R uses HUD `textColor` solid fill on `MouseSchematic`, not stroke-only highlight)

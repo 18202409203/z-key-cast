@@ -40,6 +40,8 @@ export type HudStyleSettings = {
   backgroundColor: string;
   backgroundOpacity: number;
   dwellMs: number;
+  /** Omitted in older settings → treat as `false`. */
+  persistVisible?: boolean;
   /** Omitted in older settings → treat as `"text"`. */
   keyboardDisplayMode?: KeyboardDisplayMode;
   /** Omitted → `"auto"` (guess from OS). */
@@ -56,6 +58,7 @@ export const DEFAULT_HUD_STYLE: HudStyleSettings = {
   backgroundColor: "#0f172a",
   backgroundOpacity: 0.82,
   dwellMs: 1000,
+  persistVisible: false,
   keyboardDisplayMode: "text",
   keyboardLegendLayout: "auto",
   mouseDisplayMode: "text",
@@ -184,11 +187,15 @@ export function isHudStyleSettings(value: unknown): value is HudStyleSettings {
   ) {
     return false;
   }
+  if (s.persistVisible !== undefined && typeof s.persistVisible !== "boolean") {
+    return false;
+  }
   return true;
 }
 
 /** Fill defaults for fields omitted by older settings.json / emits. */
 export function normalizeHudStyleSettings(value: HudStyleSettings): HudStyleSettings & {
+  persistVisible: boolean;
   keyboardDisplayMode: KeyboardDisplayMode;
   keyboardLegendLayout: KeyboardLegendPreference;
   mouseDisplayMode: MouseDisplayMode;
@@ -196,6 +203,7 @@ export function normalizeHudStyleSettings(value: HudStyleSettings): HudStyleSett
 } {
   return {
     ...value,
+    persistVisible: value.persistVisible ?? false,
     keyboardDisplayMode: value.keyboardDisplayMode ?? "text",
     keyboardLegendLayout: value.keyboardLegendLayout ?? "auto",
     mouseDisplayMode: value.mouseDisplayMode ?? "text",

@@ -33,6 +33,7 @@ See also: [Tauri Cast Events](../tauri/cast-events.md).
 - `MouseSchematic` is a cropped pebble mouse-head (`src/lib/MouseSchematic.svelte`); pressed L/R/wheel fills with `textColor`. Do not evenodd-punch wheel wells — the overlay is transparent, so holes show the desktop
 - Legend layout preference: `keyboardLegendLayout` `auto|mac-us|win-us` (OS guess when auto)
 - Key/mouse relative arrangement: `keyMouseLayout` (`key-left-mouse-right` default; also `key-right-mouse-left`, `key-top-mouse-bottom`, `key-bottom-mouse-top`). Overlay keeps stable key→mouse DOM and uses CSS `flex-direction`/`order`; omit field → normalize/default. Do not mirror by HUD dock corner.
+- `persistVisible` (omit → `false`): pin full-keyboard / mouse-schematic surfaces; highlights still come from `keySlot` / `mouseSlot` and idle-clear. `MouseSchematic.button` is optional (`null` = unpressed). Text / key-card keep the last chip when persist is on.
 
 ---
 

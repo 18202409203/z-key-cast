@@ -190,6 +190,8 @@ pub struct HudStyleSettings {
     pub background_opacity: f64,
     pub dwell_ms: u32,
     #[serde(default)]
+    pub persist_visible: bool,
+    #[serde(default)]
     pub keyboard_display_mode: KeyboardDisplayMode,
     #[serde(default)]
     pub keyboard_legend_layout: KeyboardLegendLayout,
@@ -207,6 +209,7 @@ impl Default for HudStyleSettings {
             background_color: "#0f172a".into(),
             background_opacity: 0.82,
             dwell_ms: 1000,
+            persist_visible: false,
             keyboard_display_mode: KeyboardDisplayMode::Text,
             keyboard_legend_layout: KeyboardLegendLayout::Auto,
             mouse_display_mode: MouseDisplayMode::Text,
@@ -838,6 +841,7 @@ mod tests {
             background_color: "#0f172a".into(),
             background_opacity: 2.0,
             dwell_ms: 10,
+            persist_visible: true,
             keyboard_display_mode: KeyboardDisplayMode::Text,
             keyboard_legend_layout: KeyboardLegendLayout::Auto,
             mouse_display_mode: MouseDisplayMode::Text,
@@ -848,6 +852,7 @@ mod tests {
         assert_eq!(clamped.dwell_ms, 200);
         assert_eq!(clamped.background_opacity, 1.0);
         assert_eq!(clamped.text_color, "#f8fafc");
+        assert!(clamped.persist_visible);
     }
 
     #[test]
@@ -858,6 +863,7 @@ mod tests {
         assert!(parsed.capture_mouse);
         assert!(parsed.ignored_key_ids.is_empty());
         assert_eq!(parsed.hud.dwell_ms, 1000);
+        assert!(!parsed.hud.persist_visible);
         assert_eq!(
             parsed.hud.key_mouse_layout,
             KeyMouseLayout::KeyLeftMouseRight
@@ -869,6 +875,79 @@ mod tests {
             }
         );
         assert_eq!(parsed.ui_locale, None);
+    }
+
+    #[test]
+    fn persist_visible_omitted_defaults_false() {
+        let omitted = r##"{
+            "captureKeyboard":true,
+            "captureMouse":true,
+            "hud":{"fontSizePx":15,"textColor":"#f8fafc","backgroundColor":"#0f172a","backgroundOpacity":0.82,"dwellMs":1000}
+        }"##;
+        let parsed: AppSettings = serde_json::from_str(omitted).unwrap();
+        assert!(!parsed.hud.persist_visible);
+
+        let enabled = r##"{
+            "captureKeyboard":true,
+            "captureMouse":true,
+            "hud":{
+                "fontSizePx":15,
+                "textColor":"#f8fafc",
+                "backgroundColor":"#0f172a",
+                "backgroundOpacity":0.82,
+                "dwellMs":1000,
+                "persistVisible":true
+            }
+        }"##;
+        let parsed: AppSettings = serde_json::from_str(enabled).unwrap();
+        assert!(parsed.hud.persist_visible);
+        assert!(parsed.capture_keyboard);
+        assert!(parsed.capture_mouse);
+        assert_eq!(parsed.hud.dwell_ms, 1000);
+        assert_eq!(
+            parsed.hud.keyboard_display_mode,
+            KeyboardDisplayMode::Text
+        );
+    }
+
+    #[test]
+    fn persist_visible_roundtrip_keeps_sibling_fields() {
+        let settings = AppSettings {
+            capture_keyboard: false,
+            capture_mouse: true,
+            ignored_key_ids: vec!["Escape".into(), "KeyA".into()],
+            hud: HudStyleSettings {
+                persist_visible: true,
+                keyboard_display_mode: KeyboardDisplayMode::Keyboard,
+                mouse_display_mode: MouseDisplayMode::Schematic,
+                ..HudStyleSettings::default()
+            },
+            hud_position: HudPositionSettings::Corner {
+                corner: HudCorner::Tl,
+            },
+            ui_locale: Some(UiLocale::Zh),
+        };
+        let raw = serde_json::to_string(&settings).unwrap();
+        let parsed: AppSettings = serde_json::from_str(&raw).unwrap();
+        assert!(!parsed.capture_keyboard);
+        assert!(parsed.capture_mouse);
+        assert_eq!(parsed.ignored_key_ids, vec!["Escape", "KeyA"]);
+        assert!(parsed.hud.persist_visible);
+        assert_eq!(
+            parsed.hud.keyboard_display_mode,
+            KeyboardDisplayMode::Keyboard
+        );
+        assert_eq!(
+            parsed.hud.mouse_display_mode,
+            MouseDisplayMode::Schematic
+        );
+        assert_eq!(
+            parsed.hud_position,
+            HudPositionSettings::Corner {
+                corner: HudCorner::Tl
+            }
+        );
+        assert_eq!(parsed.ui_locale, Some(UiLocale::Zh));
     }
 
     #[test]

@@ -1,12 +1,12 @@
 <script lang="ts">
   type Props = {
-    button: "left" | "right" | "middle";
+    button?: "left" | "right" | "middle" | null;
     textColor: string;
     backgroundCss: string;
     fontSizePx: number;
   };
 
-  let { button, textColor, backgroundCss, fontSizePx }: Props = $props();
+  let { button = null, textColor, backgroundCss, fontSizePx }: Props = $props();
 
   const scale = $derived(Math.max(0.85, Math.min(1.35, fontSizePx / 15)));
 
@@ -18,7 +18,7 @@
   class="mouse-wrap"
   style:--m-fg={textColor}
   style:--m-bg={backgroundCss}
-  aria-label={`Mouse ${button}`}
+  aria-label={button ? `Mouse ${button}` : "Mouse"}
 >
   <svg
     class="mouse"

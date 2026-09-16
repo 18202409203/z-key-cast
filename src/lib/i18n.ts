@@ -58,7 +58,11 @@ const en = {
   "settings.bgColor": "Background color",
   "settings.bgOpacity": "Background opacity ({n})",
   "settings.dwellMs": "Dwell (ms)",
-  "settings.dwellMsHint": "How long keys stay visible after release",
+  "settings.dwellMsHint":
+    "How long highlights last after input; when persist is off, also how long the HUD stays visible",
+  "settings.persistVisible": "Keep HUD visible",
+  "settings.persistVisibleHint":
+    "Full keyboard and mouse stay on screen as a reference; highlights still fade after dwell. Text and key cards keep the last input.",
 
   "settings.capture": "Capture",
   "settings.hookActive": "Input hook is active.",
@@ -150,7 +154,10 @@ const zh: Record<MessageKey, string> = {
   "settings.bgColor": "背景颜色",
   "settings.bgOpacity": "背景不透明度（{n}）",
   "settings.dwellMs": "停留时间（毫秒）",
-  "settings.dwellMsHint": "按键松开后 HUD 继续显示多久",
+  "settings.dwellMsHint": "输入后高亮持续多久；未勾选常驻时，也控制 HUD 整块淡出",
+  "settings.persistVisible": "HUD 常驻",
+  "settings.persistVisibleHint":
+    "全键盘和鼠标示意图即使未按也会留在屏幕上作为参考；高亮仍按停留时间消退。文本和按键卡片保留最后一次内容。",
 
   "settings.capture": "捕获",
   "settings.hookActive": "输入钩子已启用。",

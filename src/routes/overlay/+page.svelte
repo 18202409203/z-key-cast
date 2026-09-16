@@ -81,8 +81,19 @@
     hudBackgroundCss(style.backgroundColor, style.backgroundOpacity),
   );
 
+  const persistVisible = $derived(style.persistVisible === true);
+
+  const pinKey = $derived(
+    persistVisible && style.keyboardDisplayMode === "keyboard",
+  );
+
+  const pinMouse = $derived(
+    persistVisible && style.mouseDisplayMode === "schematic",
+  );
+
   const showKeyboardMap = $derived(
-    keySlot !== null && style.keyboardDisplayMode === "keyboard",
+    pinKey ||
+      (keySlot !== null && style.keyboardDisplayMode === "keyboard"),
   );
 
   const showKeyCards = $derived(
@@ -90,7 +101,21 @@
   );
 
   const showMouseSchematic = $derived(
-    mouseSlot !== null && style.mouseDisplayMode === "schematic",
+    pinMouse ||
+      (mouseSlot !== null && style.mouseDisplayMode === "schematic"),
+  );
+
+  const showKeySide = $derived(
+    showKeyboardMap || showKeyCards || keySlot !== null,
+  );
+
+  const showMouseSide = $derived(
+    showMouseSchematic || mouseSlot !== null,
+  );
+
+  const showKmGroup = $derived(
+    !statusActive &&
+      (keySlot !== null || mouseSlot !== null || pinKey || pinMouse),
   );
 
   function clearTimer(timer: ReturnType<typeof setTimeout> | null) {
@@ -120,6 +145,8 @@
 
   function armKeyIdle() {
     clearKeyIdleTimer();
+    // Persist + text/key-card: keep the last chip; do not idle-hide.
+    if (persistVisible && !pinKey) return;
     keyIdleTimer = setTimeout(() => {
       keySlot = null;
       keyIdleTimer = null;
@@ -128,6 +155,8 @@
 
   function armMouseIdle() {
     clearMouseIdleTimer();
+    // Persist + text: keep the last chip; schematic still clears highlights.
+    if (persistVisible && !pinMouse) return;
     mouseIdleTimer = setTimeout(() => {
       mouseSlot = null;
       mouseIdleTimer = null;
@@ -322,7 +351,7 @@
     >
       {statusText}
     </div>
-  {:else if keySlot || mouseSlot}
+  {:else if showKmGroup}
     <div
       class="km-group"
       class:km-klmr={(style.keyMouseLayout ?? "key-left-mouse-right") ===
@@ -331,7 +360,7 @@
       class:km-ktmb={style.keyMouseLayout === "key-top-mouse-bottom"}
       class:km-kbmt={style.keyMouseLayout === "key-bottom-mouse-top"}
     >
-      {#if keySlot}
+      {#if showKeySide}
         <div class="km-key">
           {#if showKeyboardMap}
             <div transition:fade={{ duration: 200 }}>
@@ -358,7 +387,7 @@
                 />
               {/each}
             </div>
-          {:else}
+          {:else if keySlot}
             <div
               class="chip"
               style:font-size={`${style.fontSizePx}px`}
@@ -372,18 +401,18 @@
         </div>
       {/if}
 
-      {#if mouseSlot}
+      {#if showMouseSide}
         <div class="km-mouse">
           {#if showMouseSchematic}
             <div transition:fade={{ duration: 200 }}>
               <MouseSchematic
-                button={mouseSlot.button}
+                button={mouseSlot?.button}
                 textColor={style.textColor}
                 backgroundCss={chipBackground}
                 fontSizePx={style.fontSizePx}
               />
             </div>
-          {:else}
+          {:else if mouseSlot}
             <div
               class="chip"
               style:font-size={`${style.fontSizePx}px`}
