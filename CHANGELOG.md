@@ -72,3 +72,19 @@
 
   - docs: split README into EN and zh-CN
 
+
+## 1.3.1 (2026-09-17)
+
+### Bug Fixes
+
+  - hide hook jargon; cache status for late UI
+  - unify mouse with key tokens
+  - align mouse fill; drop board blur
+
+### Other
+
+  - refactor(settings): split Rust settings into modules
+  - refactor(overlay): split HudView and slot runes
+  - refactor(ui): extract components and panels
+  - style(hud): drop full-board cast shadows
+
