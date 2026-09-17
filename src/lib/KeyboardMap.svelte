@@ -187,7 +187,6 @@
     border-radius: 14px;
     background: color-mix(in srgb, var(--kb-bg) 42%, transparent);
     backdrop-filter: blur(12px);
-    box-shadow: 0 12px 36px color-mix(in srgb, #000 35%, transparent);
   }
 
   .main {

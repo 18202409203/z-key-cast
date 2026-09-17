@@ -93,7 +93,6 @@
     display: flex;
     align-items: flex-end;
     justify-content: flex-end;
-    filter: drop-shadow(0 8px 18px color-mix(in srgb, #000 26%, transparent));
   }
 
   .mouse {
