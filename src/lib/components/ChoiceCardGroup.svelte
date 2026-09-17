@@ -56,41 +56,38 @@
       <span class="schematic" aria-hidden="true">
         {#if item.schematic === "hud-text"}
           <svg viewBox="0 0 64 40" width="56" height="35">
-            <rect
-              class="stroke fill"
-              x="4"
-              y="14"
-              width="14"
-              height="12"
-              rx="3"
-            />
-            <rect
-              class="stroke fill"
-              x="22"
-              y="14"
-              width="14"
-              height="12"
-              rx="3"
-            />
-            <rect
-              class="stroke fill"
-              x="40"
-              y="14"
-              width="18"
-              height="12"
-              rx="3"
-            />
+            <rect class="stroke fill" x="8" y="13" width="14" height="14" rx="3" />
+            <text
+              class="glyph"
+              x="15"
+              y="20"
+              text-anchor="middle"
+              dominant-baseline="central">Q</text
+            >
+            <rect class="stroke fill" x="25" y="13" width="14" height="14" rx="3" />
+            <text
+              class="glyph"
+              x="32"
+              y="20"
+              text-anchor="middle"
+              dominant-baseline="central">W</text
+            >
+            <rect class="stroke fill" x="42" y="13" width="14" height="14" rx="3" />
+            <text
+              class="glyph"
+              x="49"
+              y="20"
+              text-anchor="middle"
+              dominant-baseline="central">E</text
+            >
           </svg>
         {:else if item.schematic === "hud-lite"}
           <svg viewBox="0 0 64 40" width="56" height="35">
-            <rect class="stroke fill" x="4" y="12" width="12" height="14" rx="3" />
-            <rect class="stroke fill" x="19" y="12" width="12" height="14" rx="3" />
-            <ellipse class="stroke fill" cx="42" cy="19" rx="5" ry="8" />
-            <line class="stroke" x1="42" y1="13" x2="42" y2="18" />
-            <ellipse class="stroke fill" cx="56" cy="19" rx="5" ry="8" />
-            <line class="stroke" x1="54" y1="16" x2="58" y2="16" />
-            <line class="stroke" x1="54" y1="20" x2="58" y2="20" />
-            <line class="stroke" x1="54" y1="24" x2="58" y2="24" />
+            <rect class="stroke fill" x="8" y="13" width="14" height="14" rx="3" />
+            <rect class="stroke fill" x="26" y="13" width="14" height="14" rx="3" />
+            <!-- Mouse height matches keycaps (14); narrower so it reads smaller. -->
+            <ellipse class="stroke fill" cx="52" cy="20" rx="5" ry="7" />
+            <line class="stroke" x1="52" y1="14" x2="52" y2="19" />
           </svg>
         {:else if item.schematic === "hud-full"}
           <svg viewBox="0 0 64 40" width="56" height="35">
@@ -115,13 +112,13 @@
         {:else if item.schematic === "km-ktmb"}
           <svg viewBox="0 0 64 40" width="56" height="35">
             <rect class="stroke fill" x="14" y="4" width="36" height="14" rx="2" />
-            <ellipse class="stroke fill" cx="32" cy="30" rx="8" ry="6" />
-            <line class="stroke" x1="32" y1="25" x2="32" y2="30" />
+            <ellipse class="stroke fill" cx="32" cy="30" rx="4.5" ry="6.5" />
+            <line class="stroke" x1="32" y1="24.5" x2="32" y2="29" />
           </svg>
         {:else}
           <svg viewBox="0 0 64 40" width="56" height="35">
-            <ellipse class="stroke fill" cx="32" cy="10" rx="8" ry="6" />
-            <line class="stroke" x1="32" y1="5" x2="32" y2="10" />
+            <ellipse class="stroke fill" cx="32" cy="10" rx="4.5" ry="6.5" />
+            <line class="stroke" x1="32" y1="4.5" x2="32" y2="9" />
             <rect class="stroke fill" x="14" y="22" width="36" height="14" rx="2" />
           </svg>
         {/if}
@@ -188,12 +185,24 @@
     fill: color-mix(in srgb, #94a3b8 12%, transparent);
   }
 
+  .schematic .glyph {
+    fill: #94a3b8;
+    font-size: 7px;
+    font-weight: 700;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0;
+  }
+
   .choice-card:has(input:checked) .schematic .stroke {
     stroke: #7dd3fc;
   }
 
   .choice-card:has(input:checked) .schematic .fill {
     fill: color-mix(in srgb, #38bdf8 16%, transparent);
+  }
+
+  .choice-card:has(input:checked) .schematic .glyph {
+    fill: #7dd3fc;
   }
 
   .choice-label {
