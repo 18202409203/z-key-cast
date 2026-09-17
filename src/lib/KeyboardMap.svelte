@@ -186,7 +186,6 @@
     padding: 10px;
     border-radius: 14px;
     background: color-mix(in srgb, var(--kb-bg) 42%, transparent);
-    backdrop-filter: blur(12px);
   }
 
   .main {

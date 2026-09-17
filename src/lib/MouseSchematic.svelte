@@ -100,9 +100,9 @@
     overflow: visible;
   }
 
-  /* Resting body = HUD background (same as keycaps); press = textColor. */
+  /* Resting body = same mix as KeyboardMap .key; press = textColor. */
   .btn {
-    fill: color-mix(in srgb, var(--m-bg) 92%, transparent);
+    fill: color-mix(in srgb, var(--m-bg) 58%, transparent);
     stroke: none;
     transition: fill 140ms ease;
   }
