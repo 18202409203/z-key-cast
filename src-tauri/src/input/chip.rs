@@ -1,10 +1,11 @@
-use super::event::{HudChip, KeyRef, Phase, RawInput, ScrollDirection};
+use super::event::{HudChip, KeyRef, Phase, RawInput};
 
 /// Turns filtered raw downs/ups into public `HudChip` payloads.
 ///
 /// Always emits precise down/up (including bare modifiers and mouse ups).
-/// Consumers decide what to show: Text/Lite ignore ups and bare-mod downs;
-/// Full maintains held sets from every phase.
+/// Mouse/scroll chips snapshot current `held_mods`.
+/// Consumers decide what to show: Text/Lite defer bare mods until unconsumed up;
+/// Full maintains held sets from every phase (may ignore mouse/scroll `mods`).
 #[derive(Debug, Default)]
 pub struct ChipReducer {
     held_mods: Vec<KeyRef>,
@@ -72,10 +73,12 @@ impl ChipReducer {
                 phase: Phase::Up,
             }),
             RawInput::Mouse { button, phase } => Some(HudChip::Mouse {
+                mods: self.held_mods.clone(),
                 button: *button,
                 phase: *phase,
             }),
             RawInput::Scroll { direction } => Some(HudChip::Scroll {
+                mods: self.held_mods.clone(),
                 direction: *direction,
             }),
         }
@@ -117,7 +120,7 @@ pub fn modifier_transition(flag_on: bool, was_held: bool) -> Phase {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::event::MouseButton;
+    use crate::input::event::{MouseButton, ScrollDirection};
 
     fn key(id: &str) -> KeyRef {
         KeyRef::new(id)
@@ -226,6 +229,7 @@ mod tests {
             Some(HudChip::Mouse {
                 button: MouseButton::Left,
                 phase: Phase::Up,
+                ..
             })
         ));
     }
@@ -237,13 +241,16 @@ mod tests {
             button: MouseButton::Right,
             phase: Phase::Down,
         });
-        assert!(matches!(
-            chip,
+        match chip {
             Some(HudChip::Mouse {
+                mods,
                 button: MouseButton::Right,
                 phase: Phase::Down,
-            })
-        ));
+            }) => {
+                assert!(mods.is_empty());
+            }
+            other => panic!("expected mouse down, got {other:?}"),
+        }
     }
 
     #[test]
@@ -252,21 +259,65 @@ mod tests {
         let chip = r.reduce(&RawInput::Scroll {
             direction: ScrollDirection::Up,
         });
-        assert!(matches!(
-            chip,
+        match chip {
             Some(HudChip::Scroll {
+                mods,
                 direction: ScrollDirection::Up,
-            })
-        ));
+            }) => {
+                assert!(mods.is_empty());
+            }
+            other => panic!("expected scroll up, got {other:?}"),
+        }
         let down = r.reduce(&RawInput::Scroll {
             direction: ScrollDirection::Down,
         });
-        assert!(matches!(
-            down,
+        match down {
             Some(HudChip::Scroll {
+                mods,
                 direction: ScrollDirection::Down,
-            })
-        ));
+            }) => {
+                assert!(mods.is_empty());
+            }
+            other => panic!("expected scroll down, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn mouse_and_scroll_snapshot_held_mods() {
+        let mut r = ChipReducer::default();
+        let _ = r.reduce(&RawInput::Key {
+            key: key("ShiftLeft"),
+            phase: Phase::Down,
+            is_modifier: true,
+        });
+        let mouse = r.reduce(&RawInput::Mouse {
+            button: MouseButton::Left,
+            phase: Phase::Down,
+        });
+        match mouse {
+            Some(HudChip::Mouse { mods, button, phase }) => {
+                assert_eq!(button, MouseButton::Left);
+                assert_eq!(phase, Phase::Down);
+                assert_eq!(
+                    mods.iter().map(|m| m.id.as_str()).collect::<Vec<_>>(),
+                    vec!["ShiftLeft"]
+                );
+            }
+            other => panic!("expected mouse with mods, got {other:?}"),
+        }
+        let scroll = r.reduce(&RawInput::Scroll {
+            direction: ScrollDirection::Up,
+        });
+        match scroll {
+            Some(HudChip::Scroll { mods, direction }) => {
+                assert_eq!(direction, ScrollDirection::Up);
+                assert_eq!(
+                    mods.iter().map(|m| m.id.as_str()).collect::<Vec<_>>(),
+                    vec!["ShiftLeft"]
+                );
+            }
+            other => panic!("expected scroll with mods, got {other:?}"),
+        }
     }
 
     #[test]

@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "HudChip mouse/scroll mods contract; Text/Lite consumer vs Full"}
+{"file": ".trellis/spec/tauri/index.md", "reason": "Tauri input/chip layer map"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "isHudChip / overlay Text/Lite timeline rules"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend overlay conventions"}

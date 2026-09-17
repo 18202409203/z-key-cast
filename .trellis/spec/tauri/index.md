@@ -32,12 +32,12 @@ Durable settings live under `src-tauri/src/settings/` (`mod` facade + `types` / 
 
 ## Quality Check
 
-- [ ] Payload shape matches `design/index.md` (`HudChip` with `phase` on key/mouse; `scroll` without phase)
+- [ ] Payload shape matches `design/index.md` (`HudChip` with `phase` on key/mouse; `mouse`/`scroll` include `mods`; `scroll` without phase)
 - [ ] Non-macOS non-Windows path is an explicit stub (`unsupported_platform`), not a fake hook
 - [ ] Windows path uses `WH_KEYBOARD_LL` + `WH_MOUSE_LL` → same filter/reducer; `WM_MOUSEWHEEL` → scroll; drop `WM_MOUSEHWHEEL`; no Win ripple emit until a dedicated task
 - [ ] `KeyRef` wire shape is `{ id }` only (no `label`)
 - [ ] Key autorepeat / spam filtering happens before `cast://event` emit; scroll bursts coalesce before emit
-- [ ] Chip reducer: emit bare mods + ups with `phase`; scroll → `HudChip::Scroll`; consumers filter
+- [ ] Chip reducer: emit bare mods + ups with `phase`; mouse/scroll snapshot `held_mods`; Text/Lite defer bare mods; Full held-sets may ignore mouse/scroll `mods`
 - [ ] Capture toggles filter **after** reduce via `allows_chip`, not by skipping reduce; mouse **and** scroll require `captureMouse`; category drops use `ignoredMouseActions`
 - [ ] `mouseClickRipple` is a peer of capture toggles; `cast://mouse-ripple` stays off `HudChip`; ripple window gated only by that flag
 - [ ] Capture / HUD style / HUD position commands have ACL permissions; saves preserve sibling `settings.json` fields

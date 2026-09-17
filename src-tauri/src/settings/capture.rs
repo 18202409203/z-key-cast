@@ -40,7 +40,7 @@ pub fn allows_chip(chip: &HudChip) -> bool {
 /// Drop mouse chips whose button is ignored; drop scroll when `"scroll"` is ignored.
 pub fn filter_key_chip(chip: HudChip) -> Option<HudChip> {
     match chip {
-        HudChip::Mouse { button, phase } => {
+        HudChip::Mouse { mods, button, phase } => {
             let action = mouse_button_action(button);
             let ignored = ignored_mouse_lock()
                 .lock()
@@ -49,10 +49,14 @@ pub fn filter_key_chip(chip: HudChip) -> Option<HudChip> {
             if ignored {
                 None
             } else {
-                Some(HudChip::Mouse { button, phase })
+                Some(HudChip::Mouse {
+                    mods,
+                    button,
+                    phase,
+                })
             }
         }
-        HudChip::Scroll { direction } => {
+        HudChip::Scroll { mods, direction } => {
             let ignored = ignored_mouse_lock()
                 .lock()
                 .map(|g| g.contains(MOUSE_ACTION_SCROLL))
@@ -60,7 +64,7 @@ pub fn filter_key_chip(chip: HudChip) -> Option<HudChip> {
             if ignored {
                 None
             } else {
-                Some(HudChip::Scroll { direction })
+                Some(HudChip::Scroll { mods, direction })
             }
         }
         HudChip::Key { mods, key, phase } => {
@@ -191,10 +195,12 @@ mod tests {
             phase: crate::input::Phase::Down,
         };
         let mouse = HudChip::Mouse {
+            mods: vec![],
             button: MouseButton::Left,
             phase: crate::input::Phase::Down,
         };
         let scroll = HudChip::Scroll {
+            mods: vec![],
             direction: ScrollDirection::Up,
         };
         assert!(allows_chip(&key));
@@ -213,6 +219,7 @@ mod tests {
             phase: crate::input::Phase::Down,
         };
         let mouse = HudChip::Mouse {
+            mods: vec![],
             button: MouseButton::Left,
             phase: crate::input::Phase::Down,
         };
@@ -237,6 +244,7 @@ mod tests {
     fn scroll_requires_capture_mouse_only() {
         let _guard = lock_runtime();
         let scroll = HudChip::Scroll {
+            mods: vec![],
             direction: ScrollDirection::Down,
         };
         CAPTURE_MOUSE.store(true, Ordering::Relaxed);
@@ -253,10 +261,12 @@ mod tests {
         let _guard = lock_runtime();
         set_ignored_mouse(&["left", "middle"]);
         let left = HudChip::Mouse {
+            mods: vec![],
             button: MouseButton::Left,
             phase: crate::input::Phase::Down,
         };
         let right = HudChip::Mouse {
+            mods: vec![],
             button: MouseButton::Right,
             phase: crate::input::Phase::Down,
         };
@@ -276,17 +286,20 @@ mod tests {
         let _guard = lock_runtime();
         set_ignored_mouse(&["scroll"]);
         let scroll = HudChip::Scroll {
+            mods: vec![],
             direction: ScrollDirection::Up,
         };
         assert!(filter_key_chip(scroll).is_none());
         set_ignored_mouse(&[]);
         let scroll = HudChip::Scroll {
+            mods: vec![],
             direction: ScrollDirection::Up,
         };
         assert!(matches!(
             filter_key_chip(scroll),
             Some(HudChip::Scroll {
                 direction: ScrollDirection::Up,
+                ..
             })
         ));
     }
@@ -295,6 +308,7 @@ mod tests {
     fn mouse_click_ripple_does_not_gate_mouse_chips() {
         let _guard = lock_runtime();
         let mouse = HudChip::Mouse {
+            mods: vec![],
             button: MouseButton::Left,
             phase: crate::input::Phase::Down,
         };
@@ -373,6 +387,7 @@ mod tests {
         set_ignored(&["KeyA", "MetaLeft"]);
         set_ignored_mouse(&[]);
         let mouse = HudChip::Mouse {
+            mods: vec![],
             button: MouseButton::Left,
             phase: crate::input::Phase::Down,
         };
@@ -381,6 +396,7 @@ mod tests {
             Some(HudChip::Mouse {
                 button: MouseButton::Left,
                 phase: crate::input::Phase::Down,
+                ..
             })
         ));
         set_ignored(&[]);
@@ -392,12 +408,14 @@ mod tests {
         set_ignored(&["KeyA"]);
         set_ignored_mouse(&[]);
         let scroll = HudChip::Scroll {
+            mods: vec![],
             direction: ScrollDirection::Up,
         };
         assert!(matches!(
             filter_key_chip(scroll),
             Some(HudChip::Scroll {
                 direction: ScrollDirection::Up,
+                ..
             })
         ));
         set_ignored(&[]);

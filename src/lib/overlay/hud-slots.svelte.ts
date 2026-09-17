@@ -2,6 +2,7 @@ import {
   isModifierKeyId,
   SCROLL_PULSE_MS,
   type HudChip,
+  type KeyRef,
   type ScrollDirection,
 } from "$lib/cast";
 import {
@@ -25,6 +26,21 @@ export type TimelineItem = {
 
 const TIMELINE_MAX = 5;
 
+function sameModIds(a: KeyRef[], b: KeyRef[]): boolean {
+  if (a.length !== b.length) return false;
+  const left = a.map((m) => m.id).slice().sort();
+  const right = b.map((m) => m.id).slice().sort();
+  return left.every((id, i) => id === right[i]);
+}
+
+function modIdsOnChip(chip: TimelineChip): string[] {
+  const ids = chip.mods.map((m) => m.id);
+  if (chip.kind === "key" && isModifierKeyId(chip.key.id)) {
+    ids.push(chip.key.id);
+  }
+  return ids;
+}
+
 /**
  * Overlay HUD slot / timer / held-set state. Instantiated once by the overlay route.
  * Owns style for dwell and preset side effects (single writer).
@@ -40,6 +56,8 @@ export function createHudSlots() {
   /** When true, overlay shows capture-unavailable status (re-translated on locale change). */
   let statusActive = $state(false);
   let style = $state<HudStyleSettings>({ ...DEFAULT_HUD_STYLE });
+  /** Text/Lite: modifier ids consumed by a companion chord this down-cycle. */
+  let consumedModIds = new Set<string>();
   const itemTimers = new Map<string, ReturnType<typeof setTimeout>>();
   let statusIdleTimer: ReturnType<typeof setTimeout> | null = null;
   let scrollPulseTimer: ReturnType<typeof setTimeout> | null = null;
@@ -97,9 +115,20 @@ export function createHudSlots() {
     itemTimers.clear();
   }
 
+  function clearConsumedMods() {
+    consumedModIds = new Set();
+  }
+
+  function consumeModsFromChip(chip: TimelineChip) {
+    for (const id of modIdsOnChip(chip)) {
+      consumedModIds.add(id);
+    }
+  }
+
   function clearTimeline() {
     clearAllItemTimers();
     timeline = [];
+    clearConsumedMods();
   }
 
   function clearAllIdleTimers() {
@@ -213,10 +242,33 @@ export function createHudSlots() {
       return;
     }
 
-    // Text / Lite: ignore ups and bare-modifier downs.
-    if (chip.kind === "key" || chip.kind === "mouse") {
-      if (chip.phase === "up") return;
-      if (chip.kind === "key" && isModifierKeyId(chip.key.id)) return;
+    // Text / Lite: deferred modifier commit (down never queues; unconsumed up synthesizes).
+    if (chip.kind === "key" && isModifierKeyId(chip.key.id)) {
+      if (chip.phase === "down") {
+        consumedModIds.delete(chip.key.id);
+        return;
+      }
+      // Modifier up: silent if already consumed by a companion / stacked-mod synth.
+      if (consumedModIds.has(chip.key.id)) {
+        consumedModIds.delete(chip.key.id);
+        return;
+      }
+      const displayChip: TimelineChip = {
+        kind: "key",
+        mods: chip.mods,
+        key: chip.key,
+        phase: "down",
+      };
+      clearStatusIdleTimer();
+      clearStatus();
+      consumeModsFromChip(displayChip);
+      pushTimelineChip(displayChip);
+      return;
+    }
+
+    // Non-mod key ups and mouse ups stay off the timeline.
+    if ((chip.kind === "key" || chip.kind === "mouse") && chip.phase === "up") {
+      return;
     }
 
     clearStatusIdleTimer();
@@ -227,15 +279,19 @@ export function createHudSlots() {
       if (
         tail &&
         tail.chip.kind === "scroll" &&
-        tail.chip.direction === chip.direction
+        tail.chip.direction === chip.direction &&
+        sameModIds(tail.chip.mods, chip.mods)
       ) {
+        consumeModsFromChip(chip);
         armItemIdle(tail.id);
         return;
       }
+      consumeModsFromChip(chip);
       pushTimelineChip(chip);
       return;
     }
 
+    consumeModsFromChip(chip);
     pushTimelineChip(chip);
   }
 

@@ -13,7 +13,7 @@
 
 ## 核心功能
 
-- 全局捕获：按键 / 鼠标（Rust 侧合并为 chip；始终带 `phase`；Text/Lite 不把裸修饰占条）
+- 全局捕获：按键 / 鼠标（Rust 侧合并为 chip；始终带 `phase`；Text/Lite 延迟提交裸修饰）
 - 角落 HUD：Text · Lite · Full 三档预设；Text/Lite 空闲 dwell 淡出；Full 常驻板 + 真实按住高亮
 - 托盘：开关 HUD、打开设置、退出
 
@@ -22,7 +22,7 @@
 ```
 Rust core
   ├─ 平台输入钩子（macOS CGEvent / Win Raw Input·hook / Linux evdev·X11）
-  ├─ raw 归一化 → ChipReducer → HudChip（含 phase）
+  ├─ raw 归一化 → ChipReducer → HudChip（含 phase；mouse/scroll 快照 held mods）
   ├─ 节流（autorepeat / 短 debounce）
   └─ emit → Overlay + Main
        └─ （可选）mouse down → cast://mouse-ripple → Ripple 窗
@@ -46,26 +46,27 @@ type KeyRef = { id: string };
 
 type HudChip =
   | { kind: "key"; mods: KeyRef[]; key: KeyRef; phase: "down" | "up" }
-  | { kind: "mouse"; button: "left" | "right" | "middle"; phase: "down" | "up" }
-  | { kind: "scroll"; direction: "up" | "down" };
+  | { kind: "mouse"; mods: KeyRef[]; button: "left" | "right" | "middle"; phase: "down" | "up" }
+  | { kind: "scroll"; mods: KeyRef[]; direction: "up" | "down" };
 ```
 
 - `id`：稳定逻辑名（如 `MetaLeft`, `KeyS`, `Digit1`, `Numpad1`, `Backspace`, `ForwardDelete`）；不发 OS 专用 id（如 `WinLeft`）
 - 展示：UI 用 `id` + `keyboardLegendLayout`（auto → Mac/Win）解析短文案（Meta → `⌘` / `Win`）
-- 发射端：主键 / 裸修饰 / 鼠标均发 down 与 up；纵向滚轮经短窗合并后发 `scroll`（无 phase）；消费者决定如何展示
-- Text/Lite：忽略 `up` 与裸修饰；操作时间线 + dwell；Text 鼠键 `LMB`/`RMB`/`MMB`，滚轮 `Scr↑`/`Scr↓`（与方向键 `↑`/`↓` 区分）
+- 发射端：主键 / 裸修饰 / 鼠标均发 down 与 up；纵向滚轮经短窗合并后发 `scroll`（无 phase）；mouse/scroll 快照当前 `held_mods`；消费者决定如何展示
+- Text/Lite：修饰 **down 不入队**；伴随主键/鼠/滚入队并消费 mods；未消费的修饰 **up** 才合成展示用 `key` 条（`phase: "down"`）；已消费松手静默；操作时间线 + dwell；Text 鼠/滚标签 = mods + `LMB`/`Scr↑` 等；同向 scroll 且 mods 多重集合相同才刷新队尾 dwell
+- Lite：键 = KeyCard 行；鼠/滚 = 修饰 KeyCard(s) + timeline MouseSchematic 定帧
 - Lite/Full：滚轮刻度方向脉冲（固定短动画），与鼠标按键高亮不互斥；不进 Full held-set
-- Full：held-set 驱动全键盘 / 多键鼠标高亮；忽略 dwell
-- Log：记录 down 与 up；scroll 记方向
+- Full：held-set 驱动全键盘 / 多键鼠标高亮；忽略 dwell；可忽略 mouse/scroll 上的 `mods`
+- Log：记录 down 与 up；scroll 记方向；mouse/scroll 行含 mods
 - 平台：macOS CGEventTap（含 ScrollWheel）；Windows `WH_*_LL`（`WM_MOUSEWHEEL`；丢弃横向）；其它 stub `unsupported_platform`
 ## HUD 约定
 
 - 默认右下角，可改左下 / 左上 / 右上；避开 Dock / 任务栏
 - Overlay：透明 + always-on-top + click-through（角落 HUD；**不**全屏化）
 - 预设：`hudPreset` = `text` | `lite` | `full`（默认 `text`）
-- Text/Lite：键、鼠各最多 1 条可见；可同时显示；同类新事件替换同侧并重置该侧空闲淡出；两侧独立计时（共享 `dwellMs`）
+- Text/Lite：共享操作时间线（最多 5；右入左移）；每项独立 `dwellMs` 淡出
 - Full：空板常驻；高亮随物理按住；Status 仍独占（遮住 pin）
-- Status（如 hook offline）独占：清掉键/鼠两槽与 held-set 后单独 dwell
+- Status（如 hook offline）独占：清掉时间线与 held-set 后单独 dwell
 - 点击涟漪（可选）：独立主屏全屏透明层（非 HUD overlay）；默认关；与 `captureMouse` 解耦；一期仅 macOS
 
 ## MVP

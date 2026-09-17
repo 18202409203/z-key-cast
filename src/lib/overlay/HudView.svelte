@@ -13,6 +13,8 @@
   import { resolveKeyboardLegendLayout } from "$lib/key-legends";
   import {
     formatHudLabel,
+    formatHudModsLabel,
+    formatHudPointerBody,
     hudCards,
     type HudChip,
     type ScrollDirection,
@@ -235,13 +237,26 @@
                   {/each}
                 </div>
               {:else}
-                <MouseSchematic
-                  textColor={style.textColor}
-                  backgroundCss={chipBackground}
-                  fontSizePx={style.fontSizePx}
-                  size="timeline"
-                  frame={mouseFrame(item.chip)}
-                />
+                <div
+                  class="card-row"
+                  style:--cap-scale={`${style.fontSizePx}px`}
+                >
+                  {#each item.chip.mods as mod (mod.id)}
+                    <KeyCard
+                      visual={toKeyCardVisual(mod, legendLayout)}
+                      fontSizePx={style.fontSizePx}
+                      textColor={style.textColor}
+                      backgroundCss={chipBackground}
+                    />
+                  {/each}
+                  <MouseSchematic
+                    textColor={style.textColor}
+                    backgroundCss={chipBackground}
+                    fontSizePx={style.fontSizePx}
+                    size="timeline"
+                    frame={mouseFrame(item.chip)}
+                  />
+                </div>
               {/if}
             {:else}
               <div
@@ -251,80 +266,98 @@
                 style:color={style.textColor}
                 style:background={chipBackground}
               >
-                {#if item.chip.kind !== "key"}
-                  <span class="chip-icon" aria-hidden="true">
-                    {#if item.chip.kind === "scroll"}
-                      <svg
-                        class="chip-icon-svg"
-                        viewBox="0 0 16 16"
-                        width="1em"
-                        height="1em"
-                      >
-                        <path
-                          class="chip-icon-stroke"
-                          d="M8 1.75c-2.35 0-4.25 1.15-4.25 3.35v5.15c0 2.35 1.9 4.25 4.25 4.25s4.25-1.9 4.25-4.25V5.1c0-2.2-1.9-3.35-4.25-3.35Z"
-                        />
-                        <path
-                          class="chip-icon-stroke"
-                          d="M8 2.6v4.4"
-                        />
-                        {#if item.chip.direction === "up"}
+                {#if item.chip.kind === "key"}
+                  <span class="chip-label"
+                    >{formatHudLabel(item.chip, legendLayout, locale)}</span
+                  >
+                {:else}
+                  {#if item.chip.mods.length > 0}
+                    <span class="chip-label"
+                      >{formatHudModsLabel(
+                        item.chip.mods,
+                        legendLayout,
+                      )}</span
+                    >
+                    <span class="chip-sep" aria-hidden="true">+</span>
+                  {/if}
+                  <span class="chip-action">
+                    <span class="chip-icon" aria-hidden="true">
+                      {#if item.chip.kind === "scroll"}
+                        <svg
+                          class="chip-icon-svg"
+                          viewBox="0 0 16 16"
+                          width="1em"
+                          height="1em"
+                        >
                           <path
-                            class="chip-icon-fill"
-                            d="M8 5.1 9.55 7.2H6.45Z"
+                            class="chip-icon-stroke"
+                            d="M8 1.75c-2.35 0-4.25 1.15-4.25 3.35v5.15c0 2.35 1.9 4.25 4.25 4.25s4.25-1.9 4.25-4.25V5.1c0-2.2-1.9-3.35-4.25-3.35Z"
                           />
-                        {:else}
                           <path
-                            class="chip-icon-fill"
-                            d="M8 10.9 9.55 8.8H6.45Z"
+                            class="chip-icon-stroke"
+                            d="M8 2.6v4.4"
                           />
-                        {/if}
-                      </svg>
-                    {:else}
-                      <svg
-                        class="chip-icon-svg"
-                        viewBox="0 0 16 16"
-                        width="1em"
-                        height="1em"
-                      >
-                        <path
-                          class="chip-icon-stroke"
-                          d="M8 1.75c-2.35 0-4.25 1.15-4.25 3.35v5.15c0 2.35 1.9 4.25 4.25 4.25s4.25-1.9 4.25-4.25V5.1c0-2.2-1.9-3.35-4.25-3.35Z"
-                        />
-                        <path
-                          class="chip-icon-stroke"
-                          d="M8 2.6v4.4"
-                        />
-                        {#if item.chip.button === "left"}
+                          {#if item.chip.direction === "up"}
+                            <path
+                              class="chip-icon-fill"
+                              d="M8 5.1 9.55 7.2H6.45Z"
+                            />
+                          {:else}
+                            <path
+                              class="chip-icon-fill"
+                              d="M8 10.9 9.55 8.8H6.45Z"
+                            />
+                          {/if}
+                        </svg>
+                      {:else}
+                        <svg
+                          class="chip-icon-svg"
+                          viewBox="0 0 16 16"
+                          width="1em"
+                          height="1em"
+                        >
                           <path
-                            class="chip-icon-fill"
-                            d="M3.9 2.9h3.95v3.9H3.9Z"
-                            opacity="0.35"
+                            class="chip-icon-stroke"
+                            d="M8 1.75c-2.35 0-4.25 1.15-4.25 3.35v5.15c0 2.35 1.9 4.25 4.25 4.25s4.25-1.9 4.25-4.25V5.1c0-2.2-1.9-3.35-4.25-3.35Z"
                           />
-                        {:else if item.chip.button === "right"}
                           <path
-                            class="chip-icon-fill"
-                            d="M8.15 2.9H12.1v3.9H8.15Z"
-                            opacity="0.35"
+                            class="chip-icon-stroke"
+                            d="M8 2.6v4.4"
                           />
-                        {:else}
-                          <rect
-                            class="chip-icon-fill"
-                            x="6.85"
-                            y="3.35"
-                            width="2.3"
-                            height="3.4"
-                            rx="1.15"
-                            opacity="0.55"
-                          />
-                        {/if}
-                      </svg>
-                    {/if}
+                          {#if item.chip.button === "left"}
+                            <path
+                              class="chip-icon-fill"
+                              d="M3.9 2.9h3.95v3.9H3.9Z"
+                              opacity="0.35"
+                            />
+                          {:else if item.chip.button === "right"}
+                            <path
+                              class="chip-icon-fill"
+                              d="M8.15 2.9H12.1v3.9H8.15Z"
+                              opacity="0.35"
+                            />
+                          {:else}
+                            <rect
+                              class="chip-icon-fill"
+                              x="6.85"
+                              y="3.35"
+                              width="2.3"
+                              height="3.4"
+                              rx="1.15"
+                              opacity="0.55"
+                            />
+                          {/if}
+                        </svg>
+                      {/if}
+                    </span>
+                    <span class="chip-label"
+                      >{formatHudPointerBody(
+                        item.chip,
+                        locale,
+                      )}</span
+                    >
                   </span>
                 {/if}
-                <span class="chip-label"
-                  >{formatHudLabel(item.chip, legendLayout, locale)}</span
-                >
               </div>
             {/if}
           </div>
@@ -429,30 +462,45 @@
   }
 
   .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
     max-width: 100%;
     padding: 10px 14px;
     border-radius: 12px;
     font-weight: 600;
     letter-spacing: 0.02em;
+    line-height: 1.2;
     backdrop-filter: blur(10px);
     box-shadow: 0 10px 30px rgba(2, 6, 23, 0.35);
     white-space: nowrap;
     border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
   }
 
-  /* Same shell as keys; modality via leading line icon only. */
+  /* Same shell as keys; icon sits with the pointer action, after mods. */
   .chip-pointer {
+    gap: 0.35em;
+  }
+
+  .chip-sep {
+    flex: 0 0 auto;
+    opacity: 0.85;
+  }
+
+  .chip-action {
     display: inline-flex;
     align-items: center;
-    gap: 0.4em;
-    padding-left: 12px;
+    gap: 0.35em;
+    min-height: 1.2em;
   }
 
   .chip-icon {
     display: inline-flex;
     flex: 0 0 auto;
-    width: 1.05em;
-    height: 1.05em;
+    align-items: center;
+    justify-content: center;
+    width: 1em;
+    height: 1em;
     line-height: 0;
   }
 

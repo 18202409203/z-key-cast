@@ -48,14 +48,15 @@ export function formatHudLabel(chip: HudChip, legendLayout?: KeyboardLegendLayou
 | Variant | Fields | Notes |
 |---------|--------|-------|
 | `key` | `mods: KeyRef[]`, `key: KeyRef`, `phase: "down" \| "up"` | Bare modifiers and primary keys both emit; consumers filter |
-| `mouse` | `button: "left" \| "right" \| "middle"`, `phase: "down" \| "up"` | Button down **and** up |
-| `scroll` | `direction: "up" \| "down"` | Vertical only; coalesced bursts; **no** `phase` |
+| `mouse` | `mods: KeyRef[]`, `button: "left" \| "right" \| "middle"`, `phase: "down" \| "up"` | Button down **and** up; `mods` = held modifiers at reduce time |
+| `scroll` | `mods: KeyRef[]`, `direction: "up" \| "down"` | Vertical only; coalesced bursts; **no** `phase`; `mods` = held modifiers |
 
 `KeyRef = { id: string }` (**breaking** — no `label` on the wire)
 
 - `id`: stable logical name (`MetaLeft`, `ShiftRight`, `KeyS`, `Digit1`, `Numpad1`, `Backspace`, `ForwardDelete`, …). Never OS-specific ids like `WinLeft`.
-- Display: keys via `displayLabelForKeyId(id, legendLayout)`; mouse/scroll Text chips via `formatHudLabel(chip, legendLayout, locale)` (`LMB`/`Scr↑` en · `左键`/`滚↑` zh; arrow keys stay `↑`/`↓`) plus a shared-shell leading line-art mouse/scroll icon (not Lite schematic)
+- Display: keys via `displayLabelForKeyId(id, legendLayout)`; mouse/scroll Text chips via mods label + line-art mouse/scroll icon beside `formatHudPointerBody` (`LMB`/`Scr↑` en · `左键`/`滚↑` zh; arrow keys stay `↑`/`↓`) — icon after mods, not before; full string still via `formatHudLabel` for Log
 - Bare mod: `key` = that modifier; `mods` = other currently held modifiers (**exclude self**)
+- Mouse/scroll: `mods` snapshots `ChipReducer` held-mods (⌃ ⌥ ⇧ ⌘ order; left/right ids)
 
 **`cast://mouse-ripple` → `MouseRippleEvent`** (not part of `HudChip`; do not put coords on mouse chips)
 
@@ -134,15 +135,15 @@ type CaptureSettings = {
 ### 5. Good / Base / Bad Cases
 
 - **Good**: `{ "kind":"key","mods":[{"id":"MetaLeft"},{"id":"ShiftLeft"}],"key":{"id":"KeyS"},"phase":"down" }`
-- **Base**: `{ "kind":"mouse","button":"left","phase":"down" }`
-- **Base (scroll)**: `{ "kind":"scroll","direction":"up" }`
-- **Bad**: missing `phase` on key/mouse; inventing `kind:"combo"`; shipping `label` as required; Win/Linux fake success without a real hook; `WinLeft` ids; overloading `mouse.phase` for scroll direction
+- **Base**: `{ "kind":"mouse","mods":[],"button":"left","phase":"down" }`
+- **Base (scroll)**: `{ "kind":"scroll","mods":[{"id":"MetaLeft"}],"direction":"up" }`
+- **Bad**: missing `phase` on key/mouse; missing `mods` on mouse/scroll; inventing `kind:"combo"`; shipping `label` as required; Win/Linux fake success without a real hook; `WinLeft` ids; overloading `mouse.phase` for scroll direction
 
 ### 6. Tests Required
 
 - `cargo check` (+ Windows target when toolchain available) (+ `cargo test` for chip reducer + `settings::{allows_chip,filter_key_chip,ignore capture}` unit tests)
 - `pnpm check` (guards + listeners + `$lib/settings` / `$lib/key-ignore-presets` typecheck)
-- Manual: denied Accessibility → main log shows failed hook-status; grant → key + mouse HUD can show together; bare mods silent on Text/Lite timeline but light Full board; Text/Lite queue idle-fades per item on `dwellMs`; Full pin ignores dwell; hold key → no repeat spam; toggle keyboard/mouse independently → only that side’s chips stop/resume without restart; ignore primary / strip ignored mod; category toggles; Add key (incl. Escape) + Cancel-only exit; capture press neither HUD nor log; hook-status fail → clears timeline/held sets and shows exclusive status banner; Log lists down and up; **Windows live smoke deferred**
+- Manual: denied Accessibility → main log shows failed hook-status; grant → key + mouse HUD can show together; Text/Lite deferred bare mods (down silent; unconsumed up shows; companion consumes); Full board lights mods on down; Text/Lite queue idle-fades per item on `dwellMs`; Full pin ignores dwell; hold key → no repeat spam; toggle keyboard/mouse independently → only that side’s chips stop/resume without restart; ignore primary / strip ignored mod; category toggles; Add key (incl. Escape) + Cancel-only exit; capture press neither HUD nor log; hook-status fail → clears timeline/held sets and shows exclusive status banner; Log lists down and up (mouse/scroll include mods); **Windows live smoke deferred**
 
 ### 7. Wrong vs Correct
 
@@ -176,9 +177,9 @@ void listen(EVENT_CHANNEL, (event) => {
 
 ### Chip reduce scope
 
-- **Decision**: Emit precise down/up for primary keys, bare modifiers, and mouse; autorepeat / short debounce still drop before reduce
-- **Consumers**: Text/Lite ignore `up` and bare-mod-only downs and push into a shared operation timeline (max 5; scroll same-direction at tail refreshes dwell only); Full maintains held-sets + scroll pulse; Log records both phases
-- **Out of scope**: AxN combo badges; exposing queue length / timeline direction settings
+- **Decision**: Emit precise down/up for primary keys, bare modifiers, and mouse; snapshot `held_mods` onto mouse/scroll; autorepeat / short debounce still drop before reduce
+- **Consumers**: Text/Lite defer modifier downs; companion key/mouse/scroll enqueue with mods and mark those mod ids consumed; unconsumed modifier ups synthesize a display `key` chip (`phase: "down"`); consumed ups silent; shared operation timeline (max 5; same-direction scroll at tail refreshes dwell only when mods multiset matches). Full maintains held-sets + scroll pulse (may ignore mouse/scroll `mods`). Log records both phases and mods on mouse/scroll.
+- **Out of scope**: AxN combo badges; exposing queue length / timeline direction settings; Caps Lock as chord modifier
 
 ### Capture toggles (filter after reduce)
 
@@ -208,11 +209,11 @@ void listen(EVENT_CHANNEL, (event) => {
 - **`hudPreset`**: `"text"` | `"lite"` | `"full"` (default `"text"`). Replaces `keyboardDisplayMode` × `mouseDisplayMode` × `persistVisible`.
   | Preset | Surface | Pin | Highlight |
   |--------|---------|-----|-----------|
-  | `text` | operation timeline of text chips (key + mouse + scroll, ≤5) | no | per-item `dwellMs` |
-  | `lite` | same timeline: KeyCard + compact MouseSchematic five frames | no | per-item `dwellMs` |
-  | `full` | keyboard map + MouseSchematic board | always | held-set from down/up; scroll pulse; ignore dwell |
+| `text` | operation timeline of text chips (key + mouse + scroll, ≤5) | no | per-item `dwellMs`; deferred mod commit |
+| `lite` | same timeline: KeyCard + compact MouseSchematic five frames (mods KeyCards precede mouse/scroll frame) | no | per-item `dwellMs`; deferred mod commit |
+| `full` | keyboard map + MouseSchematic board | always | held-set from down/up; scroll pulse; ignore dwell; ignore mouse/scroll `mods` |
 - **Migration**: if `hudPreset` absent, map legacy `keyboardDisplayMode` (`text`→text, `key-card`→lite, `keyboard`→full); else `"text"`. Strip legacy fields on next write.
-- **Overlay**: load on mount + `listen`; Text/Lite unified timeline (right-enter / left-shift, drop oldest when full; scroll tail-refresh); Full held key-id / mouse-button sets + scroll pulse; status message is exclusive (clears timeline + held sets); defaults `dwellMs=1000`, `hudPreset="text"`
+- **Overlay**: load on mount + `listen`; Text/Lite unified timeline (right-enter / left-shift, drop oldest when full; scroll tail-refresh when direction **and** mods multiset match; deferred modifier chord commit via `consumedModIds`); Full held key-id / mouse-button sets + scroll pulse; status message is exclusive (clears timeline + held sets + consumed mods); defaults `dwellMs=1000`, `hudPreset="text"`
 - **Settings UI**: ChoiceCardGroup Text·Lite·Full; **hide** dwell when Full; **hide** `keyMouseLayout` unless Full (value still persisted)
 - **`MouseSchematic`**: `size` `"board"` \| `"timeline"`; board uses `activeButtons` + scroll pulse; timeline uses fixed `frame` (L/R/M/scroll-up/scroll-down)
 - **Clamp**: font 10–48, dwell 200–5000, opacity 0–1, colors `#rgb`/`#rrggbb`

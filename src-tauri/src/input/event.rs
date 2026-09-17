@@ -12,12 +12,16 @@ pub enum HudChip {
     },
     #[serde(rename = "mouse")]
     Mouse {
+        mods: Vec<KeyRef>,
         button: MouseButton,
         phase: Phase,
     },
     /// Vertical scroll direction pulse — no `phase`.
     #[serde(rename = "scroll")]
-    Scroll { direction: ScrollDirection },
+    Scroll {
+        mods: Vec<KeyRef>,
+        direction: ScrollDirection,
+    },
 }
 
 /// Stable logical key identity on the wire. Display labels are resolved in the UI.
