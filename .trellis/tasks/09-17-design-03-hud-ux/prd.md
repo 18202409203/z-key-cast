@@ -19,11 +19,13 @@
 
 ## Cross-child acceptance
 
-- [ ] 四子任务可独立 `start` / 验收 / archive；互不要求同 PR
-- [ ] 子任务 PRD 与 grilling 锁定表一致；滚动任务更新产品「忽略滚轮」约定
-- [ ] `design/03.md` 与本父任务地图对齐
+- [x] 四子任务可独立 `start` / 验收 / archive；互不要求同 PR
+- [x] 子任务 PRD 与 grilling 锁定表一致；滚动任务更新产品「忽略滚轮」约定
+- [x] `design/03.md` 与本父任务地图对齐
 
-## Out of scope (parent)
+## Status
+
+**Done** — 四子任务均已交付并 archive（2026-09-17）。
 
 - 自动检测键盘是否有小键盘
 - 滚轮速度映射 / 横向滚动 / 双视觉方案可选
