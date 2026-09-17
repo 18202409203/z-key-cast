@@ -167,20 +167,17 @@
   style={hud.style}
   {locale}
   {placeMode}
-  keySlot={hud.keySlot}
-  mouseSlot={hud.mouseSlot}
+  timeline={hud.timeline}
   statusActive={hud.statusActive}
   activeKeyIds={hud.activeKeyIds}
   mouseActiveButtons={hud.mouseActiveButtons}
   scrollDirection={hud.scrollDirection}
   scrollPulseNonce={hud.scrollPulseNonce}
   showKmGroup={hud.showKmGroup}
-  showKeySide={hud.showKeySide}
-  showMouseSide={hud.showMouseSide}
   showKeyboardMap={hud.showKeyboardMap}
-  showKeyCards={hud.showKeyCards}
   showMouseSchematic={hud.showMouseSchematic}
   isFull={hud.isFull}
+  isLite={hud.isLite}
   showNumpad={hasNumpad}
   {onPlacePointerDown}
 />

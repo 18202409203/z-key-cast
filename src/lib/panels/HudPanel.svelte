@@ -31,6 +31,7 @@
   const showLegendLayout = $derived(
     hudStyle.hudPreset === "lite" || hudStyle.hudPreset === "full",
   );
+  const showKeyMouseLayout = $derived(hudStyle.hudPreset === "full");
   const showDwellMs = $derived(hudStyle.hudPreset !== "full");
   const showFontSize = $derived(showDwellMs);
 
@@ -198,20 +199,22 @@
         {/if}
       </p>
     </div>
-    <div class="field">
-      <span class="field-label" id="hud-km-layout-label"
-        >{t("settings.keyMouseLayout", locale)}</span
-      >
-      <ChoiceCardGroup
-        name="hud-km-layout"
-        value={hudStyle.keyMouseLayout ?? "key-left-mouse-right"}
-        items={keyMouseLayoutItems}
-        disabled={!hudReady || hudSaving}
-        labelledBy="hud-km-layout-label"
-        columns={4}
-        onChange={onKeyMouseLayoutChange}
-      />
-    </div>
+    {#if showKeyMouseLayout}
+      <div class="field">
+        <span class="field-label" id="hud-km-layout-label"
+          >{t("settings.keyMouseLayout", locale)}</span
+        >
+        <ChoiceCardGroup
+          name="hud-km-layout"
+          value={hudStyle.keyMouseLayout ?? "key-left-mouse-right"}
+          items={keyMouseLayoutItems}
+          disabled={!hudReady || hudSaving}
+          labelledBy="hud-km-layout-label"
+          columns={4}
+          onChange={onKeyMouseLayoutChange}
+        />
+      </div>
+    {/if}
     {#if showLegendLayout}
       <div class="field">
         <span class="field-label" id="hud-legend-layout-label"

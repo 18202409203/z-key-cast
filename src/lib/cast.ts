@@ -1,10 +1,8 @@
 /** Wire contract — keep aligned with `design/index.md` and Rust `input/event.rs`. */
 
 import { invoke } from "@tauri-apps/api/core";
-import {
-  displayLabelForKeyId,
-  type KeyboardLegendLayoutId,
-} from "$lib/key-legends";
+import { displayLabelForKeyId, type KeyboardLegendLayoutId } from "$lib/key-legends";
+import { t, type UiLocale } from "$lib/i18n";
 
 export type KeyRef = {
   id: string;
@@ -118,9 +116,12 @@ export function isMouseRippleEvent(value: unknown): value is MouseRippleEvent {
 export function formatHudLabel(
   chip: HudChip,
   legendLayout: KeyboardLegendLayoutId = "mac-us",
+  locale: UiLocale = "en",
 ): string {
   if (chip.kind === "scroll") {
-    return chip.direction === "up" ? "↑" : "↓";
+    return chip.direction === "up"
+      ? t("hud.chip.scroll.up", locale)
+      : t("hud.chip.scroll.down", locale);
   }
 
   if (chip.kind === "key") {
@@ -131,9 +132,9 @@ export function formatHudLabel(
     return parts.join(" + ");
   }
 
-  const button =
-    chip.button === "left" ? "Left" : chip.button === "right" ? "Right" : "Middle";
-  return `Mouse · ${button}`;
+  if (chip.button === "left") return t("hud.chip.mouse.left", locale);
+  if (chip.button === "right") return t("hud.chip.mouse.right", locale);
+  return t("hud.chip.mouse.middle", locale);
 }
 
 /** Stable ordered cards for key-card mode (mods then primary; mouse → one card). */
@@ -152,16 +153,17 @@ export function hudCards(chip: HudChip): KeyRef[] {
 export function summarizeHudChip(
   chip: HudChip,
   legendLayout: KeyboardLegendLayoutId = "mac-us",
+  locale: UiLocale = "en",
 ): string {
   if (chip.kind === "key") {
     const modIds = chip.mods.map((m) => m.id).join(",");
     const modPart = modIds ? ` mods=[${modIds}]` : "";
-    return `key ${chip.phase}${modPart} key=${chip.key.id} · ${formatHudLabel(chip, legendLayout)}`;
+    return `key ${chip.phase}${modPart} key=${chip.key.id} · ${formatHudLabel(chip, legendLayout, locale)}`;
   }
   if (chip.kind === "scroll") {
-    return `scroll direction=${chip.direction} · ${formatHudLabel(chip, legendLayout)}`;
+    return `scroll direction=${chip.direction} · ${formatHudLabel(chip, legendLayout, locale)}`;
   }
-  return `mouse ${chip.phase} button=${chip.button} · ${formatHudLabel(chip, legendLayout)}`;
+  return `mouse ${chip.phase} button=${chip.button} · ${formatHudLabel(chip, legendLayout, locale)}`;
 }
 
 export function summarizeHookStatus(status: HookStatus): string {

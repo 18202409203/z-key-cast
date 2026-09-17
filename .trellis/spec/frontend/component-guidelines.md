@@ -10,7 +10,7 @@ Three Svelte layers under `$lib`:
 
 - **`components/`** — reusable controls and HUD primitives (`Tabs`, `SegmentedControl`, `ChoiceCardGroup`, `KeyCard`, `KeyboardMap`, `MouseSchematic`)
 - **`panels/`** — main-window tab bodies that own their settings get/set and panel-local listeners
-- **`overlay/`** — overlay HUD only: `HudView` (presentation) + `hud-slots.svelte.ts` (slots/timers); route keeps Tauri `listen` and place drag
+- **`overlay/`** — overlay HUD only: `HudView` (presentation) + `hud-slots.svelte.ts` (timeline/timers/held-sets); route keeps Tauri `listen` and place drag
 
 Route files compose these; they do not redefine cast/settings wire types. Do not put overlay orchestration in `panels/` or reinvent HUD primitives outside `components/`.
 

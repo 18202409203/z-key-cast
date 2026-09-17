@@ -109,7 +109,7 @@
 
         const unlistenEvent = await listen(EVENT_CHANNEL, (event) => {
           if (!isHudChip(event.payload)) return;
-          appendLog(summarizeHudChip(event.payload, legendLayout));
+          appendLog(summarizeHudChip(event.payload, legendLayout, locale));
         });
         if (cancelled) {
           unlistenEvent();

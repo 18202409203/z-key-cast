@@ -3,7 +3,7 @@
   "name": "text-key-queue",
   "title": "Text mode multi-key queue",
   "description": "Text HUD: N keys with per-key dwell, enter right exit left — needs more grilling",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,

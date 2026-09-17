@@ -34,7 +34,7 @@ src/
 │   │   └── AboutPanel.svelte
 │   ├── overlay/                  # Overlay HUD presentation + slot/timer logic
 │   │   ├── HudView.svelte        # Presentational HUD (markup + view CSS)
-│   │   └── hud-slots.svelte.ts   # Slots, held sets, idle timers, showChip API
+│   │   └── hud-slots.svelte.ts   # Timeline / held sets / idle timers / showChip API
 │   ├── cast.ts                   # Event channels, wire types, guards
 │   ├── settings.ts               # Capture / HUD style / position / locale API
 │   ├── i18n.ts
@@ -57,7 +57,7 @@ Do **not** put overlay orchestration under `$lib/panels/` — panels are main-wi
 |-------|------|--------------|
 | `$lib/components/` | Presentational / reusable controls; HUD primitives used by overlay + Capture | Tauri listen/persist for main settings tabs; overlay slot/timer orchestration |
 | `$lib/panels/` | Tab markup, local `$state`, get/set via `$lib/settings`, panel-local listen | Global tab routing; inventing wire types; overlay HUD |
-| `$lib/overlay/` | `HudView` markup/CSS; `hud-slots` slots / held sets / idle timers / `showChip` / style dwell | Tauri `listen` registration; main-window panels |
+| `$lib/overlay/` | `HudView` markup/CSS; `hud-slots` timeline / held sets / idle timers / `showChip` / style dwell | Tauri `listen` registration; main-window panels |
 | `routes/overlay/+page.svelte` | Locale/style/place bootstrap, Tauri `listen`/`get*`, place-mode drag, compose `HudView`; transparent `:global(html,body)` | Full HUD markup blob; slot/timer implementation |
 | `routes/+page.svelte` | `activeTab`, tab-label locale mirror, composing always-mounted panels, shared `logLines` / `appendLog` | Full panel form markup |
 | `$lib/*.ts` | Wire types, invokes, i18n, layouts | Svelte markup |

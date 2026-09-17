@@ -15,7 +15,7 @@
 | 1 | `09-17-hud-settings-schematics` | 预设 1×3 + 键鼠布局 1×4 静态图卡 | 轻量–中等 | done (archived) |
 | 2 | `09-17-has-numpad-toggle` | 捕获区「有小键盘」；Full/Capture 板形 | 中等 | done (archived) |
 | 3 | `09-17-scroll-wheel-hud` | `scroll` HudChip + 刻度方向脉冲 | 复杂 | done (archived) |
-| 4 | `09-17-text-key-queue` | Text/Lite 键盘时间线（grilling 中） | 复杂 | planning |
+| 4 | `09-17-text-key-queue` | Text/Lite 操作时间线 | 复杂 | done (archiving) |
 
 ## Cross-child acceptance
 

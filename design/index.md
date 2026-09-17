@@ -53,7 +53,7 @@ type HudChip =
 - `id`：稳定逻辑名（如 `MetaLeft`, `KeyS`, `Digit1`, `Numpad1`, `Backspace`, `ForwardDelete`）；不发 OS 专用 id（如 `WinLeft`）
 - 展示：UI 用 `id` + `keyboardLegendLayout`（auto → Mac/Win）解析短文案（Meta → `⌘` / `Win`）
 - 发射端：主键 / 裸修饰 / 鼠标均发 down 与 up；纵向滚轮经短窗合并后发 `scroll`（无 phase）；消费者决定如何展示
-- Text/Lite：忽略 `up` 与裸修饰；down 占条 + dwell；Text 鼠侧文字可显示 `↑`/`↓`
+- Text/Lite：忽略 `up` 与裸修饰；操作时间线 + dwell；Text 鼠键 `LMB`/`RMB`/`MMB`，滚轮 `Scr↑`/`Scr↓`（与方向键 `↑`/`↓` 区分）
 - Lite/Full：滚轮刻度方向脉冲（固定短动画），与鼠标按键高亮不互斥；不进 Full held-set
 - Full：held-set 驱动全键盘 / 多键鼠标高亮；忽略 dwell
 - Log：记录 down 与 up；scroll 记方向

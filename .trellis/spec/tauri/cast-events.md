@@ -38,7 +38,7 @@ export function isHudChip(value: unknown): value is HudChip;
 export function isHookStatus(value: unknown): value is HookStatus;
 export function isIgnoreKeyCaptured(value: unknown): value is KeyRef;
 export function isMouseRippleEvent(value: unknown): value is MouseRippleEvent;
-export function formatHudLabel(chip: HudChip, legendLayout?: KeyboardLegendLayoutId): string;
+export function formatHudLabel(chip: HudChip, legendLayout?: KeyboardLegendLayoutId, locale?: UiLocale): string;
 ```
 
 ### 3. Contracts
@@ -54,7 +54,7 @@ export function formatHudLabel(chip: HudChip, legendLayout?: KeyboardLegendLayou
 `KeyRef = { id: string }` (**breaking** — no `label` on the wire)
 
 - `id`: stable logical name (`MetaLeft`, `ShiftRight`, `KeyS`, `Digit1`, `Numpad1`, `Backspace`, `ForwardDelete`, …). Never OS-specific ids like `WinLeft`.
-- Display: Svelte resolves all user-visible strings via `displayLabelForKeyId(id, legendLayout)` / `formatHudLabel(chip, legendLayout)` (`keyboardLegendLayout` auto → Mac vs Win glyphs; Meta → `⌘` vs `Win`)
+- Display: keys via `displayLabelForKeyId(id, legendLayout)`; mouse/scroll Text chips via `formatHudLabel(chip, legendLayout, locale)` (`LMB`/`Scr↑` en · `左键`/`滚↑` zh; arrow keys stay `↑`/`↓`) plus a shared-shell leading line-art mouse/scroll icon (not Lite schematic)
 - Bare mod: `key` = that modifier; `mods` = other currently held modifiers (**exclude self**)
 
 **`cast://mouse-ripple` → `MouseRippleEvent`** (not part of `HudChip`; do not put coords on mouse chips)
@@ -142,7 +142,7 @@ type CaptureSettings = {
 
 - `cargo check` (+ Windows target when toolchain available) (+ `cargo test` for chip reducer + `settings::{allows_chip,filter_key_chip,ignore capture}` unit tests)
 - `pnpm check` (guards + listeners + `$lib/settings` / `$lib/key-ignore-presets` typecheck)
-- Manual: denied Accessibility → main log shows failed hook-status; grant → key + mouse HUD slots can show together; bare mods silent on Text/Lite bar but light Full board; each Text/Lite side idle-fades on its own `dwellMs`; Full pin ignores dwell; hold key → no repeat spam; toggle keyboard/mouse independently → only that side’s chips stop/resume without restart; ignore primary / strip ignored mod; category toggles; Add key (incl. Escape) + Cancel-only exit; capture press neither HUD nor log; hook-status fail → clears both slots and shows exclusive status banner; Log lists down and up; **Windows live smoke deferred**
+- Manual: denied Accessibility → main log shows failed hook-status; grant → key + mouse HUD can show together; bare mods silent on Text/Lite timeline but light Full board; Text/Lite queue idle-fades per item on `dwellMs`; Full pin ignores dwell; hold key → no repeat spam; toggle keyboard/mouse independently → only that side’s chips stop/resume without restart; ignore primary / strip ignored mod; category toggles; Add key (incl. Escape) + Cancel-only exit; capture press neither HUD nor log; hook-status fail → clears timeline/held sets and shows exclusive status banner; Log lists down and up; **Windows live smoke deferred**
 
 ### 7. Wrong vs Correct
 
@@ -177,8 +177,8 @@ void listen(EVENT_CHANNEL, (event) => {
 ### Chip reduce scope
 
 - **Decision**: Emit precise down/up for primary keys, bare modifiers, and mouse; autorepeat / short debounce still drop before reduce
-- **Consumers**: Text/Lite ignore `up` and bare-mod-only downs for the bar; Full maintains held-sets; Log records both phases
-- **Out of scope**: Multi-chip history, display skins beyond presets
+- **Consumers**: Text/Lite ignore `up` and bare-mod-only downs and push into a shared operation timeline (max 5; scroll same-direction at tail refreshes dwell only); Full maintains held-sets + scroll pulse; Log records both phases
+- **Out of scope**: AxN combo badges; exposing queue length / timeline direction settings
 
 ### Capture toggles (filter after reduce)
 
@@ -206,15 +206,15 @@ void listen(EVENT_CHANNEL, (event) => {
 - **Channel**: `cast://hud-style` → `HudStyleSettings` (`fontSizePx`, `textColor`, `backgroundColor`, `backgroundOpacity`, `dwellMs`, `hudPreset`)
 - **Commands**: `get_hud_style_settings` / `set_hud_style_settings` (persist in same `settings.json` as capture; never wipe sibling fields)
 - **`hudPreset`**: `"text"` | `"lite"` | `"full"` (default `"text"`). Replaces `keyboardDisplayMode` × `mouseDisplayMode` × `persistVisible`.
-  | Preset | Keyboard | Mouse | Pin | Highlight |
-  |--------|----------|-------|-----|-----------|
-  | `text` | text chip | text chip | no | last down + `dwellMs` |
-  | `lite` | key-card | schematic | no | last down + `dwellMs` |
-  | `full` | keyboard map | schematic | always | held-set from down/up; ignore dwell |
+  | Preset | Surface | Pin | Highlight |
+  |--------|---------|-----|-----------|
+  | `text` | operation timeline of text chips (key + mouse + scroll, ≤5) | no | per-item `dwellMs` |
+  | `lite` | same timeline: KeyCard + compact MouseSchematic five frames | no | per-item `dwellMs` |
+  | `full` | keyboard map + MouseSchematic board | always | held-set from down/up; scroll pulse; ignore dwell |
 - **Migration**: if `hudPreset` absent, map legacy `keyboardDisplayMode` (`text`→text, `key-card`→lite, `keyboard`→full); else `"text"`. Strip legacy fields on next write.
-- **Overlay**: load on mount + `listen`; Text/Lite dual slots with independent idle timers sharing `dwellMs`; Full held key-id / mouse-button sets; status message is exclusive (clears slots + held sets); defaults `dwellMs=1000`, `hudPreset="text"`
-- **Settings UI**: one segmented Text·Lite·Full; **hide** dwell when Full
-- **`MouseSchematic`**: `activeButtons` iterable (multi-button for Full; Lite usually 0–1)
+- **Overlay**: load on mount + `listen`; Text/Lite unified timeline (right-enter / left-shift, drop oldest when full; scroll tail-refresh); Full held key-id / mouse-button sets + scroll pulse; status message is exclusive (clears timeline + held sets); defaults `dwellMs=1000`, `hudPreset="text"`
+- **Settings UI**: ChoiceCardGroup Text·Lite·Full; **hide** dwell when Full; **hide** `keyMouseLayout` unless Full (value still persisted)
+- **`MouseSchematic`**: `size` `"board"` \| `"timeline"`; board uses `activeButtons` + scroll pulse; timeline uses fixed `frame` (L/R/M/scroll-up/scroll-down)
 - **Clamp**: font 10–48, dwell 200–5000, opacity 0–1, colors `#rgb`/`#rrggbb`
 - **`keyboardLegendLayout`**: `auto` (OS guess) | `mac-us` | `win-us` — dual-glyph legends from `$lib/key-legends.ts` (US ANSI `!`/`1` etc.); key-card + full keyboard + Text/Log consume the resolved layout. Prefer glyphs (`↵` enter, `⌫`/`⌦` delete pair, `⇥` tab, `⇧` shift); Caps is text `Caps` (avoid `⇪` vs `⇧` confusion at small size). `NumLock` → Clr/Num by layout. Meta → `⌘` (mac-us) / `Win` (win-us).
 

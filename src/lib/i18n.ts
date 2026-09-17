@@ -38,8 +38,10 @@ const en = {
   "settings.hudPreset.text": "Text",
   "settings.hudPreset.lite": "Lite",
   "settings.hudPreset.full": "Full",
-  "settings.hudPreset.textHint": "Minimal text chips for key and mouse; fades after dwell.",
-  "settings.hudPreset.liteHint": "Keycaps plus mouse diagram; fades after dwell.",
+  "settings.hudPreset.textHint":
+    "Text operation timeline (keys, mouse, scroll); up to 5 chips; fades after dwell.",
+  "settings.hudPreset.liteHint":
+    "Styled operation timeline: keycaps and compact mouse/wheel glyphs; up to 5; fades after dwell.",
   "settings.hudPreset.fullHint":
     "Always-on keyboard and mouse board; highlights follow hold and release.",
   "settings.keyMouseLayout": "Key / mouse layout",
@@ -114,6 +116,12 @@ const en = {
   "overlay.placeAffordance": "Drag to move · Done in Settings",
   "overlay.placeAria": "HUD place mode — drag to move",
   "overlay.hudAria": "Key cast HUD",
+
+  "hud.chip.mouse.left": "LMB",
+  "hud.chip.mouse.right": "RMB",
+  "hud.chip.mouse.middle": "MMB",
+  "hud.chip.scroll.up": "Scr↑",
+  "hud.chip.scroll.down": "Scr↓",
 } as const;
 
 const zh: Record<MessageKey, string> = {
@@ -149,8 +157,9 @@ const zh: Record<MessageKey, string> = {
   "settings.hudPreset.text": "文本",
   "settings.hudPreset.lite": "精简",
   "settings.hudPreset.full": "完整",
-  "settings.hudPreset.textHint": "键鼠均为文本条；停留后淡出。",
-  "settings.hudPreset.liteHint": "按键卡片 + 鼠标示意图；停留后淡出。",
+  "settings.hudPreset.textHint": "文本操作时间线（键、鼠、滚轮），最多 5 条；停留后淡出。",
+  "settings.hudPreset.liteHint":
+    "样式化操作时间线：按键卡片 + 缩小鼠/轮图例，最多 5 条；停留后淡出。",
   "settings.hudPreset.fullHint": "常驻全键盘与鼠标示意图；高亮跟随按下与抬起。",
   "settings.keyMouseLayout": "键鼠布局",
   "settings.keyMouseLayout.keyLeftMouseRight": "键左 · 鼠右",
@@ -223,6 +232,12 @@ const zh: Record<MessageKey, string> = {
   "overlay.placeAffordance": "拖动以移动 · 在设置中完成",
   "overlay.placeAria": "面板定位模式 — 拖动以移动",
   "overlay.hudAria": "按键投射面板",
+
+  "hud.chip.mouse.left": "左键",
+  "hud.chip.mouse.right": "右键",
+  "hud.chip.mouse.middle": "中键",
+  "hud.chip.scroll.up": "向上滚",
+  "hud.chip.scroll.down": "向下滚",
 };
 
 const catalogs: Record<UiLocale, Record<MessageKey, string>> = { en, zh };

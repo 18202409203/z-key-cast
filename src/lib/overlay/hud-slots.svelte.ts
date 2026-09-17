@@ -1,5 +1,4 @@
 import {
-  hudCards,
   isModifierKeyId,
   SCROLL_PULSE_MS,
   type HudChip,
@@ -12,33 +11,39 @@ import {
   type HudStyleSettings,
 } from "$lib/settings";
 
-type KeyChip = Extract<HudChip, { kind: "key" }>;
-/** Text mouse slot may hold a button chip or a scroll direction chip. */
-type MouseTextChip =
-  | Extract<HudChip, { kind: "mouse" }>
-  | Extract<HudChip, { kind: "scroll" }>;
 type MouseButton = Extract<HudChip, { kind: "mouse" }>["button"];
+
+export type TimelineChip = Extract<
+  HudChip,
+  { kind: "key" | "mouse" | "scroll" }
+>;
+
+export type TimelineItem = {
+  id: string;
+  chip: TimelineChip;
+};
+
+const TIMELINE_MAX = 5;
 
 /**
  * Overlay HUD slot / timer / held-set state. Instantiated once by the overlay route.
  * Owns style for dwell and preset side effects (single writer).
  */
 export function createHudSlots() {
-  let keySlot = $state<KeyChip | null>(null);
-  let mouseSlot = $state<MouseTextChip | null>(null);
+  let timeline = $state<TimelineItem[]>([]);
   let heldKeyIds = $state<Set<string>>(new Set());
   let heldMouseButtons = $state<Set<MouseButton>>(new Set());
-  /** Lite/Full wheel-tick pulse — orthogonal to button held-set / mouseSlot. */
+  /** Full wheel-tick pulse — orthogonal to button held-set. */
   let scrollPulse = $state<{ direction: ScrollDirection; nonce: number } | null>(
     null,
   );
   /** When true, overlay shows capture-unavailable status (re-translated on locale change). */
   let statusActive = $state(false);
   let style = $state<HudStyleSettings>({ ...DEFAULT_HUD_STYLE });
-  let keyIdleTimer: ReturnType<typeof setTimeout> | null = null;
-  let mouseIdleTimer: ReturnType<typeof setTimeout> | null = null;
+  const itemTimers = new Map<string, ReturnType<typeof setTimeout>>();
   let statusIdleTimer: ReturnType<typeof setTimeout> | null = null;
   let scrollPulseTimer: ReturnType<typeof setTimeout> | null = null;
+  let nextItemId = 0;
 
   const hudPreset = $derived<HudPreset>(style.hudPreset ?? "text");
   const isFull = $derived(hudPreset === "full");
@@ -46,18 +51,11 @@ export function createHudSlots() {
 
   const activeKeyIds = $derived.by(() => {
     if (isFull) return heldKeyIds;
-    const ids = new Set<string>();
-    if (keySlot) {
-      for (const card of hudCards(keySlot)) {
-        ids.add(card.id);
-      }
-    }
-    return ids;
+    return new Set<string>();
   });
 
   const mouseActiveButtons = $derived.by(() => {
     if (isFull) return heldMouseButtons;
-    if (mouseSlot?.kind === "mouse") return new Set<MouseButton>([mouseSlot.button]);
     return new Set<MouseButton>();
   });
 
@@ -67,39 +65,13 @@ export function createHudSlots() {
   const scrollPulseNonce = $derived(scrollPulse?.nonce ?? 0);
 
   const showKeyboardMap = $derived(isFull);
-  const showKeyCards = $derived(isLite && keySlot !== null);
-  const showMouseSchematic = $derived(
-    isFull || (isLite && (mouseSlot !== null || scrollPulse !== null)),
-  );
+  const showMouseSchematic = $derived(isFull);
 
-  const showKeySide = $derived(
-    showKeyboardMap || showKeyCards || (!isFull && !isLite && keySlot !== null),
-  );
-
-  const showMouseSide = $derived(
-    showMouseSchematic || (!isFull && !isLite && mouseSlot !== null),
-  );
-
-  const showKmGroup = $derived(
-    !statusActive &&
-      (isFull ||
-        keySlot !== null ||
-        mouseSlot !== null ||
-        scrollPulse !== null),
-  );
+  /** Full always shows boards; Text/Lite keep the timeline host mounted so last-item outro can finish. */
+  const showKmGroup = $derived(!statusActive);
 
   function clearTimer(timer: ReturnType<typeof setTimeout> | null) {
     if (timer !== null) clearTimeout(timer);
-  }
-
-  function clearKeyIdleTimer() {
-    clearTimer(keyIdleTimer);
-    keyIdleTimer = null;
-  }
-
-  function clearMouseIdleTimer() {
-    clearTimer(mouseIdleTimer);
-    mouseIdleTimer = null;
   }
 
   function clearStatusIdleTimer() {
@@ -112,9 +84,26 @@ export function createHudSlots() {
     scrollPulseTimer = null;
   }
 
+  function clearItemTimer(id: string) {
+    const timer = itemTimers.get(id);
+    if (timer !== undefined) {
+      clearTimeout(timer);
+      itemTimers.delete(id);
+    }
+  }
+
+  function clearAllItemTimers() {
+    for (const timer of itemTimers.values()) clearTimeout(timer);
+    itemTimers.clear();
+  }
+
+  function clearTimeline() {
+    clearAllItemTimers();
+    timeline = [];
+  }
+
   function clearAllIdleTimers() {
-    clearKeyIdleTimer();
-    clearMouseIdleTimer();
+    clearAllItemTimers();
     clearStatusIdleTimer();
     clearScrollPulseTimer();
   }
@@ -124,22 +113,16 @@ export function createHudSlots() {
     heldMouseButtons = new Set();
   }
 
-  function armKeyIdle() {
-    clearKeyIdleTimer();
+  function armItemIdle(id: string) {
+    clearItemTimer(id);
     if (isFull) return;
-    keyIdleTimer = setTimeout(() => {
-      keySlot = null;
-      keyIdleTimer = null;
-    }, style.dwellMs);
-  }
-
-  function armMouseIdle() {
-    clearMouseIdleTimer();
-    if (isFull) return;
-    mouseIdleTimer = setTimeout(() => {
-      mouseSlot = null;
-      mouseIdleTimer = null;
-    }, style.dwellMs);
+    itemTimers.set(
+      id,
+      setTimeout(() => {
+        itemTimers.delete(id);
+        timeline = timeline.filter((item) => item.id !== id);
+      }, style.dwellMs),
+    );
   }
 
   function armScrollPulse(direction: ScrollDirection) {
@@ -164,6 +147,18 @@ export function createHudSlots() {
     }, style.dwellMs);
   }
 
+  function pushTimelineChip(chip: TimelineChip) {
+    const id = `t${nextItemId++}`;
+    let next = [...timeline, { id, chip }];
+    while (next.length > TIMELINE_MAX) {
+      const dropped = next[0];
+      if (dropped) clearItemTimer(dropped.id);
+      next = next.slice(1);
+    }
+    timeline = next;
+    armItemIdle(id);
+  }
+
   function applyStyle(next: HudStyleSettings) {
     const previousPreset = style.hudPreset ?? "text";
     const normalized = normalizeHudStyleSettings(next);
@@ -172,21 +167,22 @@ export function createHudSlots() {
 
     if (previousPreset === "full" && nextPreset !== "full") {
       clearHeldSets();
+      scrollPulse = null;
+      clearScrollPulseTimer();
+      clearTimeline();
     }
     if (previousPreset !== "full" && nextPreset === "full") {
       clearHeldSets();
-      keySlot = null;
-      mouseSlot = null;
+      clearTimeline();
       scrollPulse = null;
-      clearKeyIdleTimer();
-      clearMouseIdleTimer();
       clearScrollPulseTimer();
     }
 
     // Use nextPreset (not derived `isFull`) so re-arming is deterministic in this sync path.
     if (nextPreset !== "full") {
-      if (keySlot !== null) armKeyIdle();
-      if (mouseSlot !== null) armMouseIdle();
+      for (const item of timeline) {
+        armItemIdle(item.id);
+      }
     }
     if (statusActive) armStatusIdle();
   }
@@ -206,62 +202,55 @@ export function createHudSlots() {
   }
 
   function showChip(chip: HudChip) {
-    if (chip.kind === "scroll") {
-      clearStatusIdleTimer();
-      clearStatus();
-      if (isFull || isLite) {
-        // Orthogonal pulse — do not clear mouse button highlights / held-set.
-        armScrollPulse(chip.direction);
-        return;
-      }
-      // Text: mouse text slot shows ↑/↓ and dwells.
-      mouseSlot = chip;
-      armMouseIdle();
-      return;
-    }
-
     if (isFull) {
       clearStatusIdleTimer();
       clearStatus();
+      if (chip.kind === "scroll") {
+        armScrollPulse(chip.direction);
+        return;
+      }
       applyFullHeld(chip);
       return;
     }
 
     // Text / Lite: ignore ups and bare-modifier downs.
-    if (chip.phase === "up") return;
-    if (chip.kind === "key" && isModifierKeyId(chip.key.id)) return;
-
-    if (chip.kind === "key") {
-      clearStatusIdleTimer();
-      clearStatus();
-      keySlot = chip;
-      armKeyIdle();
-      return;
+    if (chip.kind === "key" || chip.kind === "mouse") {
+      if (chip.phase === "up") return;
+      if (chip.kind === "key" && isModifierKeyId(chip.key.id)) return;
     }
+
     clearStatusIdleTimer();
     clearStatus();
-    mouseSlot = chip;
-    armMouseIdle();
+
+    if (chip.kind === "scroll") {
+      const tail = timeline[timeline.length - 1];
+      if (
+        tail &&
+        tail.chip.kind === "scroll" &&
+        tail.chip.direction === chip.direction
+      ) {
+        armItemIdle(tail.id);
+        return;
+      }
+      pushTimelineChip(chip);
+      return;
+    }
+
+    pushTimelineChip(chip);
   }
 
   function showCaptureUnavailable() {
-    keySlot = null;
-    mouseSlot = null;
+    clearTimeline();
     scrollPulse = null;
     clearHeldSets();
-    clearKeyIdleTimer();
-    clearMouseIdleTimer();
     clearScrollPulseTimer();
     statusActive = true;
     armStatusIdle();
   }
 
   return {
-    get keySlot() {
-      return keySlot;
-    },
-    get mouseSlot() {
-      return mouseSlot;
+    get timeline() {
+      return timeline;
     },
     get statusActive() {
       return statusActive;
@@ -271,6 +260,9 @@ export function createHudSlots() {
     },
     get isFull() {
       return isFull;
+    },
+    get isLite() {
+      return isLite;
     },
     get activeKeyIds() {
       return activeKeyIds;
@@ -287,17 +279,8 @@ export function createHudSlots() {
     get showKeyboardMap() {
       return showKeyboardMap;
     },
-    get showKeyCards() {
-      return showKeyCards;
-    },
     get showMouseSchematic() {
       return showMouseSchematic;
-    },
-    get showKeySide() {
-      return showKeySide;
-    },
-    get showMouseSide() {
-      return showMouseSide;
     },
     get showKmGroup() {
       return showKmGroup;

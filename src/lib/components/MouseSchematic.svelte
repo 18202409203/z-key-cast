@@ -1,6 +1,7 @@
 <script lang="ts">
   type MouseButton = "left" | "right" | "middle";
   type ScrollDirection = "up" | "down";
+  type MouseFrame = MouseButton | "scroll-up" | "scroll-down";
 
   type Props = {
     /** Pressed buttons (Full can light several; Lite usually 0–1). */
@@ -12,6 +13,10 @@
     textColor: string;
     backgroundCss: string;
     fontSizePx: number;
+    /** board = Full HUD; timeline = Lite queue chip sized to KeyCard. */
+    size?: "board" | "timeline";
+    /** When set, forces a single fixed frame (Lite timeline). */
+    frame?: MouseFrame | null;
   };
 
   let {
@@ -21,17 +26,56 @@
     textColor,
     backgroundCss,
     fontSizePx,
+    size = "board",
+    frame = null,
   }: Props = $props();
 
-  const active = $derived(new Set(activeButtons));
-  const scale = $derived(Math.max(0.85, Math.min(1.35, fontSizePx / 15)));
+  const active = $derived.by(() => {
+    if (frame === "left" || frame === "right" || frame === "middle") {
+      return new Set<MouseButton>([frame]);
+    }
+    if (frame === "scroll-up" || frame === "scroll-down") {
+      return new Set<MouseButton>();
+    }
+    return new Set(activeButtons);
+  });
+
+  const effectiveScroll = $derived.by((): ScrollDirection | null => {
+    if (frame === "scroll-up") return "up";
+    if (frame === "scroll-down") return "down";
+    return scrollDirection;
+  });
+
+  const isTimeline = $derived(size === "timeline");
+  const isStaticScrollFrame = $derived(
+    frame === "scroll-up" || frame === "scroll-down",
+  );
+  /** Timeline L/R: don't rely on fg/bg half-fill (Theme invert makes “which is pressed?” ambiguous). */
+  const isTimelineSideFrame = $derived(
+    isTimeline && (frame === "left" || frame === "right"),
+  );
+
+  const dims = $derived.by(() => {
+    if (isTimeline) {
+      const unit = Math.max(18, Math.min(34, fontSizePx * 1.35));
+      const height = Math.round(unit * 2.15);
+      const width = Math.round(height * (80 / 56));
+      return { width, height };
+    }
+    const scale = Math.max(0.85, Math.min(1.35, fontSizePx / 15));
+    return {
+      width: Math.round(86 * scale),
+      height: Math.round(60 * scale),
+    };
+  });
+
   const ariaLabel = $derived(
-    active.size === 0 && !scrollDirection
+    active.size === 0 && !effectiveScroll
       ? "Mouse"
       : [
           "Mouse",
           ...active,
-          scrollDirection ? `scroll ${scrollDirection}` : null,
+          effectiveScroll ? `scroll ${effectiveScroll}` : null,
         ]
           .filter(Boolean)
           .join(" "),
@@ -46,7 +90,8 @@
 
 <div
   class="mouse-wrap"
-  class:lit={active.size > 0 || scrollDirection !== null}
+  class:lit={active.size > 0 || effectiveScroll !== null}
+  class:timeline={isTimeline}
   style:--m-fg={textColor}
   style:--m-bg={backgroundCss}
   aria-label={ariaLabel}
@@ -54,8 +99,8 @@
   <svg
     class="mouse"
     viewBox="0 0 80 56"
-    width={Math.round(86 * scale)}
-    height={Math.round(60 * scale)}
+    width={dims.width}
+    height={dims.height}
     role="img"
   >
     <defs>
@@ -70,7 +115,8 @@
     <g clip-path={`url(#${clipId})`}>
       <rect
         class="press"
-        class:active={active.has("left")}
+        class:active={!isTimelineSideFrame && active.has("left")}
+        class:side-tint={isTimelineSideFrame && active.has("left")}
         x="0"
         y="0"
         width="40.5"
@@ -78,7 +124,8 @@
       />
       <rect
         class="press"
-        class:active={active.has("right")}
+        class:active={!isTimelineSideFrame && active.has("right")}
+        class:side-tint={isTimelineSideFrame && active.has("right")}
         x="39.5"
         y="0"
         width="40.5"
@@ -90,28 +137,50 @@
     <line class="seam" x1="40" y1="6.4" x2="40" y2="12.2" />
     <line class="seam" x1="40" y1="32.2" x2="40" y2="50.6" />
 
+    {#if isTimelineSideFrame}
+      <!-- Explicit L/R so Theme fg/bg swap cannot invert the meaning of “pressed”. -->
+      <text
+        class="side-mark"
+        x={frame === "left" ? 22 : 58}
+        y="40"
+        text-anchor="middle"
+        dominant-baseline="middle">{frame === "left" ? "L" : "R"}</text
+      >
+    {/if}
     <rect class="well" x="35.05" y="10.9" width="9.9" height="22.6" rx="4.95" />
     <rect
       class="press wheel"
       class:active={active.has("middle")}
+      class:scroll-frame={isStaticScrollFrame}
       x="36.2"
       y="12.1"
       width="7.6"
       height="20.2"
       rx="3.8"
     />
-    {#key scrollPulseNonce}
-      <g
-        class="ticks"
-        class:on={active.has("middle")}
-        class:pulse-up={scrollDirection === "up"}
-        class:pulse-down={scrollDirection === "down"}
-      >
-        <line x1="38.15" y1="17.3" x2="41.85" y2="17.3" />
-        <line x1="38.15" y1="22.2" x2="41.85" y2="22.2" />
-        <line x1="38.15" y1="27.1" x2="41.85" y2="27.1" />
+    {#if isStaticScrollFrame}
+      <!-- Timeline: direction as a clear arrow on the wheel (ticks are too subtle at chip size). -->
+      <g class="scroll-arrow" class:up={effectiveScroll === "up"} class:down={effectiveScroll === "down"}>
+        {#if effectiveScroll === "up"}
+          <path d="M40 15.6 L44.4 22.4 H35.6 Z" />
+        {:else}
+          <path d="M40 30.6 L44.4 23.8 H35.6 Z" />
+        {/if}
       </g>
-    {/key}
+    {:else}
+      {#key scrollPulseNonce}
+        <g
+          class="ticks"
+          class:on={active.has("middle")}
+          class:pulse-up={effectiveScroll === "up"}
+          class:pulse-down={effectiveScroll === "down"}
+        >
+          <line x1="38.15" y1="17.3" x2="41.85" y2="17.3" />
+          <line x1="38.15" y1="22.2" x2="41.85" y2="22.2" />
+          <line x1="38.15" y1="27.1" x2="41.85" y2="27.1" />
+        </g>
+      {/key}
+    {/if}
   </svg>
 </div>
 
@@ -144,6 +213,24 @@
   .press.active {
     fill: var(--m-fg);
     filter: drop-shadow(0 0 3px color-mix(in srgb, var(--m-fg) 55%, transparent));
+  }
+
+  /* Soft locate-only tint; letter carries the meaning. */
+  .press.side-tint {
+    fill: color-mix(in srgb, var(--m-fg) 20%, transparent);
+  }
+
+  .side-mark {
+    fill: var(--m-fg);
+    font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0;
+    paint-order: stroke fill;
+    stroke: color-mix(in srgb, var(--m-bg) 70%, transparent);
+    stroke-width: 2.5px;
+    stroke-linejoin: round;
+    pointer-events: none;
   }
 
   .outline {
@@ -180,6 +267,18 @@
     fill: var(--m-fg);
     stroke: color-mix(in srgb, var(--m-fg) 35%, transparent);
     filter: drop-shadow(0 0 3px color-mix(in srgb, var(--m-fg) 55%, transparent));
+  }
+
+  /* Timeline scroll frames: tint wheel so the arrow reads on Theme/HUD colors. */
+  .wheel.scroll-frame {
+    fill: color-mix(in srgb, var(--m-fg) 22%, var(--m-bg));
+    stroke: color-mix(in srgb, var(--m-fg) 45%, transparent);
+  }
+
+  .scroll-arrow {
+    fill: var(--m-fg);
+    stroke: none;
+    filter: drop-shadow(0 0 2px color-mix(in srgb, var(--m-fg) 40%, transparent));
   }
 
   .ticks {
