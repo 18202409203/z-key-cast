@@ -89,7 +89,7 @@
 
   .lead {
     margin: 6px 0 0;
-    max-width: 32ch;
+    /* max-width: 32ch; */
     color: #94a3b8;
     line-height: 1.5;
   }

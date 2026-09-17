@@ -105,14 +105,14 @@ const en = {
 } as const;
 
 const zh: Record<MessageKey, string> = {
-  "nav.hud": "呈现",
+  "nav.hud": "显示",
   "nav.settings": "设置",
   "nav.capture": "捕获",
   "nav.log": "日志",
   "nav.about": "关于",
   "nav.aria": "主要分区",
 
-  "about.blurb": "录屏时在角落显示键盘与鼠标操作的 HUD。",
+  "about.blurb": "录屏时在角落显示键盘与鼠标操作。",
   "about.version": "版本 {version}",
 
   "settings.language": "语言",
@@ -127,13 +127,13 @@ const zh: Record<MessageKey, string> = {
   "settings.corner.tr": "右上",
   "settings.corner.tl": "左上",
   "settings.corner.custom": "自定义",
-  "settings.hudPosition": "HUD 位置",
-  "settings.moveHud": "移动 HUD",
+  "settings.hudPosition": "面板位置",
+  "settings.moveHud": "移动面板",
   "settings.done": "完成",
   "settings.placeHint": "拖动浮层，然后点击完成。",
 
   "settings.theme": "主题",
-  "settings.hudPreset": "HUD 预设",
+  "settings.hudPreset": "面板预设",
   "settings.hudPreset.text": "文本",
   "settings.hudPreset.lite": "精简",
   "settings.hudPreset.full": "完整",
@@ -145,8 +145,8 @@ const zh: Record<MessageKey, string> = {
   "settings.keyMouseLayout.keyRightMouseLeft": "键右 · 鼠左",
   "settings.keyMouseLayout.keyTopMouseBottom": "键上 · 鼠下",
   "settings.keyMouseLayout.keyBottomMouseTop": "键下 · 鼠上",
-  "settings.legendLayout": "键帽图例布局",
-  "settings.legendLayout.auto": "自动（按系统猜测）",
+  "settings.legendLayout": "键位布局",
+  "settings.legendLayout.auto": "自动（自动检测系统）",
   "settings.legendLayout.macUs": "Mac 美式 ANSI",
   "settings.legendLayout.winUs": "Windows 美式 ANSI",
   "settings.fontSize": "字号（{n}px）",
@@ -156,10 +156,10 @@ const zh: Record<MessageKey, string> = {
   "settings.colorPreset.custom": "自定义",
   "settings.textColor": "文字颜色",
   "settings.bgColor": "背景颜色",
-  "settings.bgOpacity": "背景不透明度（{n}）",
-  "settings.dwellMs": "停留时间（毫秒）",
+  "settings.bgOpacity": "背景透明度（{n}）",
+  "settings.dwellMs": "停留时长（毫秒）",
   "settings.dwellMsHint":
-    "文本/精简模式下，输入后芯片停留多久再淡出（200–5000）",
+    "文本/精简模式下，输入后文字/卡片停留多久再淡出（200–5000 毫秒）",
 
   "settings.capture": "捕获",
   "settings.captureFailedMac":
@@ -169,9 +169,9 @@ const zh: Record<MessageKey, string> = {
   "settings.captureFailedOther": "当前平台暂不支持键盘和鼠标捕获。",
   "settings.listenKeyboard": "监听键盘",
   "settings.listenMouse": "监听鼠标",
-  "settings.mouseClickRipple": "点击涟漪（主屏）",
+  "settings.mouseClickRipple": "点击涟漪",
   "settings.mouseClickRippleHint":
-    "在主显示器点击位置显示短暂圆环。与鼠标 HUD 监听互不影响。目前仅 macOS 生效。",
+    "在主显示器点击位置显示短暂圆环。",
   "settings.ignoreKeys": "忽略按键",
   "settings.ignoreHint":
     "点击键盘上的按键即可忽略。被忽略的主键不会显示；被忽略的修饰键会从组合中剥离。不在键盘图上的按键请用「添加按键」。",
@@ -197,8 +197,8 @@ const zh: Record<MessageKey, string> = {
 
   "overlay.captureUnavailable": "无法捕获键盘和鼠标 — 请检查系统权限",
   "overlay.placeAffordance": "拖动以移动 · 在设置中完成",
-  "overlay.placeAria": "HUD 定位模式 — 拖动以移动",
-  "overlay.hudAria": "按键投射 HUD",
+  "overlay.placeAria": "面板定位模式 — 拖动以移动",
+  "overlay.hudAria": "按键投射面板",
 };
 
 const catalogs: Record<UiLocale, Record<MessageKey, string>> = { en, zh };
