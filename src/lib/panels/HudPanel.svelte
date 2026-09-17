@@ -34,6 +34,7 @@
   const showKeyMouseLayout = $derived(hudStyle.hudPreset === "full");
   const showDwellMs = $derived(hudStyle.hudPreset !== "full");
   const showFontSize = $derived(showDwellMs);
+  const showTimelineMax = $derived(showDwellMs);
 
   const presetItems = $derived([
     {
@@ -108,6 +109,12 @@
     const value = Number((event.currentTarget as HTMLInputElement).value);
     if (!Number.isFinite(value)) return;
     patchHud({ dwellMs: value });
+  }
+
+  function onTimelineMaxChange(event: Event) {
+    const value = Number((event.currentTarget as HTMLInputElement).value);
+    if (!Number.isFinite(value)) return;
+    patchHud({ timelineMax: Math.max(1, Math.min(10, Math.round(value))) });
   }
 
   function onHudPresetChange(value: string) {
@@ -277,6 +284,31 @@
         />
         <p class="field-hint" id="hud-dwell-ms-hint"
           >{t("settings.dwellMsHint", locale)}</p
+        >
+      </div>
+    {/if}
+    {#if showTimelineMax}
+      <div class="field">
+        <span class="field-label" id="hud-timeline-max-label"
+          >{t("settings.timelineMax", locale, {
+            n: hudStyle.timelineMax ?? 5,
+          })}</span
+        >
+        <input
+          id="hud-timeline-max"
+          type="range"
+          min="1"
+          max="10"
+          step="1"
+          value={hudStyle.timelineMax ?? 5}
+          disabled={!hudReady || hudSaving}
+          aria-labelledby="hud-timeline-max-label"
+          aria-describedby="hud-timeline-max-hint"
+          title={t("settings.timelineMaxHint", locale)}
+          onchange={onTimelineMaxChange}
+        />
+        <p class="field-hint" id="hud-timeline-max-hint"
+          >{t("settings.timelineMaxHint", locale)}</p
         >
       </div>
     {/if}

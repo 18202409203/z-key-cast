@@ -24,8 +24,6 @@ export type TimelineItem = {
   chip: TimelineChip;
 };
 
-const TIMELINE_MAX = 5;
-
 function sameModIds(a: KeyRef[], b: KeyRef[]): boolean {
   if (a.length !== b.length) return false;
   const left = a.map((m) => m.id).slice().sort();
@@ -178,14 +176,26 @@ export function createHudSlots() {
 
   function pushTimelineChip(chip: TimelineChip) {
     const id = `t${nextItemId++}`;
+    const max = style.timelineMax ?? 5;
     let next = [...timeline, { id, chip }];
-    while (next.length > TIMELINE_MAX) {
+    while (next.length > max) {
       const dropped = next[0];
       if (dropped) clearItemTimer(dropped.id);
       next = next.slice(1);
     }
     timeline = next;
     armItemIdle(id);
+  }
+
+  function trimTimelineToMax(max: number) {
+    if (timeline.length <= max) return;
+    let next = [...timeline];
+    while (next.length > max) {
+      const dropped = next[0];
+      if (dropped) clearItemTimer(dropped.id);
+      next = next.slice(1);
+    }
+    timeline = next;
   }
 
   function applyStyle(next: HudStyleSettings) {
@@ -205,6 +215,11 @@ export function createHudSlots() {
       clearTimeline();
       scrollPulse = null;
       clearScrollPulseTimer();
+    }
+
+    // Shrinking N drops oldest immediately (same as enqueue overflow).
+    if (nextPreset !== "full") {
+      trimTimelineToMax(normalized.timelineMax);
     }
 
     // Use nextPreset (not derived `isFull`) so re-arming is deterministic in this sync path.

@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "HudStyleSettings / hud-style channel; Text/Lite timeline consumer"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "HudStyleSettings fields and Text/Lite timeline max"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend settings/panel conventions"}
+{"file": ".trellis/spec/guides/release.md", "reason": "Do not hand-edit CHANGELOG"}

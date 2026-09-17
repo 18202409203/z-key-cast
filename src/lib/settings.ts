@@ -55,6 +55,8 @@ export type HudStyleSettings = {
   backgroundColor: string;
   backgroundOpacity: number;
   dwellMs: number;
+  /** Text/Lite timeline length. Omit → 5; clamp 1..=10. */
+  timelineMax?: number;
   /** Omitted / invalid → `"text"`. Legacy `keyboardDisplayMode` migrates on normalize. */
   hudPreset?: HudPreset;
   /** Omitted → `"auto"` (guess from OS). */
@@ -69,6 +71,7 @@ export const DEFAULT_HUD_STYLE: HudStyleSettings = {
   backgroundColor: "#0f172a",
   backgroundOpacity: 0.82,
   dwellMs: 1000,
+  timelineMax: 5,
   hudPreset: "text",
   keyboardLegendLayout: "auto",
   keyMouseLayout: "key-left-mouse-right",
@@ -177,6 +180,9 @@ export function isHudStyleSettings(value: unknown): value is HudStyleSettings {
   ) {
     return false;
   }
+  if (s.timelineMax !== undefined && typeof s.timelineMax !== "number") {
+    return false;
+  }
   // Invalid hudPreset is tolerated here; `normalizeHudStyleSettings` coerces to a valid preset.
   if (
     s.hudPreset !== undefined &&
@@ -199,11 +205,17 @@ export function isHudStyleSettings(value: unknown): value is HudStyleSettings {
   return true;
 }
 
+function clampTimelineMax(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return 5;
+  return Math.max(1, Math.min(10, Math.round(value)));
+}
+
 /** Fill defaults for fields omitted by older settings.json / emits. */
 export function normalizeHudStyleSettings(value: HudStyleSettings): HudStyleSettings & {
   hudPreset: HudPreset;
   keyboardLegendLayout: KeyboardLegendPreference;
   keyMouseLayout: KeyMouseLayout;
+  timelineMax: number;
 } {
   const raw = value as HudStyleSettings & Record<string, unknown>;
   return {
@@ -212,6 +224,7 @@ export function normalizeHudStyleSettings(value: HudStyleSettings): HudStyleSett
     backgroundColor: value.backgroundColor,
     backgroundOpacity: value.backgroundOpacity,
     dwellMs: value.dwellMs,
+    timelineMax: clampTimelineMax(value.timelineMax),
     hudPreset: hudPresetFromLegacy(raw),
     keyboardLegendLayout: value.keyboardLegendLayout ?? "auto",
     keyMouseLayout: value.keyMouseLayout ?? "key-left-mouse-right",

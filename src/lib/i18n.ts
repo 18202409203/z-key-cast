@@ -39,9 +39,9 @@ const en = {
   "settings.hudPreset.lite": "Lite",
   "settings.hudPreset.full": "Full",
   "settings.hudPreset.textHint":
-    "Text operation timeline (keys, mouse, scroll); up to 5 chips; fades after dwell.",
+    "Text operation timeline (keys, mouse, scroll); length set below; fades after dwell.",
   "settings.hudPreset.liteHint":
-    "Styled operation timeline: keycaps and compact mouse/wheel glyphs; up to 5; fades after dwell.",
+    "Styled operation timeline: keycaps and compact mouse/wheel glyphs; length set below; fades after dwell.",
   "settings.hudPreset.fullHint":
     "Always-on keyboard and mouse board; highlights follow hold and release.",
   "settings.keyMouseLayout": "Key / mouse layout",
@@ -64,6 +64,9 @@ const en = {
   "settings.dwellMs": "Dwell (ms)",
   "settings.dwellMsHint":
     "How long Text/Lite chips stay after input before fading (200–5000)",
+  "settings.timelineMax": "Timeline length ({n})",
+  "settings.timelineMaxHint":
+    "Max Text/Lite chips visible at once (1–10). Shrinking drops oldest immediately.",
 
   "settings.capture": "Capture",
   "settings.captureFailedMac":
@@ -157,9 +160,9 @@ const zh: Record<MessageKey, string> = {
   "settings.hudPreset.text": "文本",
   "settings.hudPreset.lite": "精简",
   "settings.hudPreset.full": "完整",
-  "settings.hudPreset.textHint": "文本操作时间线（键、鼠、滚轮），最多 5 条；停留后淡出。",
+  "settings.hudPreset.textHint": "文本操作时间线（键、鼠、滚轮），条数见下方设置；停留后淡出。",
   "settings.hudPreset.liteHint":
-    "样式化操作时间线：按键卡片 + 缩小鼠/轮图例，最多 5 条；停留后淡出。",
+    "样式化操作时间线：按键卡片 + 缩小鼠/轮图例，条数见下方设置；停留后淡出。",
   "settings.hudPreset.fullHint": "常驻全键盘与鼠标示意图；高亮跟随按下与抬起。",
   "settings.keyMouseLayout": "键鼠布局",
   "settings.keyMouseLayout.keyLeftMouseRight": "键左 · 鼠右",
@@ -181,6 +184,9 @@ const zh: Record<MessageKey, string> = {
   "settings.dwellMs": "停留时长（毫秒）",
   "settings.dwellMsHint":
     "文本/精简模式下，输入后文字/卡片停留多久再淡出（200–5000 毫秒）",
+  "settings.timelineMax": "时间线条数（{n}）",
+  "settings.timelineMaxHint":
+    "文本/精简模式同时可见的最多条数（1–10）。调小会立刻丢掉最旧的条目。",
 
   "settings.capture": "捕获",
   "settings.captureFailedMac":

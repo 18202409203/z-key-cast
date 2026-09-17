@@ -102,12 +102,19 @@ pub struct HudStyleSettings {
     pub background_color: String,
     pub background_opacity: f64,
     pub dwell_ms: u32,
+    /// Text/Lite operation timeline length. Omit → 5; clamp 1..=10.
+    #[serde(default = "default_timeline_max")]
+    pub timeline_max: u32,
     #[serde(default)]
     pub hud_preset: HudPreset,
     #[serde(default)]
     pub keyboard_legend_layout: KeyboardLegendLayout,
     #[serde(default)]
     pub key_mouse_layout: KeyMouseLayout,
+}
+
+fn default_timeline_max() -> u32 {
+    5
 }
 
 impl Default for HudStyleSettings {
@@ -118,6 +125,7 @@ impl Default for HudStyleSettings {
             background_color: "#0f172a".into(),
             background_opacity: 0.82,
             dwell_ms: 1000,
+            timeline_max: default_timeline_max(),
             hud_preset: HudPreset::Text,
             keyboard_legend_layout: KeyboardLegendLayout::Auto,
             key_mouse_layout: KeyMouseLayout::KeyLeftMouseRight,
@@ -134,6 +142,8 @@ struct HudStyleSettingsDe {
     background_color: String,
     background_opacity: f64,
     dwell_ms: u32,
+    #[serde(default = "default_timeline_max")]
+    timeline_max: u32,
     /// Parsed as string so garbage values become `Text` instead of failing the file.
     #[serde(default)]
     hud_preset: Option<String>,
@@ -177,6 +187,7 @@ impl<'de> Deserialize<'de> for HudStyleSettings {
             background_color: raw.background_color,
             background_opacity: raw.background_opacity,
             dwell_ms: raw.dwell_ms,
+            timeline_max: raw.timeline_max,
             hud_preset,
             keyboard_legend_layout: raw.keyboard_legend_layout,
             key_mouse_layout: raw.key_mouse_layout,
@@ -188,6 +199,7 @@ impl HudStyleSettings {
     pub(crate) fn clamp(mut self) -> Self {
         self.font_size_px = self.font_size_px.clamp(10, 48);
         self.dwell_ms = self.dwell_ms.clamp(200, 5_000);
+        self.timeline_max = self.timeline_max.clamp(1, 10);
         self.background_opacity = self.background_opacity.clamp(0.0, 1.0);
         if !is_hex_color(&self.text_color) {
             self.text_color = Self::default().text_color;
@@ -411,6 +423,7 @@ mod tests {
             background_color: "#0f172a".into(),
             background_opacity: 2.0,
             dwell_ms: 10,
+            timeline_max: 0,
             hud_preset: HudPreset::Full,
             keyboard_legend_layout: KeyboardLegendLayout::Auto,
             key_mouse_layout: KeyMouseLayout::KeyLeftMouseRight,
@@ -418,9 +431,36 @@ mod tests {
         .clamp();
         assert_eq!(clamped.font_size_px, 10);
         assert_eq!(clamped.dwell_ms, 200);
+        assert_eq!(clamped.timeline_max, 1);
         assert_eq!(clamped.background_opacity, 1.0);
         assert_eq!(clamped.text_color, "#f8fafc");
         assert_eq!(clamped.hud_preset, HudPreset::Full);
+
+        let high = HudStyleSettings {
+            timeline_max: 99,
+            ..HudStyleSettings::default()
+        }
+        .clamp();
+        assert_eq!(high.timeline_max, 10);
+    }
+
+    #[test]
+    fn timeline_max_omitted_defaults_to_five() {
+        let omitted = r##"{
+            "captureKeyboard":true,
+            "captureMouse":true,
+            "hud":{"fontSizePx":15,"textColor":"#f8fafc","backgroundColor":"#0f172a","backgroundOpacity":0.82,"dwellMs":1000}
+        }"##;
+        let parsed: AppSettings = serde_json::from_str(omitted).unwrap();
+        assert_eq!(parsed.hud.timeline_max, 5);
+
+        let set = r##"{
+            "captureKeyboard":true,
+            "captureMouse":true,
+            "hud":{"fontSizePx":15,"textColor":"#f8fafc","backgroundColor":"#0f172a","backgroundOpacity":0.82,"dwellMs":1000,"timelineMax":8}
+        }"##;
+        let parsed: AppSettings = serde_json::from_str(set).unwrap();
+        assert_eq!(parsed.hud.timeline_max, 8);
     }
 
     #[test]
@@ -434,6 +474,7 @@ mod tests {
         assert!(parsed.ignored_key_ids.is_empty());
         assert!(parsed.ignored_mouse_actions.is_empty());
         assert_eq!(parsed.hud.dwell_ms, 1000);
+        assert_eq!(parsed.hud.timeline_max, 5);
         assert_eq!(parsed.hud.hud_preset, HudPreset::Text);
         assert_eq!(
             parsed.hud.key_mouse_layout,

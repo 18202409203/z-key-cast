@@ -178,8 +178,8 @@ void listen(EVENT_CHANNEL, (event) => {
 ### Chip reduce scope
 
 - **Decision**: Emit precise down/up for primary keys, bare modifiers, and mouse; snapshot `held_mods` onto mouse/scroll; autorepeat / short debounce still drop before reduce
-- **Consumers**: Text/Lite defer modifier downs; companion key/mouse/scroll enqueue with mods and mark those mod ids consumed; unconsumed modifier ups synthesize a display `key` chip (`phase: "down"`); consumed ups silent; shared operation timeline (max 5; same-direction scroll at tail refreshes dwell only when mods multiset matches). Full maintains held-sets + scroll pulse (may ignore mouse/scroll `mods`). Log records both phases and mods on mouse/scroll.
-- **Out of scope**: AxN combo badges; exposing queue length / timeline direction settings; Caps Lock as chord modifier
+- **Consumers**: Text/Lite defer modifier downs; companion key/mouse/scroll enqueue with mods and mark those mod ids consumed; unconsumed modifier ups synthesize a display `key` chip (`phase: "down"`); consumed ups silent; shared operation timeline (`timelineMax`, default 5, range 1–10; same-direction scroll at tail refreshes dwell only when mods multiset matches). Full maintains held-sets + scroll pulse (may ignore mouse/scroll `mods`). Log records both phases and mods on mouse/scroll.
+- **Out of scope**: AxN combo badges; timeline direction settings; Caps Lock as chord modifier
 
 ### Capture toggles (filter after reduce)
 
@@ -204,19 +204,19 @@ void listen(EVENT_CHANNEL, (event) => {
 
 ### HUD style settings
 
-- **Channel**: `cast://hud-style` → `HudStyleSettings` (`fontSizePx`, `textColor`, `backgroundColor`, `backgroundOpacity`, `dwellMs`, `hudPreset`)
+- **Channel**: `cast://hud-style` → `HudStyleSettings` (`fontSizePx`, `textColor`, `backgroundColor`, `backgroundOpacity`, `dwellMs`, `timelineMax`, `hudPreset`)
 - **Commands**: `get_hud_style_settings` / `set_hud_style_settings` (persist in same `settings.json` as capture; never wipe sibling fields)
 - **`hudPreset`**: `"text"` | `"lite"` | `"full"` (default `"text"`). Replaces `keyboardDisplayMode` × `mouseDisplayMode` × `persistVisible`.
   | Preset | Surface | Pin | Highlight |
   |--------|---------|-----|-----------|
-| `text` | operation timeline of text chips (key + mouse + scroll, ≤5) | no | per-item `dwellMs`; deferred mod commit |
+| `text` | operation timeline of text chips (key + mouse + scroll, length = `timelineMax`) | no | per-item `dwellMs`; deferred mod commit |
 | `lite` | same timeline: KeyCard + compact MouseSchematic five frames (mods KeyCards precede mouse/scroll frame) | no | per-item `dwellMs`; deferred mod commit |
 | `full` | keyboard map + MouseSchematic board | always | held-set from down/up; scroll pulse; ignore dwell; ignore mouse/scroll `mods` |
 - **Migration**: if `hudPreset` absent, map legacy `keyboardDisplayMode` (`text`→text, `key-card`→lite, `keyboard`→full); else `"text"`. Strip legacy fields on next write.
-- **Overlay**: load on mount + `listen`; Text/Lite unified timeline (right-enter / left-shift, drop oldest when full; scroll tail-refresh when direction **and** mods multiset match; deferred modifier chord commit via `consumedModIds`); Full held key-id / mouse-button sets + scroll pulse; status message is exclusive (clears timeline + held sets + consumed mods); defaults `dwellMs=1000`, `hudPreset="text"`
-- **Settings UI**: ChoiceCardGroup Text·Lite·Full; **hide** dwell when Full; **hide** `keyMouseLayout` unless Full (value still persisted)
+- **Overlay**: load on mount + `listen`; Text/Lite unified timeline (right-enter / left-shift, drop oldest when full or when `timelineMax` shrinks; scroll tail-refresh when direction **and** mods multiset match; deferred modifier chord commit via `consumedModIds`); Full held key-id / mouse-button sets + scroll pulse; status message is exclusive (clears timeline + held sets + consumed mods); defaults `dwellMs=1000`, `timelineMax=5`, `hudPreset="text"`
+- **Settings UI**: ChoiceCardGroup Text·Lite·Full; **hide** dwell / `timelineMax` when Full; **hide** `keyMouseLayout` unless Full (value still persisted)
 - **`MouseSchematic`**: `size` `"board"` \| `"timeline"`; board uses `activeButtons` + scroll pulse; timeline uses fixed `frame` (L/R/M/scroll-up/scroll-down)
-- **Clamp**: font 10–48, dwell 200–5000, opacity 0–1, colors `#rgb`/`#rrggbb`
+- **Clamp**: font 10–48, dwell 200–5000, `timelineMax` 1–10 (omit → 5), opacity 0–1, colors `#rgb`/`#rrggbb`
 - **`keyboardLegendLayout`**: `auto` (OS guess) | `mac-us` | `win-us` — dual-glyph legends from `$lib/key-legends.ts` (US ANSI `!`/`1` etc.); key-card + full keyboard + Text/Log consume the resolved layout. Prefer glyphs (`↵` enter, `⌫`/`⌦` delete pair, `⇥` tab, `⇧` shift); Caps is text `Caps` (avoid `⇪` vs `⇧` confusion at small size). `NumLock` → Clr/Num by layout. Meta → `⌘` (mac-us) / `Win` (win-us).
 
 ### HUD position settings

@@ -64,7 +64,7 @@ type HudChip =
 - 默认右下角，可改左下 / 左上 / 右上；避开 Dock / 任务栏
 - Overlay：透明 + always-on-top + click-through（角落 HUD；**不**全屏化）
 - 预设：`hudPreset` = `text` | `lite` | `full`（默认 `text`）
-- Text/Lite：共享操作时间线（最多 5；右入左移）；每项独立 `dwellMs` 淡出
+- Text/Lite：共享操作时间线（`timelineMax` 默认 5，范围 1–10；右入左移）；每项独立 `dwellMs` 淡出
 - Full：空板常驻；高亮随物理按住；Status 仍独占（遮住 pin）
 - Status（如 hook offline）独占：清掉时间线与 held-set 后单独 dwell
 - 点击涟漪（可选）：独立主屏全屏透明层（非 HUD overlay）；默认关；与 `captureMouse` 解耦；一期仅 macOS
