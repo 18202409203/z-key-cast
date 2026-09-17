@@ -300,7 +300,7 @@
                           {#if item.chip.direction === "up"}
                             <path
                               class="chip-icon-fill"
-                              d="M8 5.1 9.55 7.2H6.45Z"
+                              d="M8 8.8 9.55 10.9H6.45Z"
                             />
                           {:else}
                             <path
