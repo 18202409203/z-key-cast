@@ -8,6 +8,8 @@
 
 This layer owns Rust-side modules under `src-tauri/` and the wire contracts shared with the Svelte overlay/main windows.
 
+Durable settings live under `src-tauri/src/settings/` (`mod` facade + `types` / `store` / `capture` / `hud` / `locale` / `ripple`). Call sites keep using `settings::…`; do not reintroduce a flat `settings.rs`.
+
 ---
 
 ## Guidelines Index
@@ -22,7 +24,7 @@ This layer owns Rust-side modules under `src-tauri/` and the wire contracts shar
 
 - [ ] Read [Cast Events](./cast-events.md) before changing emit payloads, channel names, or capture toggles
 - [ ] Keep TypeScript `$lib/cast.ts` aligned with Rust `input/event.rs`
-- [ ] Keep `$lib/settings.ts` aligned with Rust `settings.rs` (capture + `HudStyleSettings` + `HudPositionSettings` + `uiLocale`)
+- [ ] Keep `$lib/settings.ts` aligned with Rust `settings/` (`types` + domain modules: capture + `HudStyleSettings` + `HudPositionSettings` + `uiLocale`)
 - [ ] Windows hooks live in `input/windows.rs` (LL); Linux/other stay on `stub` unless a dedicated task says otherwise
 - [ ] `KeyRef` is `{ id }` only — display labels are frontend (`displayLabelForKeyId` / legend layout)
 

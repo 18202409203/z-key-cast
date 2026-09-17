@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/tauri/index.md", "reason": "Verify settings/ layout documented and checklist paths updated"}
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "Commands/channels/capture helpers still match wire contracts"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Confirm no TS settings contract changes required"}

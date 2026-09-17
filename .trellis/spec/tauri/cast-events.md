@@ -10,7 +10,7 @@
 
 - Trigger: Cross-layer payload (`HudChip` / `HookStatus` / ignore-capture `KeyRef`) crosses Rust emit and Svelte listen
 - Owners:
-  - Rust: `src-tauri/src/input/event.rs` (+ `chip.rs` / `macos.rs` / `windows.rs` / `stub.rs` / `filter.rs`) + `settings.rs` (ignore list + arm + `mouseClickRipple` / ripple window)
+  - Rust: `src-tauri/src/input/event.rs` (+ `chip.rs` / `macos.rs` / `windows.rs` / `stub.rs` / `filter.rs`) + `settings/` (`capture` / `ripple` / `store`: ignore list + arm + `mouseClickRipple` / ripple window)
   - TS: `src/lib/cast.ts` (types, channel constants, formatters, type guards); `$lib/settings.ts`; `$lib/key-ignore-presets.ts`; `$lib/key-legends.ts` (`displayLabelForKeyId`); `/ripple` listens to `cast://mouse-ripple` only
 - Do **not** redefine the payload inline in route components
 
@@ -119,7 +119,7 @@ type CaptureSettings = {
 
 **`cast://ignore-key-captured` → `KeyRef`** — once per successful arm consume (`{ id }` only).
 
-- Owners: Rust `src-tauri/src/settings.rs`; TS `$lib/settings.ts` + `$lib/key-ignore-presets.ts` (category → id[])
+- Owners: Rust `src-tauri/src/settings/` (`capture` + `store`); TS `$lib/settings.ts` + `$lib/key-ignore-presets.ts` (category → id[])
 - Hot path (macOS tap / Windows LL hooks, after `EventFilter`, after/around `ChipReducer::reduce`): ignore-capture consume → `filter_key_chip` → `allows_chip` → `emit(EVENT_CHANNEL)`
 - Forbidden: gating reduce on capture toggles or ignore list (would desync held mods); filtering only on the frontend; cancelling capture with Escape
 

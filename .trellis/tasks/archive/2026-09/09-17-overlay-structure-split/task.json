@@ -1,9 +1,9 @@
 {
-  "id": "rust-settings-split",
-  "name": "rust-settings-split",
-  "title": "Rust settings module split",
+  "id": "overlay-structure-split",
+  "name": "overlay-structure-split",
+  "title": "Overlay structure split",
   "description": "",
-  "status": "planning",
+  "status": "completed",
   "dev_type": null,
   "scope": null,
   "package": null,
@@ -11,7 +11,7 @@
   "creator": "zhupengji",
   "assignee": "zhupengji",
   "createdAt": "2026-09-17",
-  "completedAt": null,
+  "completedAt": "2026-09-17",
   "branch": null,
   "base_branch": "main",
   "worktree_path": null,
@@ -21,6 +21,6 @@
   "children": [],
   "parent": "09-17-frontend-structure-refactor",
   "relatedFiles": [],
-  "notes": "",
+  "notes": "\nCommitted as b6cd071.",
   "meta": {}
 }

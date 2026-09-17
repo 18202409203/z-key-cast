@@ -3,7 +3,7 @@
   "name": "frontend-structure-refactor",
   "title": "Frontend structure refactor",
   "description": "",
-  "status": "planning",
+  "status": "completed",
   "dev_type": null,
   "scope": null,
   "package": null,
@@ -11,7 +11,7 @@
   "creator": "zhupengji",
   "assignee": "zhupengji",
   "createdAt": "2026-09-17",
-  "completedAt": null,
+  "completedAt": "2026-09-17",
   "branch": null,
   "base_branch": "main",
   "worktree_path": null,
@@ -25,6 +25,6 @@
   ],
   "parent": null,
   "relatedFiles": [],
-  "notes": "",
+  "notes": "\nAll three children completed; ready to archive parent.",
   "meta": {}
 }
