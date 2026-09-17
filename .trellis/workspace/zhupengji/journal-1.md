@@ -546,3 +546,39 @@ Archived parent 09-17-design-03-hud-ux after all four children delivered (schema
 ### Next Steps
 
 - None - task complete
+
+
+## Session 15: Text/Lite timelineMax + archive mod-chord
+
+**Date**: 2026-09-17
+**Task**: Text/Lite timelineMax + archive mod-chord
+**Branch**: `main`
+
+### Summary
+
+Added configurable Text/Lite timelineMax (1–10, default 5, trim on shrink). Archived timeline-max and text-lite-mod-chord tasks.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `332e86c` | (see git log) |
+| `0d77e4a` | (see git log) |
+| `ad6aed7` | (see git log) |
+| `2868a50` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
