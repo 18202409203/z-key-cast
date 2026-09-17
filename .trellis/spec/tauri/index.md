@@ -42,4 +42,5 @@ Durable settings live under `src-tauri/src/settings/` (`mod` facade + `types` / 
 - [ ] `mouseClickRipple` is a peer of capture toggles; `cast://mouse-ripple` stays off `HudChip`; ripple window gated only by that flag
 - [ ] Capture / HUD style / HUD position commands have ACL permissions; saves preserve sibling `settings.json` fields
 - [ ] `cast://hud-style` hot-updates overlay dwell / `hudPreset` surfaces without restart
+- [ ] `cast://capture-settings` hot-updates Overlay Full `showNumpad` without restart; `hasNumpad` does not gate `allows_chip` / ignore
 - [ ] `cast://hud-place-mode` drives overlay drag affordance; non-place mode stays click-through

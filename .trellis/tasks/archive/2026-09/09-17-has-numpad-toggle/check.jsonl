@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "hasNumpad default true; no chip gating"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Capture field flows to overlay board"}

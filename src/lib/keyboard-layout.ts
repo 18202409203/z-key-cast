@@ -150,11 +150,26 @@ function collectNonSpacerIds(rows: LayoutRow[]): string[] {
   return ids;
 }
 
+/** Non-spacer ids on the main board only. */
+export const LAYOUT_KEY_IDS_MAIN: ReadonlySet<string> = new Set(
+  collectNonSpacerIds(MAIN_ROWS),
+);
+
+/** Non-spacer ids on the numpad column. */
+export const LAYOUT_KEY_IDS_NUMPAD: ReadonlySet<string> = new Set(
+  collectNonSpacerIds(NUMPAD_ROWS),
+);
+
 /** Non-spacer ids drawn on the shared KeyboardMap (main + numpad). */
 export const LAYOUT_KEY_IDS: ReadonlySet<string> = new Set([
-  ...collectNonSpacerIds(MAIN_ROWS),
-  ...collectNonSpacerIds(NUMPAD_ROWS),
+  ...LAYOUT_KEY_IDS_MAIN,
+  ...LAYOUT_KEY_IDS_NUMPAD,
 ]);
+
+/** Layout id set matching the visible KeyboardMap (`showNumpad`). */
+export function layoutKeyIds(showNumpad: boolean): ReadonlySet<string> {
+  return showNumpad ? LAYOUT_KEY_IDS : LAYOUT_KEY_IDS_MAIN;
+}
 
 function rowUnitSum(row: LayoutRow): number {
   return row.reduce((sum, key) => sum + (key.w ?? 1), 0);

@@ -12,14 +12,18 @@
     isHudChip,
   } from "$lib/cast";
   import {
+    CAPTURE_SETTINGS_CHANNEL,
     HUD_PLACE_MODE_CHANNEL,
     HUD_STYLE_CHANNEL,
     UI_LOCALE_CHANNEL,
+    getCaptureSettings,
     getHudStyleSettings,
     getUiLocaleSettings,
+    isCaptureSettings,
     isHudPlaceModePayload,
     isHudStyleSettings,
     isUiLocalePayload,
+    normalizeCaptureSettings,
     setUiLocaleSettings,
   } from "$lib/settings";
   import {
@@ -30,6 +34,7 @@
   const hud = createHudSlots();
   let placeMode = $state(false);
   let locale = $state<UiLocale>("en");
+  let hasNumpad = $state(false);
 
   async function onPlacePointerDown(event: PointerEvent) {
     if (!placeMode) return;
@@ -73,6 +78,13 @@
         // Keep defaults when invoke is unavailable (browser-only).
       }
 
+      try {
+        const capture = await getCaptureSettings();
+        if (!cancelled) hasNumpad = capture.hasNumpad;
+      } catch {
+        // Keep default true when invoke is unavailable.
+      }
+
       const unlistenLocale = await listen(UI_LOCALE_CHANNEL, (event) => {
         if (!isUiLocalePayload(event.payload)) return;
         locale = event.payload.locale;
@@ -92,6 +104,16 @@
         return;
       }
       unsubs.push(unlistenStyle);
+
+      const unlistenCapture = await listen(CAPTURE_SETTINGS_CHANNEL, (event) => {
+        if (!isCaptureSettings(event.payload)) return;
+        hasNumpad = normalizeCaptureSettings(event.payload).hasNumpad;
+      });
+      if (cancelled) {
+        unlistenCapture();
+        return;
+      }
+      unsubs.push(unlistenCapture);
 
       const unlistenPlace = await listen(HUD_PLACE_MODE_CHANNEL, (event) => {
         if (!isHudPlaceModePayload(event.payload)) return;
@@ -157,6 +179,7 @@
   showKeyCards={hud.showKeyCards}
   showMouseSchematic={hud.showMouseSchematic}
   isFull={hud.isFull}
+  showNumpad={hasNumpad}
   {onPlacePointerDown}
 />
 

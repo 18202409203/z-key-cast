@@ -8,12 +8,15 @@ import { isUiLocale, type UiLocale } from "$lib/i18n";
 export const HUD_STYLE_CHANNEL = "cast://hud-style";
 export const HUD_PLACE_MODE_CHANNEL = "cast://hud-place-mode";
 export const UI_LOCALE_CHANNEL = "cast://ui-locale";
+export const CAPTURE_SETTINGS_CHANNEL = "cast://capture-settings";
 
 export type CaptureSettings = {
   captureKeyboard: boolean;
   captureMouse: boolean;
   /** Separate primary-monitor click rings; omit → false. Independent of captureMouse. */
   mouseClickRipple: boolean;
+  /** Hardware: draw numpad on KeyboardMap. Omit → true. Does not gate chips/ignore. */
+  hasNumpad: boolean;
   /** Key ids omitted from HUD chips (primary drop / mod strip). Default []. */
   ignoredKeyIds: string[];
 };
@@ -224,14 +227,49 @@ export function hudBackgroundCss(color: string, opacity: number): string {
   return `rgba(${r}, ${g}, ${b}, ${a})`;
 }
 
-export async function getCaptureSettings(): Promise<CaptureSettings> {
-  const raw = await invoke<CaptureSettings>("get_capture_settings");
+/** Normalize capture payload; omit `hasNumpad` → false (matches Rust serde default). */
+export function normalizeCaptureSettings(
+  raw: Partial<CaptureSettings> | CaptureSettings,
+): CaptureSettings {
   return {
-    captureKeyboard: raw.captureKeyboard,
-    captureMouse: raw.captureMouse,
+    captureKeyboard: Boolean(raw.captureKeyboard),
+    captureMouse: Boolean(raw.captureMouse),
     mouseClickRipple: Boolean(raw.mouseClickRipple),
+    hasNumpad: raw.hasNumpad === true,
     ignoredKeyIds: Array.isArray(raw.ignoredKeyIds) ? [...raw.ignoredKeyIds] : [],
   };
+}
+
+export function isCaptureSettings(value: unknown): value is CaptureSettings {
+  if (!value || typeof value !== "object") return false;
+  const s = value as Record<string, unknown>;
+  if (
+    typeof s.captureKeyboard !== "boolean" ||
+    typeof s.captureMouse !== "boolean"
+  ) {
+    return false;
+  }
+  if (s.mouseClickRipple !== undefined && typeof s.mouseClickRipple !== "boolean") {
+    return false;
+  }
+  if (s.hasNumpad !== undefined && typeof s.hasNumpad !== "boolean") {
+    return false;
+  }
+  if (s.ignoredKeyIds !== undefined && !Array.isArray(s.ignoredKeyIds)) {
+    return false;
+  }
+  if (
+    Array.isArray(s.ignoredKeyIds) &&
+    !s.ignoredKeyIds.every((id) => typeof id === "string")
+  ) {
+    return false;
+  }
+  return true;
+}
+
+export async function getCaptureSettings(): Promise<CaptureSettings> {
+  const raw = await invoke<CaptureSettings>("get_capture_settings");
+  return normalizeCaptureSettings(raw);
 }
 
 export async function setCaptureSettings(
@@ -242,17 +280,11 @@ export async function setCaptureSettings(
       captureKeyboard: settings.captureKeyboard,
       captureMouse: settings.captureMouse,
       mouseClickRipple: settings.mouseClickRipple,
+      hasNumpad: settings.hasNumpad,
       ignoredKeyIds: settings.ignoredKeyIds,
     },
   });
-  return {
-    captureKeyboard: saved.captureKeyboard,
-    captureMouse: saved.captureMouse,
-    mouseClickRipple: Boolean(saved.mouseClickRipple),
-    ignoredKeyIds: Array.isArray(saved.ignoredKeyIds)
-      ? [...saved.ignoredKeyIds]
-      : [],
-  };
+  return normalizeCaptureSettings(saved);
 }
 
 export async function armIgnoreKeyCapture(): Promise<void> {

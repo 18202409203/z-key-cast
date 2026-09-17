@@ -16,6 +16,8 @@ pub(crate) static CAPTURE_KEYBOARD: AtomicBool = AtomicBool::new(true);
 pub(crate) static CAPTURE_MOUSE: AtomicBool = AtomicBool::new(true);
 /// Independent of `capture_mouse` — gates ripple window + emit only.
 pub(crate) static MOUSE_CLICK_RIPPLE: AtomicBool = AtomicBool::new(false);
+/// Hardware declaration for KeyboardMap numpad column (UI only; does not gate chips).
+pub(crate) static HAS_NUMPAD: AtomicBool = AtomicBool::new(false);
 pub(crate) static IGNORE_KEY_CAPTURE_ARMED: AtomicBool = AtomicBool::new(false);
 pub(crate) static HUD_PLACE_MODE: AtomicBool = AtomicBool::new(false);
 static HUD: OnceLock<Mutex<HudStyleSettings>> = OnceLock::new();
@@ -90,6 +92,7 @@ impl CaptureSettings {
             capture_keyboard: CAPTURE_KEYBOARD.load(Ordering::Relaxed),
             capture_mouse: CAPTURE_MOUSE.load(Ordering::Relaxed),
             mouse_click_ripple: MOUSE_CLICK_RIPPLE.load(Ordering::Relaxed),
+            has_numpad: HAS_NUMPAD.load(Ordering::Relaxed),
             ignored_key_ids,
         }
     }
@@ -114,6 +117,7 @@ impl AppSettings {
             capture_keyboard: CAPTURE_KEYBOARD.load(Ordering::Relaxed),
             capture_mouse: CAPTURE_MOUSE.load(Ordering::Relaxed),
             mouse_click_ripple: MOUSE_CLICK_RIPPLE.load(Ordering::Relaxed),
+            has_numpad: HAS_NUMPAD.load(Ordering::Relaxed),
             ignored_key_ids,
             hud,
             hud_position,
@@ -125,6 +129,7 @@ impl AppSettings {
         CAPTURE_KEYBOARD.store(self.capture_keyboard, Ordering::Relaxed);
         CAPTURE_MOUSE.store(self.capture_mouse, Ordering::Relaxed);
         MOUSE_CLICK_RIPPLE.store(self.mouse_click_ripple, Ordering::Relaxed);
+        HAS_NUMPAD.store(self.has_numpad, Ordering::Relaxed);
         if let Ok(mut guard) = ignored_lock().lock() {
             *guard = IgnoredKeys::from_ids(self.ignored_key_ids);
         }

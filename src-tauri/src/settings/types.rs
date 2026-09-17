@@ -212,6 +212,9 @@ pub struct CaptureSettings {
     /// Separate fullscreen click rings; omit → false. Independent of `capture_mouse`.
     #[serde(default)]
     pub mouse_click_ripple: bool,
+    /// Hardware declaration: draw numpad column on KeyboardMap. Omit → false.
+    #[serde(default)]
+    pub has_numpad: bool,
     #[serde(default)]
     pub ignored_key_ids: Vec<String>,
 }
@@ -222,6 +225,7 @@ impl Default for CaptureSettings {
             capture_keyboard: true,
             capture_mouse: true,
             mouse_click_ripple: false,
+            has_numpad: false,
             ignored_key_ids: Vec::new(),
         }
     }
@@ -234,6 +238,8 @@ pub struct AppSettings {
     pub capture_mouse: bool,
     #[serde(default)]
     pub mouse_click_ripple: bool,
+    #[serde(default)]
+    pub has_numpad: bool,
     #[serde(default)]
     pub ignored_key_ids: Vec<String>,
     #[serde(default)]
@@ -251,6 +257,7 @@ impl Default for AppSettings {
             capture_keyboard: true,
             capture_mouse: true,
             mouse_click_ripple: false,
+            has_numpad: false,
             ignored_key_ids: Vec::new(),
             hud: HudStyleSettings::default(),
             hud_position: HudPositionSettings::default(),
@@ -290,6 +297,7 @@ mod tests {
         assert!(!parsed.capture_keyboard);
         assert!(parsed.capture_mouse);
         assert!(!parsed.mouse_click_ripple);
+        assert!(!parsed.has_numpad);
         assert!(parsed.ignored_key_ids.is_empty());
         assert_eq!(parsed.hud.dwell_ms, 1000);
         assert_eq!(parsed.hud.hud_preset, HudPreset::Text);
@@ -316,6 +324,45 @@ mod tests {
         let parsed: AppSettings = serde_json::from_str(enabled).unwrap();
         assert!(parsed.mouse_click_ripple);
         assert!(!parsed.capture_mouse);
+    }
+
+    #[test]
+    fn has_numpad_omitted_defaults_false() {
+        let raw = r#"{"captureKeyboard":true,"captureMouse":true}"#;
+        let parsed: AppSettings = serde_json::from_str(raw).unwrap();
+        assert!(!parsed.has_numpad);
+
+        let capture: CaptureSettings = serde_json::from_str(raw).unwrap();
+        assert!(!capture.has_numpad);
+    }
+
+    #[test]
+    fn has_numpad_explicit_true_roundtrips() {
+        let settings = AppSettings {
+            capture_keyboard: true,
+            capture_mouse: true,
+            mouse_click_ripple: false,
+            has_numpad: true,
+            ignored_key_ids: Vec::new(),
+            hud: HudStyleSettings::default(),
+            hud_position: HudPositionSettings::default(),
+            ui_locale: None,
+        };
+        let raw = serde_json::to_string(&settings).unwrap();
+        assert!(raw.contains("\"hasNumpad\":true"));
+        let parsed: AppSettings = serde_json::from_str(&raw).unwrap();
+        assert!(parsed.has_numpad);
+
+        let capture = CaptureSettings {
+            capture_keyboard: true,
+            capture_mouse: true,
+            mouse_click_ripple: false,
+            has_numpad: true,
+            ignored_key_ids: Vec::new(),
+        };
+        let raw = serde_json::to_string(&capture).unwrap();
+        let parsed: CaptureSettings = serde_json::from_str(&raw).unwrap();
+        assert!(parsed.has_numpad);
     }
 
     #[test]
@@ -409,6 +456,7 @@ mod tests {
             capture_keyboard: false,
             capture_mouse: true,
             mouse_click_ripple: true,
+            has_numpad: false,
             ignored_key_ids: vec!["Escape".into(), "KeyA".into()],
             hud: HudStyleSettings {
                 hud_preset: HudPreset::Full,
@@ -424,6 +472,7 @@ mod tests {
         assert!(!parsed.capture_keyboard);
         assert!(parsed.capture_mouse);
         assert!(parsed.mouse_click_ripple);
+        assert!(!parsed.has_numpad);
         assert_eq!(parsed.ignored_key_ids, vec!["Escape", "KeyA"]);
         assert_eq!(parsed.hud.hud_preset, HudPreset::Full);
         assert!(!raw.contains("persistVisible"));

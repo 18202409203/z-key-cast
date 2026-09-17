@@ -24,7 +24,10 @@
     type HudStyleSettings,
   } from "$lib/settings";
   import { resolveKeyboardLegendLayout } from "$lib/key-legends";
-  import { KEYBOARD_MAP_FONT_PX, LAYOUT_KEY_IDS } from "$lib/keyboard-layout";
+  import {
+    KEYBOARD_MAP_FONT_PX,
+    layoutKeyIds,
+  } from "$lib/keyboard-layout";
   import {
     IGNORE_CATEGORIES,
     addCategoryIds,
@@ -47,6 +50,7 @@
   let captureKeyboard = $state(true);
   let captureMouse = $state(true);
   let mouseClickRipple = $state(false);
+  let hasNumpad = $state(false);
   let ignoredKeyIds = $state<string[]>([]);
   let ignoreCapturing = $state(false);
   let captureReady = $state(false);
@@ -55,8 +59,9 @@
   let hudStyle = $state<HudStyleSettings>({ ...DEFAULT_HUD_STYLE });
 
   const ignoredIdSet = $derived(new Set(ignoredKeyIds));
+  const visibleLayoutIds = $derived(layoutKeyIds(hasNumpad));
   const offBoardIgnoredKeyIds = $derived(
-    offBoardIgnoredIds(ignoredKeyIds, LAYOUT_KEY_IDS),
+    offBoardIgnoredIds(ignoredKeyIds, visibleLayoutIds),
   );
   const ignoreBoardBackground = $derived(
     hudBackgroundCss(hudStyle.backgroundColor, hudStyle.backgroundOpacity),
@@ -101,6 +106,7 @@
     captureKeyboard = next.captureKeyboard;
     captureMouse = next.captureMouse;
     mouseClickRipple = next.mouseClickRipple;
+    hasNumpad = next.hasNumpad;
     ignoredKeyIds = [...next.ignoredKeyIds];
     captureSaving = true;
     try {
@@ -108,11 +114,13 @@
       captureKeyboard = saved.captureKeyboard;
       captureMouse = saved.captureMouse;
       mouseClickRipple = saved.mouseClickRipple;
+      hasNumpad = saved.hasNumpad;
       ignoredKeyIds = [...saved.ignoredKeyIds];
     } catch (err) {
       captureKeyboard = previous.captureKeyboard;
       captureMouse = previous.captureMouse;
       mouseClickRipple = previous.mouseClickRipple;
+      hasNumpad = previous.hasNumpad;
       ignoredKeyIds = [...previous.ignoredKeyIds];
       appendLog(`settings save failed: ${String(err)}`);
     } finally {
@@ -125,6 +133,7 @@
       captureKeyboard,
       captureMouse,
       mouseClickRipple,
+      hasNumpad,
       ignoredKeyIds: [...ignoredKeyIds],
     };
   }
@@ -151,6 +160,12 @@
       { ...previous, mouseClickRipple: checked },
       previous,
     );
+  }
+
+  function onHasNumpadChange(event: Event) {
+    const checked = (event.currentTarget as HTMLInputElement).checked;
+    const previous = currentCapture();
+    void persistCapture({ ...previous, hasNumpad: checked }, previous);
   }
 
   function onIgnoreCategoryChange(categoryId: IgnoreCategoryId, event: Event) {
@@ -232,6 +247,7 @@
         captureKeyboard = settings.captureKeyboard;
         captureMouse = settings.captureMouse;
         mouseClickRipple = settings.mouseClickRipple;
+        hasNumpad = settings.hasNumpad;
         ignoredKeyIds = [...settings.ignoredKeyIds];
       } catch (err) {
         if (!cancelled) {
@@ -363,6 +379,17 @@
     <p class="muted ignore-hint">
       {t("settings.mouseClickRippleHint", locale)}
     </p>
+    <div class="field field-toggle">
+      <input
+        id="has-numpad"
+        type="checkbox"
+        checked={hasNumpad}
+        disabled={!captureReady || captureSaving}
+        onchange={onHasNumpadChange}
+      />
+      <label for="has-numpad">{t("settings.hasNumpad", locale)}</label>
+    </div>
+    <p class="muted ignore-hint">{t("settings.hasNumpadHint", locale)}</p>
 
     <div class="ignore-block">
       <p class="field-label">{t("settings.ignoreKeys", locale)}</p>
@@ -393,6 +420,7 @@
         <KeyboardMap
           ignoredIds={ignoredIdSet}
           interactive={true}
+          showNumpad={hasNumpad}
           disabled={ignoreBoardDisabled}
           textColor={hudStyle.textColor}
           backgroundCss={ignoreBoardBackground}

@@ -18,6 +18,8 @@
     activeIds?: ReadonlySet<string>;
     ignoredIds?: ReadonlySet<string>;
     interactive?: boolean;
+    /** Draw numpad column; default true. Does not affect chip emit. */
+    showNumpad?: boolean;
     textColor: string;
     backgroundCss: string;
     fontSizePx: number;
@@ -30,6 +32,7 @@
     activeIds = EMPTY_IDS,
     ignoredIds = EMPTY_IDS,
     interactive = false,
+    showNumpad = false,
     textColor,
     backgroundCss,
     fontSizePx,
@@ -79,7 +82,8 @@
   style:--kb-unit={`${unit}px`}
   style:--kb-gap={`${Math.max(3, unit * 0.18)}px`}
   style:--kb-main-flex={MAIN_LAYOUT_UNITS}
-  style:--kb-num-flex={NUMPAD_LAYOUT_UNITS}
+  style:--kb-num-flex={showNumpad ? NUMPAD_LAYOUT_UNITS : 0}
+  class:no-numpad={!showNumpad}
 >
   <div class="main">
     {#each MAIN_ROWS as row, ri (ri)}
@@ -127,52 +131,54 @@
       </div>
     {/each}
   </div>
-  <div class="numpad">
-    {#each NUMPAD_ROWS as row, ri (ri)}
-      <div class="row">
-        {#each row as key (`np-${key.id}-${ri}`)}
-          {@const legend = face(key)}
-          {@const spacer = isSpacer(key.id)}
-          {#if interactive && !spacer}
-            <button
-              type="button"
-              class="key"
-              class:ignored={isIgnored(key.id)}
-              class:dual={Boolean(legend.shift)}
-              data-key-id={key.id}
-              style={keyStyle(key)}
-              disabled={disabled}
-              aria-pressed={isIgnored(key.id)}
-              onclick={() => handleToggle(key.id)}
-            >
-              {#if legend.shift}
-                <span class="face-shift">{legend.shift}</span>
-                <span class="face-main">{legend.main}</span>
-              {:else}
-                <span class="face-single">{legend.main}</span>
-              {/if}
-            </button>
-          {:else}
-            <div
-              class="key"
-              class:active={activeIds.has(key.id)}
-              class:ignored={isIgnored(key.id)}
-              class:dual={Boolean(legend.shift)}
-              data-key-id={key.id}
-              style={keyStyle(key)}
-            >
-              {#if legend.shift}
-                <span class="face-shift">{legend.shift}</span>
-                <span class="face-main">{legend.main}</span>
-              {:else}
-                <span class="face-single">{legend.main}</span>
-              {/if}
-            </div>
-          {/if}
-        {/each}
-      </div>
-    {/each}
-  </div>
+  {#if showNumpad}
+    <div class="numpad">
+      {#each NUMPAD_ROWS as row, ri (ri)}
+        <div class="row">
+          {#each row as key (`np-${key.id}-${ri}`)}
+            {@const legend = face(key)}
+            {@const spacer = isSpacer(key.id)}
+            {#if interactive && !spacer}
+              <button
+                type="button"
+                class="key"
+                class:ignored={isIgnored(key.id)}
+                class:dual={Boolean(legend.shift)}
+                data-key-id={key.id}
+                style={keyStyle(key)}
+                disabled={disabled}
+                aria-pressed={isIgnored(key.id)}
+                onclick={() => handleToggle(key.id)}
+              >
+                {#if legend.shift}
+                  <span class="face-shift">{legend.shift}</span>
+                  <span class="face-main">{legend.main}</span>
+                {:else}
+                  <span class="face-single">{legend.main}</span>
+                {/if}
+              </button>
+            {:else}
+              <div
+                class="key"
+                class:active={activeIds.has(key.id)}
+                class:ignored={isIgnored(key.id)}
+                class:dual={Boolean(legend.shift)}
+                data-key-id={key.id}
+                style={keyStyle(key)}
+              >
+                {#if legend.shift}
+                  <span class="face-shift">{legend.shift}</span>
+                  <span class="face-main">{legend.main}</span>
+                {:else}
+                  <span class="face-single">{legend.main}</span>
+                {/if}
+              </div>
+            {/if}
+          {/each}
+        </div>
+      {/each}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -194,6 +200,10 @@
     gap: var(--kb-gap);
     min-width: 0;
     flex: var(--kb-main-flex) 1 0;
+  }
+
+  .board.no-numpad .main {
+    flex: 1 1 auto;
   }
 
   .numpad {

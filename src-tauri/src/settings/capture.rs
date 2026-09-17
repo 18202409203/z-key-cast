@@ -2,7 +2,7 @@
 
 use std::sync::atomic::Ordering;
 
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
 
 use crate::input::HudChip;
 
@@ -12,6 +12,7 @@ use super::store::{
     IGNORE_KEY_CAPTURE_ARMED,
 };
 use super::types::{AppSettings, CaptureSettings};
+use super::CAPTURE_SETTINGS_CHANNEL;
 
 /// Whether a reduced chip should be emitted on `cast://event`.
 pub fn allows_chip(chip: &HudChip) -> bool {
@@ -62,6 +63,10 @@ pub fn get_capture_settings() -> CaptureSettings {
     CaptureSettings::from_runtime()
 }
 
+fn emit_capture_settings(app: &AppHandle, settings: &CaptureSettings) {
+    let _ = app.emit(CAPTURE_SETTINGS_CHANNEL, settings);
+}
+
 #[tauri::command]
 pub fn set_capture_settings(
     app: AppHandle,
@@ -73,6 +78,7 @@ pub fn set_capture_settings(
         capture_keyboard: settings.capture_keyboard,
         capture_mouse: settings.capture_mouse,
         mouse_click_ripple: settings.mouse_click_ripple,
+        has_numpad: settings.has_numpad,
         ignored_key_ids: ignored_key_ids.clone(),
         hud: previous.hud.clone(),
         hud_position: previous.hud_position.clone(),
@@ -80,12 +86,15 @@ pub fn set_capture_settings(
     };
     persist_app_settings(&app, next)?;
     ripple::sync_ripple_window(&app);
-    Ok(CaptureSettings {
+    let saved = CaptureSettings {
         capture_keyboard: settings.capture_keyboard,
         capture_mouse: settings.capture_mouse,
         mouse_click_ripple: settings.mouse_click_ripple,
+        has_numpad: settings.has_numpad,
         ignored_key_ids,
-    })
+    };
+    emit_capture_settings(&app, &saved);
+    Ok(saved)
 }
 
 #[tauri::command]

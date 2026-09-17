@@ -104,7 +104,7 @@ export function formatHudLabel(chip: HudChip, legendLayout?: KeyboardLegendLayou
 |---------|------|---------|-------|
 | `get_hook_status` | — | `HookStatus \| null` | Last emitted hook status (null until first emit). Late subscribers / HMR use this after `listen(cast://hook-status)` |
 | `get_capture_settings` | — | `CaptureSettings` | Reads process atomics + ignored-id list (loaded from `app_config_dir/settings.json` at setup) |
-| `set_capture_settings` | `{ settings: CaptureSettings }` | `CaptureSettings` | Apply runtime **then** persist; dedupe `ignoredKeyIds` (preserve order, drop empties); sync ripple window show/hide; on disk failure revert and return `Err` |
+| `set_capture_settings` | `{ settings: CaptureSettings }` | `CaptureSettings` | Apply runtime **then** persist; dedupe `ignoredKeyIds` (preserve order, drop empties); sync ripple window show/hide; emit `cast://capture-settings` with saved payload; on disk failure revert and return `Err` |
 | `arm_ignore_key_capture` | — | — | Arm next key/mod down for ignore list |
 | `cancel_ignore_key_capture` | — | — | Disarm without changing the list |
 
@@ -113,10 +113,12 @@ type CaptureSettings = {
   captureKeyboard: boolean; // default true
   captureMouse: boolean; // default true
   mouseClickRipple: boolean; // default false; omit → false; independent of captureMouse
+  hasNumpad: boolean; // default false; omit → false; UI board only — does not gate chips/ignore
   ignoredKeyIds: string[]; // default []; flat id list only (category presets are frontend sugar)
 };
 ```
 
+**`cast://capture-settings` → `CaptureSettings`** — emitted after successful `set_capture_settings` so Overlay Full `showNumpad` hot-updates (mirror `cast://hud-style`).
 **`cast://ignore-key-captured` → `KeyRef`** — once per successful arm consume (`{ id }` only).
 
 - Owners: Rust `src-tauri/src/settings/` (`capture` + `store`); TS `$lib/settings.ts` + `$lib/key-ignore-presets.ts` (category → id[])
@@ -188,7 +190,7 @@ void listen(EVENT_CHANNEL, (event) => {
 
 - **Decision**: Flat persisted `ignoredKeyIds`; runtime `HashSet` lookup; `filter_key_chip` drops ignored primaries and strips ignored mods; category presets expand on the frontend only
 - **Add-key capture**: Arm via command; next key/mod down emits `cast://ignore-key-captured` (`{ id }`) and suppresses that raw’s `cast://event`; Cancel disarms; Escape is data
-- **Capture UI (frontend only)**: Shared `$lib/components/KeyboardMap.svelte` — Overlay is display-only (`activeIds` / `.key.active`); Capture uses `interactive` + muted `.key.ignored` click-toggle. Main ignore path is board click; **Add key** discovers ids not in `LAYOUT_KEY_IDS`; under-board list shows only that off-board set difference. Do not reuse `.active` for ignore state. Rust contract unchanged.
+- **Capture UI (frontend only)**: Shared `$lib/components/KeyboardMap.svelte` — Overlay is display-only (`activeIds` / `.key.active`); Capture uses `interactive` + muted `.key.ignored` click-toggle. `showNumpad` / `hasNumpad` hides the numpad column only. Main ignore path is board click; **Add key** discovers ids not in `layoutKeyIds(hasNumpad)`; under-board list shows only that off-board set difference. Do not reuse `.active` for ignore state. Rust contract unchanged.
 - **Forbidden**: Skipping `reduce` while armed; using Escape to cancel; wiping non-category ids when a category is unchecked
 
 ### HUD style settings

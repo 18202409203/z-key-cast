@@ -75,6 +75,9 @@ const en = {
   "settings.mouseClickRipple": "Click ripple (primary screen)",
   "settings.mouseClickRippleHint":
     "Shows a brief ring at click locations on the main display. Independent of mouse HUD listening. macOS only for now.",
+  "settings.hasNumpad": "Has numpad",
+  "settings.hasNumpadHint":
+    "Select whether your keyboard has a numpad.",
   "settings.ignoreKeys": "Ignore keys",
   "settings.ignoreHint":
     "Click keys on the board to ignore them. Ignored primaries never show; ignored modifiers are stripped from chords. Use Add key for keys not on the board.",
@@ -172,6 +175,9 @@ const zh: Record<MessageKey, string> = {
   "settings.mouseClickRipple": "点击涟漪",
   "settings.mouseClickRippleHint":
     "在主显示器点击位置显示短暂圆环。",
+  "settings.hasNumpad": "有小键盘",
+  "settings.hasNumpadHint":
+    "选择您的键盘是否带有小键盘。",
   "settings.ignoreKeys": "忽略按键",
   "settings.ignoreHint":
     "点击键盘上的按键即可忽略。被忽略的主键不会显示；被忽略的修饰键会从组合中剥离。不在键盘图上的按键请用「添加按键」。",

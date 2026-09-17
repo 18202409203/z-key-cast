@@ -37,6 +37,7 @@
     showKeyCards: boolean;
     showMouseSchematic: boolean;
     isFull: boolean;
+    showNumpad?: boolean;
     onPlacePointerDown: (event: PointerEvent) => void;
   };
 
@@ -56,6 +57,7 @@
     showKeyCards,
     showMouseSchematic,
     isFull,
+    showNumpad = true,
     onPlacePointerDown,
   }: Props = $props();
 
@@ -130,6 +132,7 @@
             >
               <KeyboardMap
                 activeIds={activeKeyIds}
+                showNumpad={showNumpad}
                 textColor={style.textColor}
                 backgroundCss={chipBackground}
                 fontSizePx={KEYBOARD_MAP_FONT_PX}
