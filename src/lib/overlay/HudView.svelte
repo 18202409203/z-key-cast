@@ -472,7 +472,6 @@
     letter-spacing: 0.02em;
     line-height: 1.2;
     backdrop-filter: blur(10px);
-    box-shadow: 0 10px 30px rgba(2, 6, 23, 0.35);
     white-space: nowrap;
     border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
   }

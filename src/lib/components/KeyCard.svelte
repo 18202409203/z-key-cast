@@ -60,9 +60,6 @@
     color: var(--cap-fg);
     border: 1px solid color-mix(in srgb, var(--cap-fg) 22%, transparent);
     border-radius: calc(var(--cap-unit) * 0.28);
-    box-shadow:
-      0 1px 0 color-mix(in srgb, #fff 35%, transparent) inset,
-      0 2px 6px color-mix(in srgb, #000 22%, transparent);
     font-family:
       "SF Pro Text",
       "IBM Plex Sans",
