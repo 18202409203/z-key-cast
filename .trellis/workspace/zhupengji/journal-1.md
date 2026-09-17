@@ -442,3 +442,36 @@ Added Windows WH_*_LL key/mouse hooks into the shared HudChip pipeline; removed 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 12: Scroll wheel HUD wrap-up
+
+**Date**: 2026-09-17
+**Task**: Scroll wheel HUD wrap-up
+**Branch**: `main`
+
+### Summary
+
+Shipped scroll HudChip + Lite/Full tick pulse; captureMouse gates scroll; ignoredMouseActions replaces captureScroll; archived 09-17-scroll-wheel-hud. Continued planning 09-17-text-key-queue (Text+Lite timeline).
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ef6898a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

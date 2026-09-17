@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 11
-- **Last Active**: 2026-09-16
+- **Total Sessions**: 12
+- **Last Active**: 2026-09-17
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~444 | Active |
+| `journal-1.md` | ~477 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 12 | 2026-09-17 | Scroll wheel HUD wrap-up | `ef6898a` | `main` |
 | 11 | 2026-09-16 | Windows LL input hooks | `6b2b7f1` | `main` |
 | 10 | 2026-09-16 | Settings HUD tab IA | `000469a`, `196bd32` | `main` |
 | 9 | 2026-09-16 | HUD presets Text Lite Full | `70db209` | `main` |
