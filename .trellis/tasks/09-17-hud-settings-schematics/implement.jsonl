@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Card radiogroup a11y + components/ vs panels/"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "New schematics under $lib/components"}

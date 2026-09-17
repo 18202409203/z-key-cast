@@ -22,6 +22,7 @@ src/
 │   ├── components/               # Reusable UI + HUD primitives
 │   │   ├── Tabs.svelte
 │   │   ├── SegmentedControl.svelte
+│   │   ├── ChoiceCardGroup.svelte  # labeled schematic radiogroup cards
 │   │   ├── KeyCard.svelte
 │   │   ├── KeyboardMap.svelte
 │   │   └── MouseSchematic.svelte

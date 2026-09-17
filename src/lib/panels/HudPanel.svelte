@@ -1,7 +1,7 @@
 <script lang="ts">
   import { listen } from "@tauri-apps/api/event";
   import { onMount } from "svelte";
-  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
+  import ChoiceCardGroup from "$lib/components/ChoiceCardGroup.svelte";
   import {
     DEFAULT_HUD_STYLE,
     HUD_STYLE_CHANNEL,
@@ -35,9 +35,44 @@
   const showFontSize = $derived(showDwellMs);
 
   const presetItems = $derived([
-    { value: "text", label: t("settings.hudPreset.text", locale) },
-    { value: "lite", label: t("settings.hudPreset.lite", locale) },
-    { value: "full", label: t("settings.hudPreset.full", locale) },
+    {
+      value: "text",
+      label: t("settings.hudPreset.text", locale),
+      schematic: "hud-text" as const,
+    },
+    {
+      value: "lite",
+      label: t("settings.hudPreset.lite", locale),
+      schematic: "hud-lite" as const,
+    },
+    {
+      value: "full",
+      label: t("settings.hudPreset.full", locale),
+      schematic: "hud-full" as const,
+    },
+  ]);
+
+  const keyMouseLayoutItems = $derived([
+    {
+      value: "key-left-mouse-right",
+      label: t("settings.keyMouseLayout.keyLeftMouseRight", locale),
+      schematic: "km-klmr" as const,
+    },
+    {
+      value: "key-right-mouse-left",
+      label: t("settings.keyMouseLayout.keyRightMouseLeft", locale),
+      schematic: "km-krml" as const,
+    },
+    {
+      value: "key-top-mouse-bottom",
+      label: t("settings.keyMouseLayout.keyTopMouseBottom", locale),
+      schematic: "km-ktmb" as const,
+    },
+    {
+      value: "key-bottom-mouse-top",
+      label: t("settings.keyMouseLayout.keyBottomMouseTop", locale),
+      schematic: "km-kbmt" as const,
+    },
   ]);
 
   async function persistHud(
@@ -79,8 +114,7 @@
     patchHud({ hudPreset: value as HudPreset });
   }
 
-  function onKeyMouseLayoutChange(event: Event) {
-    const value = (event.currentTarget as HTMLSelectElement).value;
+  function onKeyMouseLayoutChange(value: string) {
     if (!isKeyMouseLayout(value)) return;
     patchHud({ keyMouseLayout: value });
   }
@@ -145,12 +179,13 @@
       <span class="field-label" id="hud-preset-label"
         >{t("settings.hudPreset", locale)}</span
       >
-      <SegmentedControl
+      <ChoiceCardGroup
         name="hud-preset"
         value={hudStyle.hudPreset ?? "text"}
         items={presetItems}
         disabled={!hudReady || hudSaving}
         labelledBy="hud-preset-label"
+        columns={3}
         onChange={onHudPresetChange}
       />
       <p class="field-hint" id="hud-preset-hint">
@@ -167,26 +202,15 @@
       <span class="field-label" id="hud-km-layout-label"
         >{t("settings.keyMouseLayout", locale)}</span
       >
-      <select
-        id="hud-km-layout"
+      <ChoiceCardGroup
+        name="hud-km-layout"
         value={hudStyle.keyMouseLayout ?? "key-left-mouse-right"}
+        items={keyMouseLayoutItems}
         disabled={!hudReady || hudSaving}
-        aria-labelledby="hud-km-layout-label"
-        onchange={onKeyMouseLayoutChange}
-      >
-        <option value="key-left-mouse-right"
-          >{t("settings.keyMouseLayout.keyLeftMouseRight", locale)}</option
-        >
-        <option value="key-right-mouse-left"
-          >{t("settings.keyMouseLayout.keyRightMouseLeft", locale)}</option
-        >
-        <option value="key-top-mouse-bottom"
-          >{t("settings.keyMouseLayout.keyTopMouseBottom", locale)}</option
-        >
-        <option value="key-bottom-mouse-top"
-          >{t("settings.keyMouseLayout.keyBottomMouseTop", locale)}</option
-        >
-      </select>
+        labelledBy="hud-km-layout-label"
+        columns={4}
+        onChange={onKeyMouseLayoutChange}
+      />
     </div>
     {#if showLegendLayout}
       <div class="field">
