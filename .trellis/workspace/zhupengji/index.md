@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 12
+- **Total Sessions**: 13
 - **Last Active**: 2026-09-17
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~477 | Active |
+| `journal-1.md` | ~515 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,12 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 13 | 2026-09-17 | Text/Lite operation timeline | `b5e998cfe46c04c1d64da94d3fd5af8fa3af7494`
+`91428a3` chore(task): archive 09-17-text-key-queue
+`b5e998c` feat(hud): Text/Lite shared operation timeline
+`99a06d9` docs(task): mark scroll-wheel-hud archived in design/03 map
+`e69d8b9` chore: record journal
+`5a7c4f1` chore(task): archive 09-17-scroll-wheel-hud | `main` |
 | 12 | 2026-09-17 | Scroll wheel HUD wrap-up | `ef6898a` | `main` |
 | 11 | 2026-09-16 | Windows LL input hooks | `6b2b7f1` | `main` |
 | 10 | 2026-09-16 | Settings HUD tab IA | `000469a`, `196bd32` | `main` |

@@ -475,3 +475,41 @@ Shipped scroll HudChip + Lite/Full tick pulse; captureMouse gates scroll; ignore
 ### Next Steps
 
 - None - task complete
+
+
+## Session 13: Text/Lite operation timeline
+
+**Date**: 2026-09-17
+**Task**: Text/Lite operation timeline
+**Branch**: `main`
+
+### Summary
+
+Shipped Text/Lite unified timeline (≤5, scroll tail-refresh, status clear); Lite KeyCard+schematic frames; Text i18n mouse/scroll labels + line-art icons; outro fixed-position polish; archived 09-17-text-key-queue. design/03 child map complete.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b5e998cfe46c04c1d64da94d3fd5af8fa3af7494
+91428a3 chore(task): archive 09-17-text-key-queue
+b5e998c feat(hud): Text/Lite shared operation timeline
+99a06d9 docs(task): mark scroll-wheel-hud archived in design/03 map
+e69d8b9 chore: record journal
+5a7c4f1 chore(task): archive 09-17-scroll-wheel-hud` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
