@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use super::event::{Phase, RawInput};
+use super::event::{Phase, RawInput, ScrollDirection};
 
 /// Drops obvious same-key spam before the chip reducer.
 pub struct EventFilter {
@@ -44,7 +44,67 @@ impl EventFilter {
             RawInput::Key {
                 phase: Phase::Up, ..
             }
-            | RawInput::Mouse { .. } => true,
+            | RawInput::Mouse { .. }
+            | RawInput::Scroll { .. } => true,
         }
+    }
+}
+
+/// Leading-edge coalesce for vertical scroll bursts (~64ms window).
+///
+/// Emits the first tick of a same-direction burst; drops subsequent ticks
+/// within the window; emits immediately on direction flip.
+pub struct ScrollCoalescer {
+    last: Option<(ScrollDirection, Instant)>,
+    window: Duration,
+}
+
+impl Default for ScrollCoalescer {
+    fn default() -> Self {
+        Self {
+            last: None,
+            window: Duration::from_millis(64),
+        }
+    }
+}
+
+impl ScrollCoalescer {
+    pub fn allow(&mut self, direction: ScrollDirection) -> bool {
+        self.allow_at(direction, Instant::now())
+    }
+
+    pub(crate) fn allow_at(&mut self, direction: ScrollDirection, now: Instant) -> bool {
+        if let Some((prev, at)) = self.last {
+            if prev == direction && now.duration_since(at) < self.window {
+                return false;
+            }
+        }
+        self.last = Some((direction, now));
+        true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn scroll_coalesce_drops_same_direction_within_window() {
+        let mut c = ScrollCoalescer::default();
+        let t0 = Instant::now();
+        assert!(c.allow_at(ScrollDirection::Up, t0));
+        assert!(!c.allow_at(ScrollDirection::Up, t0 + Duration::from_millis(20)));
+        assert!(!c.allow_at(ScrollDirection::Up, t0 + Duration::from_millis(50)));
+        assert!(c.allow_at(ScrollDirection::Up, t0 + Duration::from_millis(70)));
+    }
+
+    #[test]
+    fn scroll_coalesce_emits_on_direction_flip() {
+        let mut c = ScrollCoalescer::default();
+        let t0 = Instant::now();
+        assert!(c.allow_at(ScrollDirection::Up, t0));
+        assert!(c.allow_at(ScrollDirection::Down, t0 + Duration::from_millis(10)));
+        assert!(!c.allow_at(ScrollDirection::Down, t0 + Duration::from_millis(20)));
+        assert!(c.allow_at(ScrollDirection::Up, t0 + Duration::from_millis(30)));
     }
 }

@@ -11,10 +11,12 @@ export type KeyRef = {
 };
 
 export type HudPhase = "down" | "up";
+export type ScrollDirection = "up" | "down";
 
 export type HudChip =
   | { kind: "key"; mods: KeyRef[]; key: KeyRef; phase: HudPhase }
-  | { kind: "mouse"; button: "left" | "right" | "middle"; phase: HudPhase };
+  | { kind: "mouse"; button: "left" | "right" | "middle"; phase: HudPhase }
+  | { kind: "scroll"; direction: ScrollDirection };
 
 export type MouseRippleEvent = {
   /** Logical/CSS px from primary monitor top-left. */
@@ -33,6 +35,9 @@ export const HOOK_STATUS_CHANNEL = "cast://hook-status";
 export const IGNORE_KEY_CAPTURED_CHANNEL = "cast://ignore-key-captured";
 export const MOUSE_RIPPLE_CHANNEL = "cast://mouse-ripple";
 
+/** Fixed Lite/Full wheel-tick pulse length (ms). */
+export const SCROLL_PULSE_MS = 250;
+
 function isKeyRef(value: unknown): value is KeyRef {
   if (!value || typeof value !== "object") return false;
   const ref = value as Record<string, unknown>;
@@ -42,6 +47,10 @@ function isKeyRef(value: unknown): value is KeyRef {
 
 function isHudPhase(value: unknown): value is HudPhase {
   return value === "down" || value === "up";
+}
+
+function isScrollDirection(value: unknown): value is ScrollDirection {
+  return value === "up" || value === "down";
 }
 
 /** Modifier ids used by ChipReducer / Full held-set (bare-mod chips). */
@@ -57,6 +66,11 @@ export function isModifierKeyId(id: string): boolean {
 export function isHudChip(value: unknown): value is HudChip {
   if (!value || typeof value !== "object") return false;
   const chip = value as Record<string, unknown>;
+
+  if (chip.kind === "scroll") {
+    return isScrollDirection(chip.direction);
+  }
+
   if (!isHudPhase(chip.phase)) return false;
 
   if (chip.kind === "key") {
@@ -105,6 +119,10 @@ export function formatHudLabel(
   chip: HudChip,
   legendLayout: KeyboardLegendLayoutId = "mac-us",
 ): string {
+  if (chip.kind === "scroll") {
+    return chip.direction === "up" ? "↑" : "↓";
+  }
+
   if (chip.kind === "key") {
     const parts = [
       ...chip.mods.map((m) => displayLabelForKeyId(m.id, legendLayout)),
@@ -123,6 +141,9 @@ export function hudCards(chip: HudChip): KeyRef[] {
   if (chip.kind === "key") {
     return [...chip.mods, chip.key];
   }
+  if (chip.kind === "scroll") {
+    return [{ id: chip.direction === "up" ? "ScrollUp" : "ScrollDown" }];
+  }
   const label =
     chip.button === "left" ? "Left" : chip.button === "right" ? "Right" : "Middle";
   return [{ id: `Mouse${label}` }];
@@ -136,6 +157,9 @@ export function summarizeHudChip(
     const modIds = chip.mods.map((m) => m.id).join(",");
     const modPart = modIds ? ` mods=[${modIds}]` : "";
     return `key ${chip.phase}${modPart} key=${chip.key.id} · ${formatHudLabel(chip, legendLayout)}`;
+  }
+  if (chip.kind === "scroll") {
+    return `scroll direction=${chip.direction} · ${formatHudLabel(chip, legendLayout)}`;
   }
   return `mouse ${chip.phase} button=${chip.button} · ${formatHudLabel(chip, legendLayout)}`;
 }

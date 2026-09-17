@@ -12,6 +12,7 @@
   import {
     DEFAULT_HUD_STYLE,
     HUD_STYLE_CHANNEL,
+    IGNORED_MOUSE_ACTIONS,
     armIgnoreKeyCapture,
     cancelIgnoreKeyCapture,
     getCaptureSettings,
@@ -22,6 +23,7 @@
     setCaptureSettings,
     type CaptureSettings,
     type HudStyleSettings,
+    type IgnoredMouseAction,
   } from "$lib/settings";
   import { resolveKeyboardLegendLayout } from "$lib/key-legends";
   import {
@@ -52,6 +54,7 @@
   let mouseClickRipple = $state(false);
   let hasNumpad = $state(false);
   let ignoredKeyIds = $state<string[]>([]);
+  let ignoredMouseActions = $state<IgnoredMouseAction[]>([]);
   let ignoreCapturing = $state(false);
   let captureReady = $state(false);
   let captureSaving = $state(false);
@@ -59,6 +62,7 @@
   let hudStyle = $state<HudStyleSettings>({ ...DEFAULT_HUD_STYLE });
 
   const ignoredIdSet = $derived(new Set(ignoredKeyIds));
+  const ignoredMouseSet = $derived(new Set(ignoredMouseActions));
   const visibleLayoutIds = $derived(layoutKeyIds(hasNumpad));
   const offBoardIgnoredKeyIds = $derived(
     offBoardIgnoredIds(ignoredKeyIds, visibleLayoutIds),
@@ -69,9 +73,21 @@
   const ignoreBoardLegendLayout = $derived(
     resolveKeyboardLegendLayout(hudStyle.keyboardLegendLayout),
   );
-  const ignoreBoardDisabled = $derived(
-    !captureReady || captureSaving || ignoreCapturing,
+  const keyboardControlsDisabled = $derived(
+    !captureReady || captureSaving || !captureKeyboard,
   );
+  const mouseIgnoreDisabled = $derived(
+    !captureReady || captureSaving || !captureMouse,
+  );
+  const ignoreBoardDisabled = $derived(
+    keyboardControlsDisabled || ignoreCapturing,
+  );
+
+  function mouseActionLabelKey(
+    action: IgnoredMouseAction,
+  ): `settings.ignoreMouse.${IgnoredMouseAction}` {
+    return `settings.ignoreMouse.${action}`;
+  }
 
   function isWindowsHost(): boolean {
     if (typeof navigator === "undefined") return false;
@@ -108,6 +124,7 @@
     mouseClickRipple = next.mouseClickRipple;
     hasNumpad = next.hasNumpad;
     ignoredKeyIds = [...next.ignoredKeyIds];
+    ignoredMouseActions = [...next.ignoredMouseActions];
     captureSaving = true;
     try {
       const saved = await setCaptureSettings(next);
@@ -116,12 +133,14 @@
       mouseClickRipple = saved.mouseClickRipple;
       hasNumpad = saved.hasNumpad;
       ignoredKeyIds = [...saved.ignoredKeyIds];
+      ignoredMouseActions = [...saved.ignoredMouseActions];
     } catch (err) {
       captureKeyboard = previous.captureKeyboard;
       captureMouse = previous.captureMouse;
       mouseClickRipple = previous.mouseClickRipple;
       hasNumpad = previous.hasNumpad;
       ignoredKeyIds = [...previous.ignoredKeyIds];
+      ignoredMouseActions = [...previous.ignoredMouseActions];
       appendLog(`settings save failed: ${String(err)}`);
     } finally {
       captureSaving = false;
@@ -135,6 +154,7 @@
       mouseClickRipple,
       hasNumpad,
       ignoredKeyIds: [...ignoredKeyIds],
+      ignoredMouseActions: [...ignoredMouseActions],
     };
   }
 
@@ -179,6 +199,23 @@
     void persistCapture({ ...previous, ignoredKeyIds: nextIds }, previous);
   }
 
+  function onIgnoreMouseActionChange(
+    action: IgnoredMouseAction,
+    event: Event,
+  ) {
+    const checked = (event.currentTarget as HTMLInputElement).checked;
+    const previous = currentCapture();
+    const nextActions = checked
+      ? previous.ignoredMouseActions.includes(action)
+        ? previous.ignoredMouseActions
+        : [...previous.ignoredMouseActions, action]
+      : previous.ignoredMouseActions.filter((a) => a !== action);
+    void persistCapture(
+      { ...previous, ignoredMouseActions: nextActions },
+      previous,
+    );
+  }
+
   function removeIgnoredKey(id: string) {
     const previous = currentCapture();
     if (!previous.ignoredKeyIds.includes(id)) return;
@@ -201,7 +238,7 @@
   }
 
   async function onAddIgnoreKey() {
-    if (ignoreCapturing || !captureReady || captureSaving) return;
+    if (ignoreCapturing || keyboardControlsDisabled) return;
     try {
       await armIgnoreKeyCapture();
       ignoreCapturing = true;
@@ -249,6 +286,7 @@
         mouseClickRipple = settings.mouseClickRipple;
         hasNumpad = settings.hasNumpad;
         ignoredKeyIds = [...settings.ignoredKeyIds];
+        ignoredMouseActions = [...settings.ignoredMouseActions];
       } catch (err) {
         if (!cancelled) {
           appendLog(`settings load failed: ${String(err)}`);
@@ -329,7 +367,7 @@
   });
 </script>
 
-<div
+  <div
   class="panel settings-panel"
   id="panel-capture"
   role="tabpanel"
@@ -337,23 +375,12 @@
   hidden={!active}
   inert={!active}
 >
-  <section>
-    <h2>{t("settings.capture", locale)}</h2>
-    {#if hookOk === false}
-      <p class="muted error">{captureFailedMessage}</p>
-    {/if}
-    <div class="field field-toggle">
-      <input
-        id="capture-keyboard"
-        type="checkbox"
-        checked={captureKeyboard}
-        disabled={!captureReady || captureSaving}
-        onchange={onCaptureKeyboardChange}
-      />
-      <label for="capture-keyboard"
-        >{t("settings.listenKeyboard", locale)}</label
-      >
-    </div>
+  {#if hookOk === false}
+    <p class="muted error">{captureFailedMessage}</p>
+  {/if}
+
+  <section class="capture-section" aria-labelledby="capture-mouse-heading">
+    <h2 id="capture-mouse-heading">{t("settings.mouseSection", locale)}</h2>
     <div class="field field-toggle">
       <input
         id="capture-mouse"
@@ -364,6 +391,29 @@
       />
       <label for="capture-mouse">{t("settings.listenMouse", locale)}</label>
     </div>
+
+    <div class="ignore-block" class:section-disabled={!captureMouse}>
+      <p class="field-label">{t("settings.ignoreMouse", locale)}</p>
+      <p class="muted ignore-hint">{t("settings.ignoreMouseHint", locale)}</p>
+      <div
+        class="category-grid"
+        role="group"
+        aria-label={t("settings.ignoreMouse", locale)}
+      >
+        {#each IGNORED_MOUSE_ACTIONS as action (action)}
+          <label class="category-toggle">
+            <input
+              type="checkbox"
+              checked={ignoredMouseSet.has(action)}
+              disabled={mouseIgnoreDisabled}
+              onchange={(e) => onIgnoreMouseActionChange(action, e)}
+            />
+            <span>{t(mouseActionLabelKey(action), locale)}</span>
+          </label>
+        {/each}
+      </div>
+    </div>
+
     <div class="field field-toggle">
       <input
         id="mouse-click-ripple"
@@ -379,19 +429,35 @@
     <p class="muted ignore-hint">
       {t("settings.mouseClickRippleHint", locale)}
     </p>
+  </section>
+
+  <section class="capture-section" aria-labelledby="capture-keyboard-heading">
+    <h2 id="capture-keyboard-heading">{t("settings.keyboardSection", locale)}</h2>
+    <div class="field field-toggle">
+      <input
+        id="capture-keyboard"
+        type="checkbox"
+        checked={captureKeyboard}
+        disabled={!captureReady || captureSaving}
+        onchange={onCaptureKeyboardChange}
+      />
+      <label for="capture-keyboard"
+        >{t("settings.listenKeyboard", locale)}</label
+      >
+    </div>
     <div class="field field-toggle">
       <input
         id="has-numpad"
         type="checkbox"
         checked={hasNumpad}
-        disabled={!captureReady || captureSaving}
+        disabled={keyboardControlsDisabled}
         onchange={onHasNumpadChange}
       />
       <label for="has-numpad">{t("settings.hasNumpad", locale)}</label>
     </div>
     <p class="muted ignore-hint">{t("settings.hasNumpadHint", locale)}</p>
 
-    <div class="ignore-block">
+    <div class="ignore-block" class:section-disabled={!captureKeyboard}>
       <p class="field-label">{t("settings.ignoreKeys", locale)}</p>
       <p class="muted ignore-hint">{t("settings.ignoreHint", locale)}</p>
       <div
@@ -405,7 +471,7 @@
           <label class="category-toggle">
             <input
               type="checkbox"
-              disabled={!captureReady || captureSaving || ignoreCapturing}
+              disabled={ignoreBoardDisabled}
               use:bindCategoryCheckbox={state}
               onchange={(e) => onIgnoreCategoryChange(category.id, e)}
             />
@@ -445,7 +511,7 @@
           <button
             type="button"
             class="clear"
-            disabled={!captureReady || captureSaving}
+            disabled={keyboardControlsDisabled}
             onclick={() => void onAddIgnoreKey()}
           >
             {t("settings.addKey", locale)}
@@ -464,7 +530,7 @@
               <button
                 type="button"
                 class="clear ignore-remove"
-                disabled={!captureReady || captureSaving || ignoreCapturing}
+                disabled={ignoreBoardDisabled}
                 aria-label={t("settings.removeAria", locale, { id })}
                 onclick={() => removeIgnoredKey(id)}
               >
@@ -509,6 +575,10 @@
     min-width: 0;
   }
 
+  .capture-section {
+    padding-top: 4px;
+  }
+
   h2 {
     margin: 0;
     font-size: 13px;
@@ -544,6 +614,10 @@
     display: grid;
     gap: 10px;
     margin-top: 4px;
+  }
+
+  .ignore-block.section-disabled {
+    opacity: 0.55;
   }
 
   .ignore-hint {

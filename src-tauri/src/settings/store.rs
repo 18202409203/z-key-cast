@@ -9,7 +9,8 @@ use std::sync::{Mutex, OnceLock};
 use tauri::{AppHandle, Manager};
 
 use super::types::{
-    AppSettings, CaptureSettings, HudPositionSettings, HudStyleSettings, UiLocale,
+    normalize_ignored_mouse_actions, AppSettings, CaptureSettings, HudPositionSettings,
+    HudStyleSettings, UiLocale,
 };
 
 pub(crate) static CAPTURE_KEYBOARD: AtomicBool = AtomicBool::new(true);
@@ -23,6 +24,7 @@ pub(crate) static HUD_PLACE_MODE: AtomicBool = AtomicBool::new(false);
 static HUD: OnceLock<Mutex<HudStyleSettings>> = OnceLock::new();
 static HUD_POSITION: OnceLock<Mutex<HudPositionSettings>> = OnceLock::new();
 static IGNORED_KEYS: OnceLock<Mutex<IgnoredKeys>> = OnceLock::new();
+static IGNORED_MOUSE: OnceLock<Mutex<IgnoredMouseActions>> = OnceLock::new();
 static UI_LOCALE: OnceLock<Mutex<Option<UiLocale>>> = OnceLock::new();
 
 #[derive(Debug, Default)]
@@ -47,6 +49,28 @@ impl IgnoredKeys {
     }
 }
 
+#[derive(Debug, Default)]
+pub(crate) struct IgnoredMouseActions {
+    order: Vec<String>,
+    set: HashSet<String>,
+}
+
+impl IgnoredMouseActions {
+    pub(crate) fn from_ids(ids: Vec<String>) -> Self {
+        let order = normalize_ignored_mouse_actions(ids);
+        let set = order.iter().cloned().collect();
+        Self { order, set }
+    }
+
+    pub(crate) fn ids(&self) -> Vec<String> {
+        self.order.clone()
+    }
+
+    pub(crate) fn contains(&self, id: &str) -> bool {
+        self.set.contains(id)
+    }
+}
+
 pub(crate) fn hud_lock() -> &'static Mutex<HudStyleSettings> {
     HUD.get_or_init(|| Mutex::new(HudStyleSettings::default()))
 }
@@ -57,6 +81,10 @@ pub(crate) fn hud_position_lock() -> &'static Mutex<HudPositionSettings> {
 
 pub(crate) fn ignored_lock() -> &'static Mutex<IgnoredKeys> {
     IGNORED_KEYS.get_or_init(|| Mutex::new(IgnoredKeys::default()))
+}
+
+pub(crate) fn ignored_mouse_lock() -> &'static Mutex<IgnoredMouseActions> {
+    IGNORED_MOUSE.get_or_init(|| Mutex::new(IgnoredMouseActions::default()))
 }
 
 pub(crate) fn ui_locale_lock() -> &'static Mutex<Option<UiLocale>> {
@@ -88,12 +116,17 @@ impl CaptureSettings {
             .lock()
             .map(|g| g.ids())
             .unwrap_or_default();
+        let ignored_mouse_actions = ignored_mouse_lock()
+            .lock()
+            .map(|g| g.ids())
+            .unwrap_or_default();
         Self {
             capture_keyboard: CAPTURE_KEYBOARD.load(Ordering::Relaxed),
             capture_mouse: CAPTURE_MOUSE.load(Ordering::Relaxed),
             mouse_click_ripple: MOUSE_CLICK_RIPPLE.load(Ordering::Relaxed),
             has_numpad: HAS_NUMPAD.load(Ordering::Relaxed),
             ignored_key_ids,
+            ignored_mouse_actions,
         }
     }
 }
@@ -112,6 +145,10 @@ impl AppSettings {
             .lock()
             .map(|g| g.ids())
             .unwrap_or_default();
+        let ignored_mouse_actions = ignored_mouse_lock()
+            .lock()
+            .map(|g| g.ids())
+            .unwrap_or_default();
         let ui_locale = ui_locale_lock().lock().map(|g| *g).unwrap_or(None);
         Self {
             capture_keyboard: CAPTURE_KEYBOARD.load(Ordering::Relaxed),
@@ -119,6 +156,7 @@ impl AppSettings {
             mouse_click_ripple: MOUSE_CLICK_RIPPLE.load(Ordering::Relaxed),
             has_numpad: HAS_NUMPAD.load(Ordering::Relaxed),
             ignored_key_ids,
+            ignored_mouse_actions,
             hud,
             hud_position,
             ui_locale,
@@ -132,6 +170,9 @@ impl AppSettings {
         HAS_NUMPAD.store(self.has_numpad, Ordering::Relaxed);
         if let Ok(mut guard) = ignored_lock().lock() {
             *guard = IgnoredKeys::from_ids(self.ignored_key_ids);
+        }
+        if let Ok(mut guard) = ignored_mouse_lock().lock() {
+            *guard = IgnoredMouseActions::from_ids(self.ignored_mouse_actions);
         }
         if let Ok(mut guard) = hud_lock().lock() {
             *guard = self.hud.clamp();

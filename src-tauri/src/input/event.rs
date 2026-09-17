@@ -15,6 +15,9 @@ pub enum HudChip {
         button: MouseButton,
         phase: Phase,
     },
+    /// Vertical scroll direction pulse — no `phase`.
+    #[serde(rename = "scroll")]
+    Scroll { direction: ScrollDirection },
 }
 
 /// Stable logical key identity on the wire. Display labels are resolved in the UI.
@@ -41,6 +44,9 @@ pub enum RawInput {
         button: MouseButton,
         phase: Phase,
     },
+    Scroll {
+        direction: ScrollDirection,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -56,6 +62,13 @@ pub enum MouseButton {
     Left,
     Right,
     Middle,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ScrollDirection {
+    Up,
+    Down,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

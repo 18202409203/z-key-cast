@@ -1,4 +1,4 @@
-use super::event::{HudChip, KeyRef, Phase, RawInput};
+use super::event::{HudChip, KeyRef, Phase, RawInput, ScrollDirection};
 
 /// Turns filtered raw downs/ups into public `HudChip` payloads.
 ///
@@ -74,6 +74,9 @@ impl ChipReducer {
             RawInput::Mouse { button, phase } => Some(HudChip::Mouse {
                 button: *button,
                 phase: *phase,
+            }),
+            RawInput::Scroll { direction } => Some(HudChip::Scroll {
+                direction: *direction,
             }),
         }
     }
@@ -239,6 +242,29 @@ mod tests {
             Some(HudChip::Mouse {
                 button: MouseButton::Right,
                 phase: Phase::Down,
+            })
+        ));
+    }
+
+    #[test]
+    fn scroll_emits_without_phase() {
+        let mut r = ChipReducer::default();
+        let chip = r.reduce(&RawInput::Scroll {
+            direction: ScrollDirection::Up,
+        });
+        assert!(matches!(
+            chip,
+            Some(HudChip::Scroll {
+                direction: ScrollDirection::Up,
+            })
+        ));
+        let down = r.reduce(&RawInput::Scroll {
+            direction: ScrollDirection::Down,
+        });
+        assert!(matches!(
+            down,
+            Some(HudChip::Scroll {
+                direction: ScrollDirection::Down,
             })
         ));
     }

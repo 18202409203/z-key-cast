@@ -13,10 +13,10 @@ use tauri::{AppHandle, Emitter, Manager};
 use super::chip::{modifier_transition, ChipReducer};
 use super::emit_hook_status;
 use super::event::{
-    HookStatus, KeyRef, MouseButton, MouseRippleEvent, Phase, RawInput, EVENT_CHANNEL,
-    IGNORE_KEY_CAPTURED_CHANNEL, MOUSE_RIPPLE_CHANNEL,
+    HookStatus, KeyRef, MouseButton, MouseRippleEvent, Phase, RawInput, ScrollDirection,
+    EVENT_CHANNEL, IGNORE_KEY_CAPTURED_CHANNEL, MOUSE_RIPPLE_CHANNEL,
 };
-use super::filter::EventFilter;
+use super::filter::{EventFilter, ScrollCoalescer};
 use crate::settings;
 
 /// Start the hook on a dedicated thread so CFRunLoop does not block Tauri's main thread.
@@ -42,6 +42,7 @@ fn run_tap(app: AppHandle) -> Result<(), HookStatus> {
 
     let filter = Mutex::new(EventFilter::default());
     let reducer = Mutex::new(ChipReducer::default());
+    let scroll_coalesce = Mutex::new(ScrollCoalescer::default());
     let app_for_cb = app.clone();
 
     let tap = CGEventTap::new(
@@ -58,6 +59,7 @@ fn run_tap(app: AppHandle) -> Result<(), HookStatus> {
             CGEventType::RightMouseUp,
             CGEventType::OtherMouseDown,
             CGEventType::OtherMouseUp,
+            CGEventType::ScrollWheel,
         ],
         move |_proxy, event_type, event: &CGEvent| {
             let held = |id: &str| {
@@ -72,6 +74,19 @@ fn run_tap(app: AppHandle) -> Result<(), HookStatus> {
                     .map(|mut f| f.allow(&raw))
                     .unwrap_or(true);
                 if should_process {
+                    let raw = if let RawInput::Scroll { direction } = raw {
+                        let allow = scroll_coalesce
+                            .lock()
+                            .map(|mut c| c.allow(direction))
+                            .unwrap_or(true);
+                        if !allow {
+                            return None;
+                        }
+                        RawInput::Scroll { direction }
+                    } else {
+                        raw
+                    };
+
                     // Capture next key/mod down for ignore list; still reduce held mods.
                     let mut suppress_emit = false;
                     if let RawInput::Key {
@@ -229,8 +244,29 @@ fn normalize(
             };
             Some(mouse(MouseButton::Middle, phase))
         }
+        CGEventType::ScrollWheel => normalize_scroll(event),
         _ => None,
     }
+}
+
+fn normalize_scroll(event: &CGEvent) -> Option<RawInput> {
+    let continuous =
+        event.get_integer_value_field(EventField::SCROLL_WHEEL_EVENT_IS_CONTINUOUS) != 0;
+    let delta = if continuous {
+        event.get_integer_value_field(EventField::SCROLL_WHEEL_EVENT_POINT_DELTA_AXIS_1)
+    } else {
+        event.get_integer_value_field(EventField::SCROLL_WHEEL_EVENT_DELTA_AXIS_1)
+    };
+    // Vertical only — zero vertical (horizontal / empty) is dropped.
+    if delta == 0 {
+        return None;
+    }
+    let direction = if delta > 0 {
+        ScrollDirection::Up
+    } else {
+        ScrollDirection::Down
+    };
+    Some(RawInput::Scroll { direction })
 }
 
 fn normalize_flags_changed(

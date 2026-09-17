@@ -3,7 +3,7 @@
   "name": "scroll-wheel-hud",
   "title": "Scroll wheel HUD direction pulse",
   "description": "Limited scroll capture with scroll HudChip + schematic tick pulse",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,

@@ -9,7 +9,7 @@
   import MouseSchematic from "$lib/components/MouseSchematic.svelte";
   import { toKeyCardVisual } from "$lib/key-card";
   import { resolveKeyboardLegendLayout } from "$lib/key-legends";
-  import { formatHudLabel, hudCards, type HudChip, type KeyRef } from "$lib/cast";
+  import { formatHudLabel, hudCards, type HudChip, type KeyRef, type ScrollDirection } from "$lib/cast";
   import {
     DEFAULT_HUD_STYLE,
     hudBackgroundCss,
@@ -18,18 +18,22 @@
   import { t, type UiLocale } from "$lib/i18n";
 
   type KeyChip = Extract<HudChip, { kind: "key" }>;
-  type MouseChip = Extract<HudChip, { kind: "mouse" }>;
-  type MouseButton = MouseChip["button"];
+  type MouseTextChip =
+    | Extract<HudChip, { kind: "mouse" }>
+    | Extract<HudChip, { kind: "scroll" }>;
+  type MouseButton = Extract<HudChip, { kind: "mouse" }>["button"];
 
   type Props = {
     style: HudStyleSettings;
     locale: UiLocale;
     placeMode: boolean;
     keySlot: KeyChip | null;
-    mouseSlot: MouseChip | null;
+    mouseSlot: MouseTextChip | null;
     statusActive: boolean;
     activeKeyIds: ReadonlySet<string>;
     mouseActiveButtons: ReadonlySet<MouseButton>;
+    scrollDirection?: ScrollDirection | null;
+    scrollPulseNonce?: number;
     showKmGroup: boolean;
     showKeySide: boolean;
     showMouseSide: boolean;
@@ -50,6 +54,8 @@
     statusActive,
     activeKeyIds,
     mouseActiveButtons,
+    scrollDirection = null,
+    scrollPulseNonce = 0,
     showKmGroup,
     showKeySide,
     showMouseSide,
@@ -174,6 +180,8 @@
             <div transition:fade={{ duration: 200 }}>
               <MouseSchematic
                 activeButtons={mouseActiveButtons}
+                scrollDirection={scrollDirection}
+                scrollPulseNonce={scrollPulseNonce}
                 textColor={style.textColor}
                 backgroundCss={chipBackground}
                 fontSizePx={isFull

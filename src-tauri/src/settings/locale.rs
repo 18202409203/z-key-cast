@@ -24,6 +24,7 @@ pub fn set_ui_locale_settings(app: AppHandle, locale: UiLocale) -> Result<UiLoca
         mouse_click_ripple: previous.mouse_click_ripple,
         has_numpad: previous.has_numpad,
         ignored_key_ids: previous.ignored_key_ids.clone(),
+        ignored_mouse_actions: previous.ignored_mouse_actions.clone(),
         hud: previous.hud.clone(),
         hud_position: previous.hud_position.clone(),
         ui_locale: Some(locale),

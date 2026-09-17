@@ -39,23 +39,25 @@ Settings + Tray
 
 ### 统一事件（对外）
 
-`cast://event` 载荷为 **`HudChip`**（含 `phase`；raw 仅内部）：
+`cast://event` 载荷为 **`HudChip`**（`key`/`mouse` 含 `phase`；`scroll` 无 phase；raw 仅内部）：
 
 ```ts
 type KeyRef = { id: string };
 
 type HudChip =
   | { kind: "key"; mods: KeyRef[]; key: KeyRef; phase: "down" | "up" }
-  | { kind: "mouse"; button: "left" | "right" | "middle"; phase: "down" | "up" };
+  | { kind: "mouse"; button: "left" | "right" | "middle"; phase: "down" | "up" }
+  | { kind: "scroll"; direction: "up" | "down" };
 ```
 
 - `id`：稳定逻辑名（如 `MetaLeft`, `KeyS`, `Digit1`, `Numpad1`, `Backspace`, `ForwardDelete`）；不发 OS 专用 id（如 `WinLeft`）
 - 展示：UI 用 `id` + `keyboardLegendLayout`（auto → Mac/Win）解析短文案（Meta → `⌘` / `Win`）
-- 发射端：主键 / 裸修饰 / 鼠标均发 down 与 up；消费者决定如何展示
-- Text/Lite：忽略 `up` 与裸修饰；down 占条 + dwell
+- 发射端：主键 / 裸修饰 / 鼠标均发 down 与 up；纵向滚轮经短窗合并后发 `scroll`（无 phase）；消费者决定如何展示
+- Text/Lite：忽略 `up` 与裸修饰；down 占条 + dwell；Text 鼠侧文字可显示 `↑`/`↓`
+- Lite/Full：滚轮刻度方向脉冲（固定短动画），与鼠标按键高亮不互斥；不进 Full held-set
 - Full：held-set 驱动全键盘 / 多键鼠标高亮；忽略 dwell
-- Log：记录 down 与 up
-- 平台：macOS CGEventTap；Windows `WH_*_LL`（本期无 Win ripple）；其它 stub `unsupported_platform`
+- Log：记录 down 与 up；scroll 记方向
+- 平台：macOS CGEventTap（含 ScrollWheel）；Windows `WH_*_LL`（`WM_MOUSEWHEEL`；丢弃横向）；其它 stub `unsupported_platform`
 ## HUD 约定
 
 - 默认右下角，可改左下 / 左上 / 右上；避开 Dock / 任务栏
@@ -75,13 +77,14 @@ type HudChip =
 - 托盘开关 / 退出
 - macOS Accessibility 引导；Win/Linux 失败时有明确提示
 - macOS 主屏点击涟漪（独立开关 + 独立层；Windows 另开任务）
+- 纵向滚轮方向反馈（合并后 `scroll` chip；受 `captureMouse` 总闸；可用 `ignoredMouseActions` 含 `"scroll"` 关闭）
 
 **不做（二期）**
 
 - 皮肤市场、按应用过滤、历史回放
 - 鼠标轨迹 / 位置指示器；外接屏涟漪；Windows/Linux 涟漪
 - 输入法候选与死键完美还原
-- 滚轮滚动事件（避免刷屏）
+- 横向滚轮 / tilt-wheel；滚速档位或真实速度映射
 
 ## 风险
 

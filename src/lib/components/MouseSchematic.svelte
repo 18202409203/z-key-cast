@@ -1,9 +1,14 @@
 <script lang="ts">
   type MouseButton = "left" | "right" | "middle";
+  type ScrollDirection = "up" | "down";
 
   type Props = {
     /** Pressed buttons (Full can light several; Lite usually 0–1). */
     activeButtons?: Iterable<MouseButton>;
+    /** Orthogonal wheel-tick pulse; does not clear button highlights. */
+    scrollDirection?: ScrollDirection | null;
+    /** Bumps so repeated same-direction pulses re-run CSS animation. */
+    scrollPulseNonce?: number;
     textColor: string;
     backgroundCss: string;
     fontSizePx: number;
@@ -11,6 +16,8 @@
 
   let {
     activeButtons = [],
+    scrollDirection = null,
+    scrollPulseNonce = 0,
     textColor,
     backgroundCss,
     fontSizePx,
@@ -19,9 +26,15 @@
   const active = $derived(new Set(activeButtons));
   const scale = $derived(Math.max(0.85, Math.min(1.35, fontSizePx / 15)));
   const ariaLabel = $derived(
-    active.size === 0
+    active.size === 0 && !scrollDirection
       ? "Mouse"
-      : `Mouse ${[...active].join(" ")}`,
+      : [
+          "Mouse",
+          ...active,
+          scrollDirection ? `scroll ${scrollDirection}` : null,
+        ]
+          .filter(Boolean)
+          .join(" "),
   );
 
   /** Stable per-instance id so multiple mice don't share one clipPath. */
@@ -33,7 +46,7 @@
 
 <div
   class="mouse-wrap"
-  class:lit={active.size > 0}
+  class:lit={active.size > 0 || scrollDirection !== null}
   style:--m-fg={textColor}
   style:--m-bg={backgroundCss}
   aria-label={ariaLabel}
@@ -87,11 +100,18 @@
       height="20.2"
       rx="3.8"
     />
-    <g class="ticks" class:on={active.has("middle")}>
-      <line x1="38.15" y1="17.3" x2="41.85" y2="17.3" />
-      <line x1="38.15" y1="22.2" x2="41.85" y2="22.2" />
-      <line x1="38.15" y1="27.1" x2="41.85" y2="27.1" />
-    </g>
+    {#key scrollPulseNonce}
+      <g
+        class="ticks"
+        class:on={active.has("middle")}
+        class:pulse-up={scrollDirection === "up"}
+        class:pulse-down={scrollDirection === "down"}
+      >
+        <line x1="38.15" y1="17.3" x2="41.85" y2="17.3" />
+        <line x1="38.15" y1="22.2" x2="41.85" y2="22.2" />
+        <line x1="38.15" y1="27.1" x2="41.85" y2="27.1" />
+      </g>
+    {/key}
   </svg>
 </div>
 
@@ -166,9 +186,50 @@
     stroke: color-mix(in srgb, var(--m-fg) 55%, transparent);
     stroke-width: 1;
     stroke-linecap: round;
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 120ms ease;
   }
 
   .ticks.on {
     stroke: color-mix(in srgb, var(--m-bg) 78%, transparent);
+  }
+
+  .ticks.pulse-up {
+    animation: tick-up 250ms ease-out;
+  }
+
+  .ticks.pulse-down {
+    animation: tick-down 250ms ease-out;
+  }
+
+  @keyframes tick-up {
+    0% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    40% {
+      transform: translateY(-3.5px);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 0.85;
+    }
+  }
+
+  @keyframes tick-down {
+    0% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    40% {
+      transform: translateY(3.5px);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 0.85;
+    }
   }
 </style>

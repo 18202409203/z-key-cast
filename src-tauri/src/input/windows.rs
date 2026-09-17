@@ -20,23 +20,26 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     CallNextHookEx, DispatchMessageW, GetMessageW, SetWindowsHookExW, TranslateMessage,
-    UnhookWindowsHookEx, HHOOK, KBDLLHOOKSTRUCT, LLKHF_EXTENDED, LLKHF_UP, MSG, WH_KEYBOARD_LL,
-    WH_MOUSE_LL, WM_KEYDOWN, WM_KEYUP, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONUP,
-    WM_RBUTTONDOWN, WM_RBUTTONUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
+    UnhookWindowsHookEx, HHOOK, KBDLLHOOKSTRUCT, LLKHF_EXTENDED, LLKHF_UP, MSG, MSLLHOOKSTRUCT,
+    WH_KEYBOARD_LL, WH_MOUSE_LL, WM_KEYDOWN, WM_KEYUP, WM_LBUTTONDOWN, WM_LBUTTONUP,
+    WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEHWHEEL, WM_MOUSEWHEEL, WM_RBUTTONDOWN, WM_RBUTTONUP,
+    WM_SYSKEYDOWN, WM_SYSKEYUP,
 };
 
 use super::chip::ChipReducer;
 use super::emit_hook_status;
 use super::event::{
-    HookStatus, KeyRef, MouseButton, Phase, RawInput, EVENT_CHANNEL, IGNORE_KEY_CAPTURED_CHANNEL,
+    HookStatus, KeyRef, MouseButton, Phase, RawInput, ScrollDirection, EVENT_CHANNEL,
+    IGNORE_KEY_CAPTURED_CHANNEL,
 };
-use super::filter::EventFilter;
+use super::filter::{EventFilter, ScrollCoalescer};
 use crate::settings;
 
 struct HookState {
     app: AppHandle,
     filter: Mutex<EventFilter>,
     reducer: Mutex<ChipReducer>,
+    scroll_coalesce: Mutex<ScrollCoalescer>,
     /// Non-modifier keys currently down — drops autorepeat KeyDown spam.
     held_primaries: Mutex<HashSet<String>>,
 }
@@ -66,6 +69,7 @@ fn run_hooks(app: AppHandle) -> Result<(), HookStatus> {
         app: app.clone(),
         filter: Mutex::new(EventFilter::default()),
         reducer: Mutex::new(ChipReducer::default()),
+        scroll_coalesce: Mutex::new(ScrollCoalescer::default()),
         held_primaries: Mutex::new(HashSet::new()),
     });
 
@@ -124,6 +128,20 @@ fn process_raw(raw: RawInput) {
         return;
     }
 
+    let raw = if let RawInput::Scroll { direction } = raw {
+        let allow = state
+            .scroll_coalesce
+            .lock()
+            .map(|mut c| c.allow(direction))
+            .unwrap_or(true);
+        if !allow {
+            return;
+        }
+        RawInput::Scroll { direction }
+    } else {
+        raw
+    };
+
     let mut suppress_emit = false;
     if let RawInput::Key {
         key,
@@ -177,7 +195,8 @@ unsafe extern "system" fn keyboard_proc(code: i32, wparam: WPARAM, lparam: LPARA
 
 unsafe extern "system" fn mouse_proc(code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     if code >= 0 {
-        if let Some(raw) = normalize_mouse(wparam.0 as u32) {
+        let info = &*(lparam.0 as *const MSLLHOOKSTRUCT);
+        if let Some(raw) = normalize_mouse(wparam.0 as u32, info) {
             process_raw(raw);
         }
     }
@@ -226,17 +245,48 @@ fn normalize_keyboard(message: u32, info: &KBDLLHOOKSTRUCT) -> Option<RawInput> 
     })
 }
 
-fn normalize_mouse(message: u32) -> Option<RawInput> {
-    let (button, phase) = match message {
-        WM_LBUTTONDOWN => (MouseButton::Left, Phase::Down),
-        WM_LBUTTONUP => (MouseButton::Left, Phase::Up),
-        WM_RBUTTONDOWN => (MouseButton::Right, Phase::Down),
-        WM_RBUTTONUP => (MouseButton::Right, Phase::Up),
-        WM_MBUTTONDOWN => (MouseButton::Middle, Phase::Down),
-        WM_MBUTTONUP => (MouseButton::Middle, Phase::Up),
-        _ => return None,
-    };
-    Some(RawInput::Mouse { button, phase })
+fn normalize_mouse(message: u32, info: &MSLLHOOKSTRUCT) -> Option<RawInput> {
+    match message {
+        WM_MOUSEHWHEEL => None, // horizontal — drop
+        WM_MOUSEWHEEL => {
+            // HIWORD(mouseData) is signed wheel delta (WHEEL_DELTA units).
+            let delta = ((info.mouseData >> 16) as i16) as i32;
+            if delta == 0 {
+                return None;
+            }
+            let direction = if delta > 0 {
+                ScrollDirection::Up
+            } else {
+                ScrollDirection::Down
+            };
+            Some(RawInput::Scroll { direction })
+        }
+        WM_LBUTTONDOWN => Some(RawInput::Mouse {
+            button: MouseButton::Left,
+            phase: Phase::Down,
+        }),
+        WM_LBUTTONUP => Some(RawInput::Mouse {
+            button: MouseButton::Left,
+            phase: Phase::Up,
+        }),
+        WM_RBUTTONDOWN => Some(RawInput::Mouse {
+            button: MouseButton::Right,
+            phase: Phase::Down,
+        }),
+        WM_RBUTTONUP => Some(RawInput::Mouse {
+            button: MouseButton::Right,
+            phase: Phase::Up,
+        }),
+        WM_MBUTTONDOWN => Some(RawInput::Mouse {
+            button: MouseButton::Middle,
+            phase: Phase::Down,
+        }),
+        WM_MBUTTONUP => Some(RawInput::Mouse {
+            button: MouseButton::Middle,
+            phase: Phase::Up,
+        }),
+        _ => None,
+    }
 }
 
 fn vk_u32(vk: VIRTUAL_KEY) -> u32 {

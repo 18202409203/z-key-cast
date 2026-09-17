@@ -204,7 +204,67 @@ fn is_hex_color(value: &str) -> bool {
     matches!(rest.len(), 3 | 6) && rest.chars().all(|c| c.is_ascii_hexdigit())
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+/// Wire values for `ignoredMouseActions` (`"left" | "right" | "middle" | "scroll"`).
+pub const MOUSE_ACTION_LEFT: &str = "left";
+pub const MOUSE_ACTION_RIGHT: &str = "right";
+pub const MOUSE_ACTION_MIDDLE: &str = "middle";
+pub const MOUSE_ACTION_SCROLL: &str = "scroll";
+
+fn is_valid_mouse_action(id: &str) -> bool {
+    matches!(
+        id,
+        MOUSE_ACTION_LEFT | MOUSE_ACTION_RIGHT | MOUSE_ACTION_MIDDLE | MOUSE_ACTION_SCROLL
+    )
+}
+
+/// Dedupe valid mouse-action ids; preserve order; drop empties / unknowns.
+pub fn normalize_ignored_mouse_actions(ids: Vec<String>) -> Vec<String> {
+    let mut seen = std::collections::HashSet::new();
+    let mut out = Vec::with_capacity(ids.len());
+    for id in ids {
+        if !is_valid_mouse_action(&id) {
+            continue;
+        }
+        if seen.insert(id.clone()) {
+            out.push(id);
+        }
+    }
+    out
+}
+
+/// Legacy: `captureScroll: false` → ensure `"scroll"` is in the ignore list.
+fn migrate_capture_scroll(
+    actions: Vec<String>,
+    capture_scroll: Option<bool>,
+) -> Vec<String> {
+    let mut actions = normalize_ignored_mouse_actions(actions);
+    if capture_scroll == Some(false)
+        && !actions.iter().any(|a| a == MOUSE_ACTION_SCROLL)
+    {
+        actions.push(MOUSE_ACTION_SCROLL.into());
+    }
+    actions
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CaptureSettingsDe {
+    capture_keyboard: bool,
+    capture_mouse: bool,
+    /// Legacy peer toggle; `false` migrates into `ignoredMouseActions` + `"scroll"`.
+    #[serde(default)]
+    capture_scroll: Option<bool>,
+    #[serde(default)]
+    mouse_click_ripple: bool,
+    #[serde(default)]
+    has_numpad: bool,
+    #[serde(default)]
+    ignored_key_ids: Vec<String>,
+    #[serde(default)]
+    ignored_mouse_actions: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CaptureSettings {
     pub capture_keyboard: bool,
@@ -217,6 +277,9 @@ pub struct CaptureSettings {
     pub has_numpad: bool,
     #[serde(default)]
     pub ignored_key_ids: Vec<String>,
+    /// Drop mouse/scroll chips whose category is listed. Default [].
+    #[serde(default)]
+    pub ignored_mouse_actions: Vec<String>,
 }
 
 impl Default for CaptureSettings {
@@ -227,11 +290,55 @@ impl Default for CaptureSettings {
             mouse_click_ripple: false,
             has_numpad: false,
             ignored_key_ids: Vec::new(),
+            ignored_mouse_actions: Vec::new(),
         }
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+impl<'de> Deserialize<'de> for CaptureSettings {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = CaptureSettingsDe::deserialize(deserializer)?;
+        Ok(Self {
+            capture_keyboard: raw.capture_keyboard,
+            capture_mouse: raw.capture_mouse,
+            mouse_click_ripple: raw.mouse_click_ripple,
+            has_numpad: raw.has_numpad,
+            ignored_key_ids: raw.ignored_key_ids,
+            ignored_mouse_actions: migrate_capture_scroll(
+                raw.ignored_mouse_actions,
+                raw.capture_scroll,
+            ),
+        })
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AppSettingsDe {
+    capture_keyboard: bool,
+    capture_mouse: bool,
+    #[serde(default)]
+    capture_scroll: Option<bool>,
+    #[serde(default)]
+    mouse_click_ripple: bool,
+    #[serde(default)]
+    has_numpad: bool,
+    #[serde(default)]
+    ignored_key_ids: Vec<String>,
+    #[serde(default)]
+    ignored_mouse_actions: Vec<String>,
+    #[serde(default)]
+    hud: HudStyleSettings,
+    #[serde(default)]
+    hud_position: HudPositionSettings,
+    #[serde(default)]
+    ui_locale: Option<UiLocale>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AppSettings {
     pub capture_keyboard: bool,
@@ -242,6 +349,8 @@ pub struct AppSettings {
     pub has_numpad: bool,
     #[serde(default)]
     pub ignored_key_ids: Vec<String>,
+    #[serde(default)]
+    pub ignored_mouse_actions: Vec<String>,
     #[serde(default)]
     pub hud: HudStyleSettings,
     #[serde(default)]
@@ -259,10 +368,34 @@ impl Default for AppSettings {
             mouse_click_ripple: false,
             has_numpad: false,
             ignored_key_ids: Vec::new(),
+            ignored_mouse_actions: Vec::new(),
             hud: HudStyleSettings::default(),
             hud_position: HudPositionSettings::default(),
             ui_locale: None,
         }
+    }
+}
+
+impl<'de> Deserialize<'de> for AppSettings {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = AppSettingsDe::deserialize(deserializer)?;
+        Ok(Self {
+            capture_keyboard: raw.capture_keyboard,
+            capture_mouse: raw.capture_mouse,
+            mouse_click_ripple: raw.mouse_click_ripple,
+            has_numpad: raw.has_numpad,
+            ignored_key_ids: raw.ignored_key_ids,
+            ignored_mouse_actions: migrate_capture_scroll(
+                raw.ignored_mouse_actions,
+                raw.capture_scroll,
+            ),
+            hud: raw.hud,
+            hud_position: raw.hud_position,
+            ui_locale: raw.ui_locale,
+        })
     }
 }
 
@@ -299,6 +432,7 @@ mod tests {
         assert!(!parsed.mouse_click_ripple);
         assert!(!parsed.has_numpad);
         assert!(parsed.ignored_key_ids.is_empty());
+        assert!(parsed.ignored_mouse_actions.is_empty());
         assert_eq!(parsed.hud.dwell_ms, 1000);
         assert_eq!(parsed.hud.hud_preset, HudPreset::Text);
         assert_eq!(
@@ -327,6 +461,35 @@ mod tests {
     }
 
     #[test]
+    fn ignored_mouse_actions_default_empty() {
+        let raw = r#"{"captureKeyboard":true,"captureMouse":true}"#;
+        let parsed: AppSettings = serde_json::from_str(raw).unwrap();
+        assert!(parsed.ignored_mouse_actions.is_empty());
+        let capture: CaptureSettings = serde_json::from_str(raw).unwrap();
+        assert!(capture.ignored_mouse_actions.is_empty());
+    }
+
+    #[test]
+    fn legacy_capture_scroll_false_migrates_to_ignore_scroll() {
+        let off = r#"{"captureKeyboard":true,"captureMouse":true,"captureScroll":false}"#;
+        let parsed: AppSettings = serde_json::from_str(off).unwrap();
+        assert_eq!(parsed.ignored_mouse_actions, vec!["scroll"]);
+        let capture: CaptureSettings = serde_json::from_str(off).unwrap();
+        assert_eq!(capture.ignored_mouse_actions, vec!["scroll"]);
+
+        let already = r#"{"captureKeyboard":true,"captureMouse":true,"captureScroll":false,"ignoredMouseActions":["left","scroll"]}"#;
+        let parsed: AppSettings = serde_json::from_str(already).unwrap();
+        assert_eq!(parsed.ignored_mouse_actions, vec!["left", "scroll"]);
+    }
+
+    #[test]
+    fn ignored_mouse_actions_drops_unknown_and_dedupes() {
+        let raw = r#"{"captureKeyboard":true,"captureMouse":true,"ignoredMouseActions":["left","nope","left","scroll"]}"#;
+        let parsed: AppSettings = serde_json::from_str(raw).unwrap();
+        assert_eq!(parsed.ignored_mouse_actions, vec!["left", "scroll"]);
+    }
+
+    #[test]
     fn has_numpad_omitted_defaults_false() {
         let raw = r#"{"captureKeyboard":true,"captureMouse":true}"#;
         let parsed: AppSettings = serde_json::from_str(raw).unwrap();
@@ -344,12 +507,14 @@ mod tests {
             mouse_click_ripple: false,
             has_numpad: true,
             ignored_key_ids: Vec::new(),
+            ignored_mouse_actions: Vec::new(),
             hud: HudStyleSettings::default(),
             hud_position: HudPositionSettings::default(),
             ui_locale: None,
         };
         let raw = serde_json::to_string(&settings).unwrap();
         assert!(raw.contains("\"hasNumpad\":true"));
+        assert!(!raw.contains("captureScroll"));
         let parsed: AppSettings = serde_json::from_str(&raw).unwrap();
         assert!(parsed.has_numpad);
 
@@ -359,10 +524,12 @@ mod tests {
             mouse_click_ripple: false,
             has_numpad: true,
             ignored_key_ids: Vec::new(),
+            ignored_mouse_actions: vec!["middle".into()],
         };
         let raw = serde_json::to_string(&capture).unwrap();
         let parsed: CaptureSettings = serde_json::from_str(&raw).unwrap();
         assert!(parsed.has_numpad);
+        assert_eq!(parsed.ignored_mouse_actions, vec!["middle"]);
     }
 
     #[test]
@@ -458,6 +625,7 @@ mod tests {
             mouse_click_ripple: true,
             has_numpad: false,
             ignored_key_ids: vec!["Escape".into(), "KeyA".into()],
+            ignored_mouse_actions: vec!["right".into(), "scroll".into()],
             hud: HudStyleSettings {
                 hud_preset: HudPreset::Full,
                 ..HudStyleSettings::default()
@@ -474,10 +642,12 @@ mod tests {
         assert!(parsed.mouse_click_ripple);
         assert!(!parsed.has_numpad);
         assert_eq!(parsed.ignored_key_ids, vec!["Escape", "KeyA"]);
+        assert_eq!(parsed.ignored_mouse_actions, vec!["right", "scroll"]);
         assert_eq!(parsed.hud.hud_preset, HudPreset::Full);
         assert!(!raw.contains("persistVisible"));
         assert!(!raw.contains("keyboardDisplayMode"));
         assert!(!raw.contains("mouseDisplayMode"));
+        assert!(!raw.contains("captureScroll"));
         assert_eq!(
             parsed.hud_position,
             HudPositionSettings::Corner {

@@ -43,12 +43,13 @@ export function formatHudLabel(chip: HudChip, legendLayout?: KeyboardLegendLayou
 
 ### 3. Contracts
 
-**`cast://event` → `HudChip`** (includes `phase`; emitter always sends precise down/up)
+**`cast://event` → `HudChip`** (`key`/`mouse` include `phase`; `scroll` has no phase; emitter always sends precise down/up for keys/mouse)
 
 | Variant | Fields | Notes |
 |---------|--------|-------|
 | `key` | `mods: KeyRef[]`, `key: KeyRef`, `phase: "down" \| "up"` | Bare modifiers and primary keys both emit; consumers filter |
 | `mouse` | `button: "left" \| "right" \| "middle"`, `phase: "down" \| "up"` | Button down **and** up |
+| `scroll` | `direction: "up" \| "down"` | Vertical only; coalesced bursts; **no** `phase` |
 
 `KeyRef = { id: string }` (**breaking** — no `label` on the wire)
 
@@ -90,10 +91,12 @@ export function formatHudLabel(chip: HudChip, legendLayout?: KeyboardLegendLayou
 | Left/right same-mod FlagsChanged (shared flag bit, macOS) | Phase via `modifier_transition(flag_on, was_held)` so releasing one side while the other stays held clears only that `KeyRef` |
 | Key / mouse up | Emit with `phase: "up"` (same shape as down) |
 | `captureKeyboard == false` | After reduce, drop `HudChip::Key` before emit (held-mod state still updates) |
-| `captureMouse == false` | After reduce, drop `HudChip::Mouse` before emit |
+| `captureMouse == false` | After reduce, drop `HudChip::Mouse` **and** `HudChip::Scroll` before emit |
+| Mouse `button` ∈ `ignoredMouseActions` | After reduce, drop that mouse chip before emit |
+| `"scroll"` ∈ `ignoredMouseActions` | After reduce, drop `HudChip::Scroll` before emit |
 | Primary `key.id` ∈ `ignoredKeyIds` | After reduce, drop whole key chip before emit |
 | Mod `id` ∈ `ignoredKeyIds` | Strip that mod from `mods` (may leave empty `mods`); primary still emits |
-| Ignore list + mouse | Mouse chips ignore `ignoredKeyIds` |
+| Ignore list + mouse | Key ignore list does not affect mouse/scroll; mouse ignore list does not affect keys |
 | Ignore-key capture armed + key/mod **down** | Emit `cast://ignore-key-captured` (`KeyRef` id-only); suppress that raw’s `cast://event`; still `reduce` held mods; Escape adds Escape (does not cancel) |
 | Ignore-key capture + mouse | Mouse still follows normal emit path; does not disarm |
 | Frontend receives unknown payload | `isHudChip` / `isHookStatus` / `isIgnoreKeyCaptured` / `isMouseRippleEvent` reject; ignore |
@@ -111,25 +114,29 @@ export function formatHudLabel(chip: HudChip, legendLayout?: KeyboardLegendLayou
 ```ts
 type CaptureSettings = {
   captureKeyboard: boolean; // default true
-  captureMouse: boolean; // default true
+  captureMouse: boolean; // default true; gates mouse **and** scroll chips
   mouseClickRipple: boolean; // default false; omit → false; independent of captureMouse
   hasNumpad: boolean; // default false; omit → false; UI board only — does not gate chips/ignore
   ignoredKeyIds: string[]; // default []; flat id list only (category presets are frontend sugar)
+  ignoredMouseActions: ("left" | "right" | "middle" | "scroll")[]; // default []; drop matching mouse/scroll chips after reduce
 };
 ```
+
+**Legacy**: JSON with `captureScroll: false` migrates on load into `ignoredMouseActions` including `"scroll"` (field is not written back).
 
 **`cast://capture-settings` → `CaptureSettings`** — emitted after successful `set_capture_settings` so Overlay Full `showNumpad` hot-updates (mirror `cast://hud-style`).
 **`cast://ignore-key-captured` → `KeyRef`** — once per successful arm consume (`{ id }` only).
 
 - Owners: Rust `src-tauri/src/settings/` (`capture` + `store`); TS `$lib/settings.ts` + `$lib/key-ignore-presets.ts` (category → id[])
-- Hot path (macOS tap / Windows LL hooks, after `EventFilter`, after/around `ChipReducer::reduce`): ignore-capture consume → `filter_key_chip` → `allows_chip` → `emit(EVENT_CHANNEL)`
+- Hot path (macOS tap / Windows LL hooks, after `EventFilter`, after/around `ChipReducer::reduce`): ignore-capture consume → `filter_key_chip` (keys + ignored mouse/scroll) → `allows_chip` → `emit(EVENT_CHANNEL)`
 - Forbidden: gating reduce on capture toggles or ignore list (would desync held mods); filtering only on the frontend; cancelling capture with Escape
 
 ### 5. Good / Base / Bad Cases
 
 - **Good**: `{ "kind":"key","mods":[{"id":"MetaLeft"},{"id":"ShiftLeft"}],"key":{"id":"KeyS"},"phase":"down" }`
 - **Base**: `{ "kind":"mouse","button":"left","phase":"down" }`
-- **Bad**: missing `phase`; scroll/wheel; inventing `kind:"combo"`; shipping `label` as required; Win/Linux fake success without a real hook; `WinLeft` ids
+- **Base (scroll)**: `{ "kind":"scroll","direction":"up" }`
+- **Bad**: missing `phase` on key/mouse; inventing `kind:"combo"`; shipping `label` as required; Win/Linux fake success without a real hook; `WinLeft` ids; overloading `mouse.phase` for scroll direction
 
 ### 6. Tests Required
 
@@ -175,9 +182,10 @@ void listen(EVENT_CHANNEL, (event) => {
 
 ### Capture toggles (filter after reduce)
 
-- **Decision**: Independent `captureKeyboard` / `captureMouse` atomics; filter with `allows_chip` only at emit
+- **Decision**: Independent `captureKeyboard` / `captureMouse` atomics; filter with `allows_chip` only at emit. Mouse **and** Scroll chips require `captureMouse`. Category drops use `ignoredMouseActions` (`left`/`right`/`middle`/`scroll`) after reduce (same layer as key ignore).
 - **Why**: Reducer must keep seeing raw downs so held-mod state stays correct while one side is off
-- **Forbidden**: Skipping `reduce` when a toggle is off; filtering only on the frontend (overlay would still show chips)
+- **Scroll**: vertical wheel coalesced (~64ms) before emit; horizontal dropped at normalize; ignore via `"scroll"` in `ignoredMouseActions` (legacy `captureScroll: false` migrates to that)
+- **Forbidden**: Skipping `reduce` when a toggle is off; filtering only on the frontend (overlay would still show chips); reintroducing a peer `captureScroll` master toggle
 
 ### Mouse click ripple (separate layer)
 
@@ -190,7 +198,7 @@ void listen(EVENT_CHANNEL, (event) => {
 
 - **Decision**: Flat persisted `ignoredKeyIds`; runtime `HashSet` lookup; `filter_key_chip` drops ignored primaries and strips ignored mods; category presets expand on the frontend only
 - **Add-key capture**: Arm via command; next key/mod down emits `cast://ignore-key-captured` (`{ id }`) and suppresses that raw’s `cast://event`; Cancel disarms; Escape is data
-- **Capture UI (frontend only)**: Shared `$lib/components/KeyboardMap.svelte` — Overlay is display-only (`activeIds` / `.key.active`); Capture uses `interactive` + muted `.key.ignored` click-toggle. `showNumpad` / `hasNumpad` hides the numpad column only. Main ignore path is board click; **Add key** discovers ids not in `layoutKeyIds(hasNumpad)`; under-board list shows only that off-board set difference. Do not reuse `.active` for ignore state. Rust contract unchanged.
+- **Capture UI (frontend only)**: Two sections — **Keyboard** (listen keyboard → has numpad → ignore key categories + `KeyboardMap`) and **Mouse** (listen mouse → ignore L/M/R/Scroll → click ripple). When listen keyboard/mouse is off, grey out that section’s ignore controls (ripple stays independent of `captureMouse` and of the mouse ignore list). Shared `$lib/components/KeyboardMap.svelte` — Overlay is display-only (`activeIds` / `.key.active`); Capture uses `interactive` + muted `.key.ignored` click-toggle. `showNumpad` / `hasNumpad` hides the numpad column only. Main ignore path is board click; **Add key** discovers ids not in `layoutKeyIds(hasNumpad)`; under-board list shows only that off-board set difference. Do not reuse `.active` for ignore state. Rust contract unchanged.
 - **Forbidden**: Skipping `reduce` while armed; using Escape to cancel; wiping non-category ids when a category is unchecked
 
 ### HUD style settings

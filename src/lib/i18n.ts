@@ -72,6 +72,8 @@ const en = {
     "Keyboard and mouse capture isn't available on this platform yet.",
   "settings.listenKeyboard": "Listen to keyboard",
   "settings.listenMouse": "Listen to mouse",
+  "settings.keyboardSection": "Keyboard",
+  "settings.mouseSection": "Mouse",
   "settings.mouseClickRipple": "Click ripple (primary screen)",
   "settings.mouseClickRippleHint":
     "Shows a brief ring at click locations on the main display. Independent of mouse HUD listening. macOS only for now.",
@@ -82,6 +84,13 @@ const en = {
   "settings.ignoreHint":
     "Click keys on the board to ignore them. Ignored primaries never show; ignored modifiers are stripped from chords. Use Add key for keys not on the board.",
   "settings.ignoreCategories": "Ignore categories",
+  "settings.ignoreMouse": "Ignore mouse actions",
+  "settings.ignoreMouseHint":
+    "Hide those mouse categories from the HUD. Click ripple is separate and stays available.",
+  "settings.ignoreMouse.left": "Left",
+  "settings.ignoreMouse.right": "Right",
+  "settings.ignoreMouse.middle": "Middle",
+  "settings.ignoreMouse.scroll": "Scroll",
   "settings.addKey": "Add key",
   "settings.cancel": "Cancel",
   "settings.pressKey": "Press a key to ignore…",
@@ -172,9 +181,11 @@ const zh: Record<MessageKey, string> = {
   "settings.captureFailedOther": "当前平台暂不支持键盘和鼠标捕获。",
   "settings.listenKeyboard": "监听键盘",
   "settings.listenMouse": "监听鼠标",
+  "settings.keyboardSection": "键盘",
+  "settings.mouseSection": "鼠标",
   "settings.mouseClickRipple": "点击涟漪",
   "settings.mouseClickRippleHint":
-    "在主显示器点击位置显示短暂圆环。",
+    "在主显示器点击位置显示短暂圆环。与鼠标 HUD 监听无关，目前仅 macOS。",
   "settings.hasNumpad": "有小键盘",
   "settings.hasNumpadHint":
     "选择您的键盘是否带有小键盘。",
@@ -182,6 +193,13 @@ const zh: Record<MessageKey, string> = {
   "settings.ignoreHint":
     "点击键盘上的按键即可忽略。被忽略的主键不会显示；被忽略的修饰键会从组合中剥离。不在键盘图上的按键请用「添加按键」。",
   "settings.ignoreCategories": "忽略分类",
+  "settings.ignoreMouse": "忽略鼠标操作",
+  "settings.ignoreMouseHint":
+    "在 HUD 中隐藏这些鼠标类别。点击涟漪独立开关，不受此列表影响。",
+  "settings.ignoreMouse.left": "左键",
+  "settings.ignoreMouse.right": "右键",
+  "settings.ignoreMouse.middle": "中键",
+  "settings.ignoreMouse.scroll": "滚轮",
   "settings.addKey": "添加按键",
   "settings.cancel": "取消",
   "settings.pressKey": "请按下要忽略的键…",

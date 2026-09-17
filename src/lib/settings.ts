@@ -10,15 +10,26 @@ export const HUD_PLACE_MODE_CHANNEL = "cast://hud-place-mode";
 export const UI_LOCALE_CHANNEL = "cast://ui-locale";
 export const CAPTURE_SETTINGS_CHANNEL = "cast://capture-settings";
 
+export type IgnoredMouseAction = "left" | "right" | "middle" | "scroll";
+
+export const IGNORED_MOUSE_ACTIONS: readonly IgnoredMouseAction[] = [
+  "left",
+  "right",
+  "middle",
+  "scroll",
+] as const;
+
 export type CaptureSettings = {
   captureKeyboard: boolean;
   captureMouse: boolean;
   /** Separate primary-monitor click rings; omit → false. Independent of captureMouse. */
   mouseClickRipple: boolean;
-  /** Hardware: draw numpad on KeyboardMap. Omit → true. Does not gate chips/ignore. */
+  /** Hardware: draw numpad on KeyboardMap. Omit → false. Does not gate chips/ignore. */
   hasNumpad: boolean;
   /** Key ids omitted from HUD chips (primary drop / mod strip). Default []. */
   ignoredKeyIds: string[];
+  /** Mouse categories omitted from HUD (`left`/`right`/`middle`/`scroll`). Default []. */
+  ignoredMouseActions: IgnoredMouseAction[];
 };
 
 export type HudPreset = "text" | "lite" | "full";
@@ -227,16 +238,49 @@ export function hudBackgroundCss(color: string, opacity: number): string {
   return `rgba(${r}, ${g}, ${b}, ${a})`;
 }
 
-/** Normalize capture payload; omit `hasNumpad` → false (matches Rust serde default). */
+function isIgnoredMouseAction(value: unknown): value is IgnoredMouseAction {
+  return (
+    value === "left" ||
+    value === "right" ||
+    value === "middle" ||
+    value === "scroll"
+  );
+}
+
+/** Normalize + dedupe valid mouse ignore categories; preserve order. */
+export function normalizeIgnoredMouseActions(
+  raw: unknown,
+): IgnoredMouseAction[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<IgnoredMouseAction>();
+  const out: IgnoredMouseAction[] = [];
+  for (const item of raw) {
+    if (!isIgnoredMouseAction(item) || seen.has(item)) continue;
+    seen.add(item);
+    out.push(item);
+  }
+  return out;
+}
+
+/**
+ * Normalize capture payload.
+ * omit `hasNumpad` → false; omit `ignoredMouseActions` → [].
+ * Legacy `captureScroll: false` → ensure `"scroll"` is ignored.
+ */
 export function normalizeCaptureSettings(
-  raw: Partial<CaptureSettings> | CaptureSettings,
+  raw: Partial<CaptureSettings> & { captureScroll?: boolean },
 ): CaptureSettings {
+  let ignoredMouseActions = normalizeIgnoredMouseActions(raw.ignoredMouseActions);
+  if (raw.captureScroll === false && !ignoredMouseActions.includes("scroll")) {
+    ignoredMouseActions = [...ignoredMouseActions, "scroll"];
+  }
   return {
     captureKeyboard: Boolean(raw.captureKeyboard),
     captureMouse: Boolean(raw.captureMouse),
     mouseClickRipple: Boolean(raw.mouseClickRipple),
     hasNumpad: raw.hasNumpad === true,
     ignoredKeyIds: Array.isArray(raw.ignoredKeyIds) ? [...raw.ignoredKeyIds] : [],
+    ignoredMouseActions,
   };
 }
 
@@ -264,6 +308,22 @@ export function isCaptureSettings(value: unknown): value is CaptureSettings {
   ) {
     return false;
   }
+  if (
+    s.ignoredMouseActions !== undefined &&
+    !Array.isArray(s.ignoredMouseActions)
+  ) {
+    return false;
+  }
+  if (
+    Array.isArray(s.ignoredMouseActions) &&
+    !s.ignoredMouseActions.every((id) => typeof id === "string")
+  ) {
+    return false;
+  }
+  // Legacy peer toggle still accepted so normalize can migrate.
+  if (s.captureScroll !== undefined && typeof s.captureScroll !== "boolean") {
+    return false;
+  }
   return true;
 }
 
@@ -282,6 +342,7 @@ export async function setCaptureSettings(
       mouseClickRipple: settings.mouseClickRipple,
       hasNumpad: settings.hasNumpad,
       ignoredKeyIds: settings.ignoredKeyIds,
+      ignoredMouseActions: settings.ignoredMouseActions,
     },
   });
   return normalizeCaptureSettings(saved);

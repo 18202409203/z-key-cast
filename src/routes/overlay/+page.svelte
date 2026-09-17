@@ -172,6 +172,8 @@
   statusActive={hud.statusActive}
   activeKeyIds={hud.activeKeyIds}
   mouseActiveButtons={hud.mouseActiveButtons}
+  scrollDirection={hud.scrollDirection}
+  scrollPulseNonce={hud.scrollPulseNonce}
   showKmGroup={hud.showKmGroup}
   showKeySide={hud.showKeySide}
   showMouseSide={hud.showMouseSide}
