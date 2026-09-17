@@ -3,7 +3,7 @@
   "name": "frontend-components-panels",
   "title": "Frontend components and panels MVP",
   "description": "",
-  "status": "in_progress",
+  "status": "completed",
   "dev_type": null,
   "scope": null,
   "package": null,
@@ -11,7 +11,7 @@
   "creator": "zhupengji",
   "assignee": "zhupengji",
   "createdAt": "2026-09-17",
-  "completedAt": null,
+  "completedAt": "2026-09-17",
   "branch": null,
   "base_branch": "main",
   "worktree_path": null,
@@ -21,6 +21,6 @@
   "children": [],
   "parent": "09-17-frontend-structure-refactor",
   "relatedFiles": [],
-  "notes": "",
+  "notes": "\nCommitted as 3e92216; ready to archive when wrapping up.",
   "meta": {}
 }

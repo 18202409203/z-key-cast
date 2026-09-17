@@ -1,1 +1,5 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend package index for overlay layout update"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Extend with $lib/overlay conventions"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "HudView vs components primitives boundary"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Keep cast/settings guards; no new wire types in overlay modules"}
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "Event/status/style channel contracts the route must still listen to"}

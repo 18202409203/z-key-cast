@@ -17,7 +17,8 @@ TypeScript (strict via SvelteKit) for the webviews. Shared wire types for Tauri 
 | Cast / hook wire types | `src/lib/cast.ts` (mirror Rust `src-tauri/src/input/event.rs`) |
 | Capture / HUD style invoke API | `src/lib/settings.ts` (mirror Rust `src-tauri/src/settings.rs`) |
 | Main-window panel UI state | `$lib/panels/*.svelte` (shell keeps `activeTab`, locale mirror, shared `logLines`) |
-| Overlay / ripple UI state | Colocated in the route `+page.svelte` |
+| Overlay HUD slots / timers | `$lib/overlay/hud-slots.svelte.ts` (route owns listen + locale/place) |
+| Ripple UI state | Colocated in `routes/ripple/+page.svelte` |
 
 See also: [Tauri Cast Events](../tauri/cast-events.md).
 

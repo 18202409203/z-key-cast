@@ -2,28 +2,34 @@
 
 ## Goal
 
-Split `src/routes/overlay/+page.svelte` so HUD presentation is easier to change without touching event/slot lifetime logic.
+Thin `src/routes/overlay/+page.svelte` (~590 lines) by separating HUD presentation and slot/timer logic from Tauri listen wiring—no intentional UX change.
 
-## Status
+## Background
 
-Deferred. Sibling of `09-17-frontend-components-panels`. **Do not start** until the MVP child is done (or explicitly reprioritized).
+- MVP archived: `$lib/components` + `$lib/panels` conventions live.
+- Overlay already uses `$lib/components` primitives; the route still owns slots, idle timers, held-sets, style/locale/place listen, and all markup.
+- **Decision:** option **B** — `$lib/overlay/` with `HudView` + rune module for slots/timers; `+page` keeps bootstrap/`listen` only.
 
-## Ordering
+## Requirements
 
-Depends on MVP conventions: prefer reusing `$lib/components` and the documented directory rules from the MVP child.
+- R1. Add `$lib/overlay/` (not `$lib/panels/`).
+- R2. Extract `HudView.svelte` — presentational HUD (place affordance, status chip, text/lite/full key+mouse layout, styles that belong to the view).
+- R3. Extract a Svelte 5 rune module (e.g. `hud-slots.svelte.ts`) for key/mouse slots, held-sets, idle timers, `showChip` / `showCaptureUnavailable` / style apply side effects needed by the view.
+- R4. `overlay/+page.svelte` owns: locale/style/place bootstrap, Tauri `listen`/`get*`, window drag in place mode, composing `HudView` from the rune module’s public state.
+- R5. Behavior parity: text/lite/full, idle clear, place mode, locale + style live channels, capture-unavailable status.
+- R6. Update `.trellis/spec/frontend/directory-structure.md` (and component guidelines if needed) for `$lib/overlay/`.
 
-## Requirements (draft — refine when opening)
+## Acceptance Criteria
 
-- R1. Separate overlay slot/timer/listen wiring from presentational markup (e.g. HUD view component and/or rune module).
-- R2. Behavior parity for presets (text/lite/full), place mode, locale, capture-unavailable status.
-- R3. Reuse shared components where appropriate; no intentional UX change.
-
-## Acceptance Criteria (draft)
-
-- [ ] Overlay route is primarily wiring; presentation lives in `$lib` modules/components.
-- [ ] Manual smoke: key/mouse HUD, idle clear, place mode, status chip.
+- [ ] AC1. Overlay route is primarily wiring + composition (target: well under half of ~590 lines, no full HUD markup blob).
+- [ ] AC2. Presentation in `$lib/overlay/HudView.svelte`; slot/timer logic in `$lib/overlay/*.svelte.ts` (or equivalent), not one inline script in the route.
+- [ ] AC3. Manual smoke: text/lite/full HUD, idle clear, place mode, status chip, live locale/style.
+- [ ] AC4. Directory spec documents `$lib/overlay/`.
 
 ## Out of scope
 
-- Main-window panel work (MVP child).
-- Product features (numpad toggle, scroll wheel, etc.).
+- Main-window panels (done).
+- Rust `settings.rs` split.
+- Product features (`design/03.md`).
+- Wrapping Tauri `listen` into a generic overlay helper (option C).
+- Visual redesign.
