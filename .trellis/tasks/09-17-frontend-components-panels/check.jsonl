@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend guideline index for structure/quality review"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Verify documented layout matches shipped folders"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Check extracted components follow project component rules"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Quality bar for refactor PR check"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Ensure panels still use cast/settings guards and APIs"}
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "Verify log/ignore-capture listeners still match channel contracts"}

@@ -16,7 +16,8 @@ TypeScript (strict via SvelteKit) for the webviews. Shared wire types for Tauri 
 |------|----------|
 | Cast / hook wire types | `src/lib/cast.ts` (mirror Rust `src-tauri/src/input/event.rs`) |
 | Capture / HUD style invoke API | `src/lib/settings.ts` (mirror Rust `src-tauri/src/settings.rs`) |
-| Route-local UI state | Colocated in `+page.svelte` |
+| Main-window panel UI state | `$lib/panels/*.svelte` (shell keeps `activeTab`, locale mirror, shared `logLines`) |
+| Overlay / ripple UI state | Colocated in the route `+page.svelte` |
 
 See also: [Tauri Cast Events](../tauri/cast-events.md).
 
@@ -32,7 +33,7 @@ See also: [Tauri Cast Events](../tauri/cast-events.md).
 - `mouseClickRipple` (omit → `false`) is a peer of `captureKeyboard` / `captureMouse`; Settings checkbox always visible under mouse listen; does not gate HUD mouse chips
 - Key-card / full-keyboard rendering uses `hudCards()` + layout `id`s from `$lib/cast.ts` / `$lib/keyboard-layout.ts`; do not invent labels in the overlay
 - Key-card / full-keyboard / text / schematic all use HUD `textColor` + `backgroundColor`/`backgroundOpacity` (presets Black/White or custom)
-- `MouseSchematic` is a cropped pebble mouse-head (`src/lib/MouseSchematic.svelte`); resting body uses HUD `backgroundColor`/`backgroundOpacity` (same as keycaps); pressed L/R/wheel fills with `textColor` via `activeButtons` (multi-button OK). Do not evenodd-punch wheel wells — the overlay is transparent, so holes show the desktop
+- `MouseSchematic` is a cropped pebble mouse-head (`src/lib/components/MouseSchematic.svelte`); resting body uses HUD `backgroundColor`/`backgroundOpacity` (same as keycaps); pressed L/R/wheel fills with `textColor` via `activeButtons` (multi-button OK). Do not evenodd-punch wheel wells — the overlay is transparent, so holes show the desktop
 - Legend layout preference: `keyboardLegendLayout` `auto|mac-us|win-us` (OS guess when auto). Prefer keycap glyphs (`↵`/`⌫`/`⌦`/`⇥`/`⇧`); Caps uses text `Caps` (not `⇪` — too similar to Shift `⇧` at HUD sizes). Word labels Title Case. `NumLock` legend is `Clr` (mac-us) / `Num` (win-us). Enter mark is unified as `↵` (U+21B5), not `⏎`. Meta Text/Log glyphs: `⌘` (mac-us) / `Win` (win-us) via `displayLabelForKeyId` — never read a payload `label`.
 - `KeyRef` wire type is `{ id: string }` only; `isKeyRef` / `isIgnoreKeyCaptured` require `id`; all HUD/Log/ignore display strings come from id + resolved legend layout.
 - Key/mouse relative arrangement: `keyMouseLayout` (`key-left-mouse-right` default; also `key-right-mouse-left`, `key-top-mouse-bottom`, `key-bottom-mouse-top`). Overlay keeps stable key→mouse DOM and uses CSS `flex-direction`/`order`; omit field → normalize/default. Do not mirror by HUD dock corner.

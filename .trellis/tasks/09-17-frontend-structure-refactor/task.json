@@ -1,0 +1,30 @@
+{
+  "id": "frontend-structure-refactor",
+  "name": "frontend-structure-refactor",
+  "title": "Frontend structure refactor",
+  "description": "",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "zhupengji",
+  "assignee": "zhupengji",
+  "createdAt": "2026-09-17",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "09-17-frontend-components-panels",
+    "09-17-overlay-structure-split",
+    "09-17-rust-settings-split"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend package index and guideline map for structure refactor"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Target doc to fill with components/panels layout conventions"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Component patterns to align Tabs/Segmented/panels extraction"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Wire types stay in $lib/*.ts; panels must not redefine cast/settings contracts"}
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "Event channel contracts Log/Capture panels must keep listening correctly"}

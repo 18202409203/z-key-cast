@@ -188,7 +188,7 @@ void listen(EVENT_CHANNEL, (event) => {
 
 - **Decision**: Flat persisted `ignoredKeyIds`; runtime `HashSet` lookup; `filter_key_chip` drops ignored primaries and strips ignored mods; category presets expand on the frontend only
 - **Add-key capture**: Arm via command; next key/mod down emits `cast://ignore-key-captured` (`{ id }`) and suppresses that raw’s `cast://event`; Cancel disarms; Escape is data
-- **Capture UI (frontend only)**: Shared `$lib/KeyboardMap.svelte` — Overlay is display-only (`activeIds` / `.key.active`); Capture uses `interactive` + muted `.key.ignored` click-toggle. Main ignore path is board click; **Add key** discovers ids not in `LAYOUT_KEY_IDS`; under-board list shows only that off-board set difference. Do not reuse `.active` for ignore state. Rust contract unchanged.
+- **Capture UI (frontend only)**: Shared `$lib/components/KeyboardMap.svelte` — Overlay is display-only (`activeIds` / `.key.active`); Capture uses `interactive` + muted `.key.ignored` click-toggle. Main ignore path is board click; **Add key** discovers ids not in `LAYOUT_KEY_IDS`; under-board list shows only that off-board set difference. Do not reuse `.active` for ignore state. Rust contract unchanged.
 - **Forbidden**: Skipping `reduce` while armed; using Escape to cancel; wiping non-category ids when a category is unchecked
 
 ### HUD style settings
