@@ -24,12 +24,16 @@
       : `Mouse ${[...active].join(" ")}`,
   );
 
+  /** Stable per-instance id so multiple mice don't share one clipPath. */
+  const clipId = `ms-body-${crypto.randomUUID().slice(0, 8)}`;
+
   const body =
     "M8 25C8 12.2 20.5 5.2 40 5.2C59.5 5.2 72 12.2 72 25C72 33.2 71.6 39.4 67.6 44.2C63.4 49.2 52.8 51.2 40 51.2C27.2 51.2 16.6 49.2 12.4 44.2C8.4 39.4 8 33.2 8 25Z";
 </script>
 
 <div
   class="mouse-wrap"
+  class:lit={active.size > 0}
   style:--m-fg={textColor}
   style:--m-bg={backgroundCss}
   aria-label={ariaLabel}
@@ -42,26 +46,29 @@
     role="img"
   >
     <defs>
-      <clipPath id="ms-body">
+      <clipPath id={clipId}>
         <path d={body} />
       </clipPath>
     </defs>
 
-    <g clip-path="url(#ms-body)">
+    <!-- One shell fill: abutting translucent halves left a hairline gap on light desktops. -->
+    <path class="shell" d={body} />
+
+    <g clip-path={`url(#${clipId})`}>
       <rect
-        class="btn"
+        class="press"
         class:active={active.has("left")}
         x="0"
         y="0"
-        width="40"
+        width="40.5"
         height="56"
       />
       <rect
-        class="btn"
+        class="press"
         class:active={active.has("right")}
-        x="40"
+        x="39.5"
         y="0"
-        width="40"
+        width="40.5"
         height="56"
       />
     </g>
@@ -72,7 +79,7 @@
 
     <rect class="well" x="35.05" y="10.9" width="9.9" height="22.6" rx="4.95" />
     <rect
-      class="btn wheel"
+      class="press wheel"
       class:active={active.has("middle")}
       x="36.2"
       y="12.1"
@@ -100,50 +107,64 @@
     overflow: visible;
   }
 
-  /* Resting body = same mix as KeyboardMap .key; press = textColor. */
-  .btn {
+  /* Resting fill matches KeyboardMap .key. */
+  .shell {
     fill: color-mix(in srgb, var(--m-bg) 58%, transparent);
     stroke: none;
-    transition: fill 140ms ease;
   }
 
-  .btn.active {
+  .press {
+    fill: transparent;
+    stroke: none;
+    transition:
+      fill 120ms ease,
+      filter 120ms ease;
+  }
+
+  .press.active {
     fill: var(--m-fg);
+    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--m-fg) 55%, transparent));
   }
 
   .outline {
     fill: none;
-    stroke: color-mix(in srgb, var(--m-fg) 32%, transparent);
-    stroke-width: 1.65;
+    stroke: color-mix(in srgb, var(--m-fg) 16%, transparent);
+    stroke-width: 1;
     stroke-linejoin: round;
     stroke-linecap: round;
+    transition: stroke 120ms ease;
+  }
+
+  .mouse-wrap.lit .outline {
+    stroke: color-mix(in srgb, var(--m-fg) 35%, transparent);
   }
 
   .seam {
-    stroke: color-mix(in srgb, var(--m-fg) 22%, transparent);
-    stroke-width: 1.15;
+    stroke: color-mix(in srgb, var(--m-fg) 16%, transparent);
+    stroke-width: 1;
     stroke-linecap: round;
   }
 
   .well {
-    fill: color-mix(in srgb, var(--m-bg) 72%, var(--m-fg) 10%);
+    fill: color-mix(in srgb, var(--m-bg) 42%, transparent);
     stroke: none;
   }
 
   .wheel {
-    fill: color-mix(in srgb, var(--m-bg) 78%, var(--m-fg) 10%);
-    stroke: color-mix(in srgb, var(--m-fg) 32%, transparent);
-    stroke-width: 1.45;
+    fill: color-mix(in srgb, var(--m-bg) 58%, transparent);
+    stroke: color-mix(in srgb, var(--m-fg) 16%, transparent);
+    stroke-width: 1;
   }
 
   .wheel.active {
     fill: var(--m-fg);
-    stroke: var(--m-fg);
+    stroke: color-mix(in srgb, var(--m-fg) 35%, transparent);
+    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--m-fg) 55%, transparent));
   }
 
   .ticks {
-    stroke: color-mix(in srgb, var(--m-fg) 58%, transparent);
-    stroke-width: 1.1;
+    stroke: color-mix(in srgb, var(--m-fg) 55%, transparent);
+    stroke-width: 1;
     stroke-linecap: round;
   }
 
