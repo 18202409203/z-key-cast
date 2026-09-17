@@ -64,14 +64,12 @@ const en = {
     "How long Text/Lite chips stay after input before fading (200–5000)",
 
   "settings.capture": "Capture",
-  "settings.hookActive": "Input hook is active.",
-  "settings.hookFailedMac":
-    "Input hook failed — enable Accessibility permission for this app in System Settings, then fully restart the app.",
-  "settings.hookFailedWin":
-    "Input hook failed — the low-level keyboard/mouse hook could not be installed. Restart the app. Capturing elevated (Administrator) apps may require running as Administrator; normal apps do not need elevation.",
-  "settings.hookFailedOther":
-    "Input hook failed — this platform is not supported yet.",
-  "settings.hookWaiting": "Waiting for hook status…",
+  "settings.captureFailedMac":
+    "Can't listen to the keyboard and mouse yet. Open System Settings → Privacy & Security → Accessibility, enable this app, then quit and reopen it.",
+  "settings.captureFailedWin":
+    "Can't listen to the keyboard and mouse. Restart the app. Capturing input from apps that run as Administrator may require running this app as Administrator too.",
+  "settings.captureFailedOther":
+    "Keyboard and mouse capture isn't available on this platform yet.",
   "settings.listenKeyboard": "Listen to keyboard",
   "settings.listenMouse": "Listen to mouse",
   "settings.mouseClickRipple": "Click ripple (primary screen)",
@@ -100,8 +98,7 @@ const en = {
   "log.clear": "Clear",
   "log.empty": "No events yet.",
 
-  "overlay.hookOffline": "Hook offline · {reason}",
-  "overlay.denied": "denied",
+  "overlay.captureUnavailable": "Can't capture keyboard & mouse — check system permissions",
   "overlay.placeAffordance": "Drag to move · Done in Settings",
   "overlay.placeAria": "HUD place mode — drag to move",
   "overlay.hudAria": "Key cast HUD",
@@ -165,13 +162,11 @@ const zh: Record<MessageKey, string> = {
     "文本/精简模式下，输入后芯片停留多久再淡出（200–5000）",
 
   "settings.capture": "捕获",
-  "settings.hookActive": "输入钩子已启用。",
-  "settings.hookFailedMac":
-    "输入钩子失败 — 请在系统设置中为本应用开启辅助功能权限，然后完全退出并重新打开应用。",
-  "settings.hookFailedWin":
-    "输入钩子失败 — 无法安装底层键盘/鼠标钩子。请重启应用。捕获以管理员运行的应用可能需要以管理员身份运行本应用；普通应用无需提权。",
-  "settings.hookFailedOther": "输入钩子失败 — 当前平台暂不支持。",
-  "settings.hookWaiting": "正在等待钩子状态…",
+  "settings.captureFailedMac":
+    "还不能监听键盘和鼠标。请打开「系统设置 → 隐私与安全性 → 辅助功能」，开启本应用权限，然后完全退出并重新打开应用。",
+  "settings.captureFailedWin":
+    "无法监听键盘和鼠标。请重启应用。若要捕获以管理员身份运行的应用，可能需要以管理员身份运行本应用。",
+  "settings.captureFailedOther": "当前平台暂不支持键盘和鼠标捕获。",
   "settings.listenKeyboard": "监听键盘",
   "settings.listenMouse": "监听鼠标",
   "settings.mouseClickRipple": "点击涟漪（主屏）",
@@ -200,8 +195,7 @@ const zh: Record<MessageKey, string> = {
   "log.clear": "清除",
   "log.empty": "暂无事件。",
 
-  "overlay.hookOffline": "钩子离线 · {reason}",
-  "overlay.denied": "已拒绝",
+  "overlay.captureUnavailable": "无法捕获键盘和鼠标 — 请检查系统权限",
   "overlay.placeAffordance": "拖动以移动 · 在设置中完成",
   "overlay.placeAria": "HUD 定位模式 — 拖动以移动",
   "overlay.hudAria": "按键投射 HUD",

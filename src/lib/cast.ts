@@ -1,5 +1,6 @@
 /** Wire contract — keep aligned with `design/index.md` and Rust `input/event.rs`. */
 
+import { invoke } from "@tauri-apps/api/core";
 import {
   displayLabelForKeyId,
   type KeyboardLegendLayoutId,
@@ -144,4 +145,11 @@ export function summarizeHookStatus(status: HookStatus): string {
     return "hook-status: ok";
   }
   return `hook-status: failed (${status.reason ?? "unknown"})`;
+}
+
+/** Last cached emit — catches missed one-shot `cast://hook-status` after HMR / late subscribe. */
+export async function getHookStatus(): Promise<HookStatus | null> {
+  const raw = await invoke<unknown>("get_hook_status");
+  if (raw == null) return null;
+  return isHookStatus(raw) ? raw : null;
 }

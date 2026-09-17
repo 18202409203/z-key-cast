@@ -102,6 +102,7 @@ export function formatHudLabel(chip: HudChip, legendLayout?: KeyboardLegendLayou
 
 | Command | Args | Returns | Notes |
 |---------|------|---------|-------|
+| `get_hook_status` | — | `HookStatus \| null` | Last emitted hook status (null until first emit). Late subscribers / HMR use this after `listen(cast://hook-status)` |
 | `get_capture_settings` | — | `CaptureSettings` | Reads process atomics + ignored-id list (loaded from `app_config_dir/settings.json` at setup) |
 | `set_capture_settings` | `{ settings: CaptureSettings }` | `CaptureSettings` | Apply runtime **then** persist; dedupe `ignoredKeyIds` (preserve order, drop empties); sync ripple window show/hide; on disk failure revert and return `Err` |
 | `arm_ignore_key_capture` | — | — | Arm next key/mod down for ignore list |
@@ -223,7 +224,7 @@ void listen(EVENT_CHANNEL, (event) => {
 - **Commands**: `get_ui_locale_settings` → `Option<"en"|"zh">`; `set_ui_locale_settings` → persist + emit
 - **Channel**: `cast://ui-locale` → `{ locale: "en" | "zh" }` so overlay hot-updates status/place chrome
 - **Boot**: if unset, frontend guesses from `navigator.language` (`zh*` → `zh`, else `en`) and persists once; user choice then sticks
-- **Scope**: main Settings/Log/About + overlay status/place strings via `$lib/i18n` `t()`; do **not** translate `HudChip.id` or `summarizeHudChip` log lines; Capture hook-failed copy is platform-specific (`settings.hookFailedMac` / `hookFailedWin` / `hookFailedOther`)
+- **Scope**: main Settings/Log/About + overlay status/place strings via `$lib/i18n` `t()`; do **not** translate `HudChip.id` or `summarizeHudChip` log lines; Capture failure copy is user-facing and platform-specific (`settings.captureFailedMac` / `captureFailedWin` / `captureFailedOther`); success/waiting hook status stays in the Log tab only (`summarizeHookStatus`)
 
 ### Mods encoding
 

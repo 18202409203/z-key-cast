@@ -6,6 +6,7 @@
     EVENT_CHANNEL,
     HOOK_STATUS_CHANNEL,
     IGNORE_KEY_CAPTURED_CHANNEL,
+    getHookStatus,
     isHookStatus,
     isHudChip,
     isIgnoreKeyCaptured,
@@ -159,12 +160,12 @@
     );
   }
 
-  const hookFailedMessage = $derived(
+  const captureFailedMessage = $derived(
     isMacHost()
-      ? t("settings.hookFailedMac", locale)
+      ? t("settings.captureFailedMac", locale)
       : isWindowsHost()
-        ? t("settings.hookFailedWin", locale)
-        : t("settings.hookFailedOther", locale),
+        ? t("settings.captureFailedWin", locale)
+        : t("settings.captureFailedOther", locale),
   );
 
   function isNearBottom(el: HTMLDivElement) {
@@ -611,6 +612,12 @@
         }
         unsubs.push(unlistenStatus);
 
+        const cachedStatus = await getHookStatus();
+        if (!cancelled && cachedStatus && hookOk === null) {
+          hookOk = cachedStatus.ok;
+          appendLog(summarizeHookStatus(cachedStatus));
+        }
+
         const unlistenEvent = await listen(EVENT_CHANNEL, (event) => {
           if (!isHudChip(event.payload)) return;
           appendLog(summarizeHudChip(event.payload, ignoreBoardLegendLayout));
@@ -994,19 +1001,9 @@
       >
         <section>
           <h2>{t("settings.capture", locale)}</h2>
-          <p
-            class="muted"
-            class:ok={hookOk === true}
-            class:error={hookOk === false}
-          >
-            {#if hookOk === true}
-              {t("settings.hookActive", locale)}
-            {:else if hookOk === false}
-              {hookFailedMessage}
-            {:else}
-              {t("settings.hookWaiting", locale)}
-            {/if}
-          </p>
+          {#if hookOk === false}
+            <p class="muted error">{captureFailedMessage}</p>
+          {/if}
           <div class="field field-toggle">
             <input
               id="capture-keyboard"
@@ -1491,10 +1488,6 @@
     margin: 0;
     color: #94a3b8;
     font-size: 14px;
-  }
-
-  .muted.ok {
-    color: #86efac;
   }
 
   .muted.error {

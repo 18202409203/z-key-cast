@@ -12,6 +12,7 @@
     "core:window:allow-current-monitor",
     "core:window:allow-start-dragging",
     "opener:default",
+    "allow-get-hook-status",
     "allow-get-capture-settings",
     "allow-set-capture-settings",
     "allow-arm-ignore-key-capture",

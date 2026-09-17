@@ -17,7 +17,28 @@ pub use event::{
     HOOK_STATUS_CHANNEL, IGNORE_KEY_CAPTURED_CHANNEL, MOUSE_RIPPLE_CHANNEL,
 };
 
-use tauri::AppHandle;
+use std::sync::Mutex;
+
+use tauri::{AppHandle, Emitter};
+
+/// Last emitted hook status — webviews that subscribe late (HMR / slow load) can query it.
+static LAST_HOOK_STATUS: Mutex<Option<HookStatus>> = Mutex::new(None);
+
+/// Persist then broadcast so Settings/Overlay can catch up after a missed one-shot emit.
+pub(crate) fn emit_hook_status(app: &AppHandle, status: HookStatus) {
+    if let Ok(mut guard) = LAST_HOOK_STATUS.lock() {
+        *guard = Some(status.clone());
+    }
+    let _ = app.emit(HOOK_STATUS_CHANNEL, status);
+}
+
+#[tauri::command]
+pub fn get_hook_status() -> Option<HookStatus> {
+    LAST_HOOK_STATUS
+        .lock()
+        .ok()
+        .and_then(|guard| guard.clone())
+}
 
 /// Start the platform input hook (macOS CGEventTap; Windows LL hooks; stub elsewhere).
 pub fn start(app: AppHandle) {

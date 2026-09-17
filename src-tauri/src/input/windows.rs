@@ -26,9 +26,9 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 
 use super::chip::ChipReducer;
+use super::emit_hook_status;
 use super::event::{
-    HookStatus, KeyRef, MouseButton, Phase, RawInput, EVENT_CHANNEL, HOOK_STATUS_CHANNEL,
-    IGNORE_KEY_CAPTURED_CHANNEL,
+    HookStatus, KeyRef, MouseButton, Phase, RawInput, EVENT_CHANNEL, IGNORE_KEY_CAPTURED_CHANNEL,
 };
 use super::filter::EventFilter;
 use crate::settings;
@@ -55,7 +55,7 @@ pub fn start(app: AppHandle) {
                     "[z-key-cast] input hook failed: {}",
                     status.reason.as_deref().unwrap_or("unknown")
                 );
-                let _ = app.emit(HOOK_STATUS_CHANNEL, status);
+                emit_hook_status(&app, status);
             }
         })
         .expect("failed to spawn input hook thread");
@@ -94,7 +94,7 @@ fn run_hooks(app: AppHandle) -> Result<(), HookStatus> {
             *guard = Some(mouse);
         }
 
-        let _ = app.emit(HOOK_STATUS_CHANNEL, HookStatus::ok());
+        emit_hook_status(&app, HookStatus::ok());
         eprintln!("[z-key-cast] input hook started (WH_*_LL)");
 
         let mut msg = MSG::default();

@@ -11,9 +11,10 @@ use core_graphics::event::{
 use tauri::{AppHandle, Emitter, Manager};
 
 use super::chip::{modifier_transition, ChipReducer};
+use super::emit_hook_status;
 use super::event::{
     HookStatus, KeyRef, MouseButton, MouseRippleEvent, Phase, RawInput, EVENT_CHANNEL,
-    HOOK_STATUS_CHANNEL, IGNORE_KEY_CAPTURED_CHANNEL, MOUSE_RIPPLE_CHANNEL,
+    IGNORE_KEY_CAPTURED_CHANNEL, MOUSE_RIPPLE_CHANNEL,
 };
 use super::filter::EventFilter;
 use crate::settings;
@@ -28,7 +29,7 @@ pub fn start(app: AppHandle) {
                     "[z-key-cast] input hook failed: {}",
                     status.reason.as_deref().unwrap_or("unknown")
                 );
-                let _ = app.emit(HOOK_STATUS_CHANNEL, status);
+                emit_hook_status(&app, status);
             }
         })
         .expect("failed to spawn input hook thread");
@@ -125,7 +126,7 @@ fn run_tap(app: AppHandle) -> Result<(), HookStatus> {
         current.add_source(&loop_source, kCFRunLoopCommonModes);
         tap.enable();
 
-        let _ = app.emit(HOOK_STATUS_CHANNEL, HookStatus::ok());
+        emit_hook_status(&app, HookStatus::ok());
         eprintln!("[z-key-cast] input hook started (CGEventTap)");
 
         CFRunLoop::run_current();

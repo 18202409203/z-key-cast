@@ -16,6 +16,7 @@
     EVENT_CHANNEL,
     HOOK_STATUS_CHANNEL,
     formatHudLabel,
+    getHookStatus,
     hudCards,
     isHookStatus,
     isHudChip,
@@ -53,10 +54,8 @@
   let mouseSlot = $state<MouseChip | null>(null);
   let heldKeyIds = $state<Set<string>>(new Set());
   let heldMouseButtons = $state<Set<MouseButton>>(new Set());
-  /** When true, overlay shows hook-offline status (re-translated on locale change). */
+  /** When true, overlay shows capture-unavailable status (re-translated on locale change). */
   let statusActive = $state(false);
-  /** Raw reason code; `null` while active → localized "denied" fallback. */
-  let statusReason = $state<string | null>(null);
   let style = $state<HudStyleSettings>({ ...DEFAULT_HUD_STYLE });
   let placeMode = $state(false);
   let locale = $state<UiLocale>("en");
@@ -65,11 +64,7 @@
   let statusIdleTimer: ReturnType<typeof setTimeout> | null = null;
 
   const statusText = $derived(
-    statusActive
-      ? t("overlay.hookOffline", locale, {
-          reason: statusReason ?? t("overlay.denied", locale),
-        })
-      : null,
+    statusActive ? t("overlay.captureUnavailable", locale) : null,
   );
 
   const legendLayout = $derived(
@@ -170,7 +165,6 @@
 
   function clearStatus() {
     statusActive = false;
-    statusReason = null;
   }
 
   function armStatusIdle() {
@@ -245,15 +239,13 @@
     armMouseIdle();
   }
 
-  function showHookOffline(reason: string | undefined) {
+  function showCaptureUnavailable() {
     keySlot = null;
     mouseSlot = null;
     clearHeldSets();
     clearKeyIdleTimer();
     clearMouseIdleTimer();
     statusActive = true;
-    statusReason =
-      reason === undefined || reason === "" ? null : reason;
     armStatusIdle();
   }
 
@@ -354,7 +346,7 @@
       const unlistenStatus = await listen(HOOK_STATUS_CHANNEL, (event) => {
         if (!isHookStatus(event.payload)) return;
         if (!event.payload.ok) {
-          showHookOffline(event.payload.reason);
+          showCaptureUnavailable();
         }
       });
       if (cancelled) {
@@ -362,6 +354,11 @@
         return;
       }
       unsubs.push(unlistenStatus);
+
+      const cachedStatus = await getHookStatus();
+      if (!cancelled && cachedStatus && !cachedStatus.ok) {
+        showCaptureUnavailable();
+      }
     })();
 
     return () => {

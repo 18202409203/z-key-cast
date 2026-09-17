@@ -1,4 +1,9 @@
 [[permission]]
+identifier = "allow-get-hook-status"
+description = "Allows reading the last emitted input-hook status"
+commands.allow = ["get_hook_status"]
+
+[[permission]]
 identifier = "allow-get-capture-settings"
 description = "Allows reading keyboard/mouse capture toggles"
 commands.allow = ["get_capture_settings"]

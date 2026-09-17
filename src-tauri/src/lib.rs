@@ -8,6 +8,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
+            input::get_hook_status,
             settings::get_capture_settings,
             settings::set_capture_settings,
             settings::arm_ignore_key_capture,
