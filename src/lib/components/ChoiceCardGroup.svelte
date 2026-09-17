@@ -58,19 +58,27 @@
           <svg viewBox="0 0 64 40" width="56" height="35">
             <rect
               class="stroke fill"
-              x="8"
-              y="14"
-              width="48"
-              height="12"
+              x="6"
+              y="12"
+              width="52"
+              height="16"
               rx="4"
             />
+            <text
+              class="glyph"
+              x="32"
+              y="20"
+              text-anchor="middle"
+              dominant-baseline="central">QWER</text
+            >
           </svg>
         {:else if item.schematic === "hud-lite"}
           <svg viewBox="0 0 64 40" width="56" height="35">
             <rect class="stroke fill" x="6" y="12" width="14" height="14" rx="3" />
             <rect class="stroke fill" x="24" y="12" width="14" height="14" rx="3" />
             <ellipse class="stroke fill" cx="52" cy="20" rx="7" ry="11" />
-            <line class="stroke" x1="52" y1="12" x2="52" y2="28" />
+            <!-- button seam: upper half only -->
+            <line class="stroke" x1="52" y1="11" x2="52" y2="19" />
           </svg>
         {:else if item.schematic === "hud-full"}
           <svg viewBox="0 0 64 40" width="56" height="35">
@@ -78,30 +86,30 @@
             <line class="stroke" x1="10" y1="16" x2="34" y2="16" />
             <line class="stroke" x1="10" y1="22" x2="34" y2="22" />
             <ellipse class="stroke fill" cx="52" cy="20" rx="7" ry="11" />
-            <line class="stroke" x1="52" y1="12" x2="52" y2="28" />
+            <line class="stroke" x1="52" y1="11" x2="52" y2="19" />
           </svg>
         {:else if item.schematic === "km-klmr"}
           <svg viewBox="0 0 64 40" width="56" height="35">
             <rect class="stroke fill" x="6" y="12" width="28" height="16" rx="2" />
             <ellipse class="stroke fill" cx="50" cy="20" rx="7" ry="11" />
-            <line class="stroke" x1="50" y1="12" x2="50" y2="28" />
+            <line class="stroke" x1="50" y1="11" x2="50" y2="19" />
           </svg>
         {:else if item.schematic === "km-krml"}
           <svg viewBox="0 0 64 40" width="56" height="35">
             <ellipse class="stroke fill" cx="14" cy="20" rx="7" ry="11" />
-            <line class="stroke" x1="14" y1="12" x2="14" y2="28" />
+            <line class="stroke" x1="14" y1="11" x2="14" y2="19" />
             <rect class="stroke fill" x="30" y="12" width="28" height="16" rx="2" />
           </svg>
         {:else if item.schematic === "km-ktmb"}
           <svg viewBox="0 0 64 40" width="56" height="35">
             <rect class="stroke fill" x="14" y="4" width="36" height="14" rx="2" />
             <ellipse class="stroke fill" cx="32" cy="30" rx="8" ry="6" />
-            <line class="stroke" x1="32" y1="26" x2="32" y2="34" />
+            <line class="stroke" x1="32" y1="25" x2="32" y2="30" />
           </svg>
         {:else}
           <svg viewBox="0 0 64 40" width="56" height="35">
             <ellipse class="stroke fill" cx="32" cy="10" rx="8" ry="6" />
-            <line class="stroke" x1="32" y1="6" x2="32" y2="14" />
+            <line class="stroke" x1="32" y1="5" x2="32" y2="10" />
             <rect class="stroke fill" x="14" y="22" width="36" height="14" rx="2" />
           </svg>
         {/if}
@@ -168,12 +176,24 @@
     fill: color-mix(in srgb, #94a3b8 12%, transparent);
   }
 
+  .schematic .glyph {
+    fill: #94a3b8;
+    font-size: 8px;
+    font-weight: 700;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.12em;
+  }
+
   .choice-card:has(input:checked) .schematic .stroke {
     stroke: #7dd3fc;
   }
 
   .choice-card:has(input:checked) .schematic .fill {
     fill: color-mix(in srgb, #38bdf8 16%, transparent);
+  }
+
+  .choice-card:has(input:checked) .schematic .glyph {
+    fill: #7dd3fc;
   }
 
   .choice-label {
