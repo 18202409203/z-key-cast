@@ -88,3 +88,33 @@
   - refactor(ui): extract components and panels
   - style(hud): drop full-board cast shadows
 
+
+## 1.4.0 (2026-09-18)
+
+### Features
+
+  - anchor overlay content to position corner
+  - unify settings panels with grouped form chrome
+  - add Text/Lite timelineMax setting
+  - defer Text/Lite modifier chords
+  - Text/Lite shared operation timeline
+  - scroll pulse and mouse ignore actions
+  - optional numpad board, default off
+  - schematic cards for preset and layout
+
+### Bug Fixes
+
+  - lock Text/Lite timeline to LTR right-enter
+  - clear Text scroll-up arrow from wheel line
+  - restore preset schematic morphs
+  - tighten schematic mouse seam and text glyph
+
+### Other
+
+  - style(hud): drop Text/Lite cast shadows
+  - docs(spec): release-kit owns CHANGELOG
+  - docs(task): restore out-of-scope header on archived design/03 PRD
+  - docs(task): close design/03 HUD UX backlog acceptance
+  - docs(task): mark text-key-queue archived in design/03 map
+  - docs(task): mark scroll-wheel-hud archived in design/03 map
+
