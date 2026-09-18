@@ -582,3 +582,28 @@ Added configurable Text/Lite timelineMax (1–10, default 5, trim on shrink). Ar
 ### Next Steps
 
 - None - task complete
+
+## 2026-09-18 — form chrome + HUD corner + LTR timeline
+
+**Branch**: `main`
+
+### Summary
+
+Delivered macOS-style settings form chrome, HUD content corner anchoring, then locked Text/Lite timeline to fixed LTR right-enter (dropped timelineGrow). Archived three tasks.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5b89b3a` | feat(ui): unify settings panels with grouped form chrome |
+| `632fe1c` | feat(hud): anchor overlay content to position corner |
+| `cd1177a` | fix(hud): lock Text/Lite timeline to LTR right-enter |
+
+### Status
+
+[OK] **Completed** — form-section-hierarchy, hud-corner-anchor, timeline-grow-direction archived.
+
+### Next Steps
+
+- Optional: custom-mode content-corner picker (方案 C)
+
