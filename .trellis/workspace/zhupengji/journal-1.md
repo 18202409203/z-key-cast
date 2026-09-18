@@ -607,3 +607,36 @@ Delivered macOS-style settings form chrome, HUD content corner anchoring, then l
 
 - Optional: custom-mode content-corner picker (方案 C)
 
+
+
+## Session 16: Main window appearance
+
+**Date**: 2026-09-18
+**Task**: Main window appearance
+**Branch**: `main`
+
+### Summary
+
+Persisted system/dark/light main chrome with flat tokens and page→inset→control depth ladder; Settings→Appearance; Theme+Position under HUD; specs for uiAppearance.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c2ed29d` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
