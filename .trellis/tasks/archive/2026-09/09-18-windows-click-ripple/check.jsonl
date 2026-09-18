@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/tauri/index.md", "reason": "Quality Check must flip Win ripple emit; Linux still stub"}
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "Verify platform emit wording + MouseRippleEvent unchanged"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Confirm no HudChip coord leak; channel alignment"}
+{"file": ".trellis/tasks/09-18-windows-click-ripple/prd.md", "reason": "AC1–AC5 agent; AC6 owner smoke"}
+{"file": ".trellis/tasks/09-18-windows-click-ripple/design.md", "reason": "Coord/DPI and emit-only boundary for review"}

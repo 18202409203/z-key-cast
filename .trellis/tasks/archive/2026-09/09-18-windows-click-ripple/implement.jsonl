@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/tauri/index.md", "reason": "Pre-dev + Quality Check: Win hooks location; ripple peer toggle; currently forbids Win ripple emit until this task"}
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "MouseRippleEvent contract, channel, macOS-only emit note to update"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "MOUSE_RIPPLE_CHANNEL / isMouseRippleEvent / no coords on HudChip"}
+{"file": ".trellis/tasks/09-18-windows-click-ripple/design.md", "reason": "Win pt→CSS mapping, emit placement, DPI"}
+{"file": ".trellis/tasks/archive/2026-09/09-16-mouse-click-ripple/design.md", "reason": "Original ripple window/channel contract to mirror"}
