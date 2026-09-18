@@ -62,76 +62,169 @@
         onchange={() => onChange?.(item.value)}
       />
       <span class="schematic-frame">
-        <span
-          class="schematic"
-          class:schematic--bleed={item.schematic.startsWith("appearance-")}
-          aria-hidden="true"
-        >
+        <span class="schematic schematic--bleed" aria-hidden="true">
           {#if item.schematic === "hud-text"}
-            <svg viewBox="0 0 64 40" preserveAspectRatio="xMidYMid meet">
-              <rect class="stroke fill" x="8" y="13" width="14" height="14" rx="3" />
+            <!-- Full-bleed HUD chips: bg #1c1c1e, keys #636366 for contrast. -->
+            <svg viewBox="0 0 80 56" preserveAspectRatio="xMidYMid slice">
+              <rect width="80" height="56" fill="#1c1c1e" />
+              <rect x="8" y="18" width="18" height="20" rx="4" fill="#0a84ff" />
+              <rect x="31" y="18" width="18" height="20" rx="4" fill="#636366" />
+              <rect x="54" y="18" width="18" height="20" rx="4" fill="#636366" />
               <text
-                class="glyph"
-                x="15"
-                y="20"
+                x="17"
+                y="28"
                 text-anchor="middle"
-                dominant-baseline="central">Q</text
+                dominant-baseline="central"
+                fill="#ffffff"
+                font-size="9"
+                font-weight="700"
+                font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
+                >Q</text
               >
-              <rect class="stroke fill" x="25" y="13" width="14" height="14" rx="3" />
               <text
-                class="glyph"
-                x="32"
-                y="20"
+                x="40"
+                y="28"
                 text-anchor="middle"
-                dominant-baseline="central">W</text
+                dominant-baseline="central"
+                fill="#f2f2f7"
+                font-size="9"
+                font-weight="700"
+                font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
+                >W</text
               >
-              <rect class="stroke fill" x="42" y="13" width="14" height="14" rx="3" />
               <text
-                class="glyph"
-                x="49"
-                y="20"
+                x="63"
+                y="28"
                 text-anchor="middle"
-                dominant-baseline="central">E</text
+                dominant-baseline="central"
+                fill="#f2f2f7"
+                font-size="9"
+                font-weight="700"
+                font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
+                >E</text
               >
             </svg>
           {:else if item.schematic === "hud-lite"}
-            <svg viewBox="0 0 64 40" preserveAspectRatio="xMidYMid meet">
-              <rect class="stroke fill" x="8" y="13" width="14" height="14" rx="3" />
-              <rect class="stroke fill" x="26" y="13" width="14" height="14" rx="3" />
-              <ellipse class="stroke fill" cx="52" cy="20" rx="5" ry="7" />
-              <line class="stroke" x1="52" y1="14" x2="52" y2="19" />
+            <svg viewBox="0 0 80 56" preserveAspectRatio="xMidYMid slice">
+              <rect width="80" height="56" fill="#1c1c1e" />
+              <rect x="8" y="18" width="18" height="20" rx="4" fill="#0a84ff" />
+              <rect x="30" y="18" width="18" height="20" rx="4" fill="#636366" />
+              <!-- mouse: squat body + seam + wheel (no tread) -->
+              <rect x="51" y="22" width="18" height="12" rx="5" fill="#636366" />
+              <line
+                x1="60"
+                y1="24"
+                x2="60"
+                y2="32"
+                stroke="#2c2c2e"
+                stroke-width="1.25"
+                stroke-linecap="round"
+              />
+              <rect x="58.5" y="23.5" width="3" height="7" rx="1.5" fill="#aeaeb2" />
             </svg>
           {:else if item.schematic === "hud-full"}
-            <svg viewBox="0 0 64 40" preserveAspectRatio="xMidYMid meet">
-              <rect class="stroke fill" x="4" y="10" width="36" height="20" rx="3" />
-              <line class="stroke" x1="10" y1="16" x2="34" y2="16" />
-              <line class="stroke" x1="10" y1="22" x2="34" y2="22" />
-              <ellipse class="stroke fill" cx="52" cy="20" rx="7" ry="11" />
-              <line class="stroke" x1="52" y1="11" x2="52" y2="19" />
+            <svg viewBox="0 0 80 56" preserveAspectRatio="xMidYMid slice">
+              <rect width="80" height="56" fill="#1c1c1e" />
+              <rect x="6" y="14" width="42" height="28" rx="5" fill="#2c2c2e" />
+              <!-- short board: top N=3 equal, bottom bar -->
+              <rect x="11" y="20" width="9" height="6" rx="1.5" fill="#0a84ff" />
+              <rect x="22" y="20" width="9" height="6" rx="1.5" fill="#636366" />
+              <rect x="33" y="20" width="9" height="6" rx="1.5" fill="#636366" />
+              <rect x="11" y="29" width="31" height="6" rx="1.5" fill="#636366" />
+              <rect x="55" y="22" width="18" height="12" rx="5" fill="#636366" />
+              <line
+                x1="64"
+                y1="24"
+                x2="64"
+                y2="32"
+                stroke="#2c2c2e"
+                stroke-width="1.25"
+                stroke-linecap="round"
+              />
+              <rect x="62.5" y="23.5" width="3" height="7" rx="1.5" fill="#aeaeb2" />
             </svg>
           {:else if item.schematic === "km-klmr"}
-            <svg viewBox="0 0 64 40" preserveAspectRatio="xMidYMid meet">
-              <rect class="stroke fill" x="6" y="12" width="28" height="16" rx="2" />
-              <ellipse class="stroke fill" cx="50" cy="20" rx="7" ry="11" />
-              <line class="stroke" x1="50" y1="11" x2="50" y2="19" />
+            <svg viewBox="0 0 80 56" preserveAspectRatio="xMidYMid slice">
+              <rect width="80" height="56" fill="#1c1c1e" />
+              <rect x="6" y="16" width="36" height="24" rx="5" fill="#2c2c2e" />
+              <rect x="11" y="22" width="7" height="5.5" rx="1.5" fill="#636366" />
+              <rect x="20" y="22" width="7" height="5.5" rx="1.5" fill="#636366" />
+              <rect x="29" y="22" width="7" height="5.5" rx="1.5" fill="#636366" />
+              <rect x="11" y="30.5" width="25" height="5.5" rx="1.5" fill="#636366" />
+              <rect x="53" y="22" width="18" height="12" rx="5" fill="#636366" />
+              <line
+                x1="62"
+                y1="24"
+                x2="62"
+                y2="32"
+                stroke="#2c2c2e"
+                stroke-width="1.25"
+                stroke-linecap="round"
+              />
+              <rect x="60.5" y="23.5" width="3" height="7" rx="1.5" fill="#aeaeb2" />
             </svg>
           {:else if item.schematic === "km-krml"}
-            <svg viewBox="0 0 64 40" preserveAspectRatio="xMidYMid meet">
-              <ellipse class="stroke fill" cx="14" cy="20" rx="7" ry="11" />
-              <line class="stroke" x1="14" y1="11" x2="14" y2="19" />
-              <rect class="stroke fill" x="30" y="12" width="28" height="16" rx="2" />
+            <svg viewBox="0 0 80 56" preserveAspectRatio="xMidYMid slice">
+              <rect width="80" height="56" fill="#1c1c1e" />
+              <rect x="9" y="22" width="18" height="12" rx="5" fill="#636366" />
+              <line
+                x1="18"
+                y1="24"
+                x2="18"
+                y2="32"
+                stroke="#2c2c2e"
+                stroke-width="1.25"
+                stroke-linecap="round"
+              />
+              <rect x="16.5" y="23.5" width="3" height="7" rx="1.5" fill="#aeaeb2" />
+              <rect x="38" y="16" width="36" height="24" rx="5" fill="#2c2c2e" />
+              <rect x="43" y="22" width="7" height="5.5" rx="1.5" fill="#636366" />
+              <rect x="52" y="22" width="7" height="5.5" rx="1.5" fill="#636366" />
+              <rect x="61" y="22" width="7" height="5.5" rx="1.5" fill="#636366" />
+              <rect x="43" y="30.5" width="25" height="5.5" rx="1.5" fill="#636366" />
             </svg>
           {:else if item.schematic === "km-ktmb"}
-            <svg viewBox="0 0 64 40" preserveAspectRatio="xMidYMid meet">
-              <rect class="stroke fill" x="14" y="4" width="36" height="14" rx="2" />
-              <ellipse class="stroke fill" cx="32" cy="30" rx="4.5" ry="6.5" />
-              <line class="stroke" x1="32" y1="24.5" x2="32" y2="29" />
+            <svg viewBox="0 0 80 56" preserveAspectRatio="xMidYMid slice">
+              <rect width="80" height="56" fill="#1c1c1e" />
+              <rect x="14" y="6" width="52" height="22" rx="5" fill="#2c2c2e" />
+              <!-- long board: top N=4 equal, bottom bar -->
+              <rect x="20" y="12" width="8.5" height="5" rx="1.5" fill="#636366" />
+              <rect x="30.5" y="12" width="8.5" height="5" rx="1.5" fill="#636366" />
+              <rect x="41" y="12" width="8.5" height="5" rx="1.5" fill="#636366" />
+              <rect x="51.5" y="12" width="8.5" height="5" rx="1.5" fill="#636366" />
+              <rect x="20" y="19" width="40" height="5" rx="1.5" fill="#636366" />
+              <rect x="33" y="36" width="14" height="10" rx="4" fill="#636366" />
+              <line
+                x1="40"
+                y1="37.5"
+                x2="40"
+                y2="44.5"
+                stroke="#2c2c2e"
+                stroke-width="1.1"
+                stroke-linecap="round"
+              />
+              <rect x="38.75" y="37.25" width="2.5" height="5.5" rx="1.25" fill="#aeaeb2" />
             </svg>
           {:else if item.schematic === "km-kbmt"}
-            <svg viewBox="0 0 64 40" preserveAspectRatio="xMidYMid meet">
-              <ellipse class="stroke fill" cx="32" cy="10" rx="4.5" ry="6.5" />
-              <line class="stroke" x1="32" y1="4.5" x2="32" y2="9" />
-              <rect class="stroke fill" x="14" y="22" width="36" height="14" rx="2" />
+            <svg viewBox="0 0 80 56" preserveAspectRatio="xMidYMid slice">
+              <rect width="80" height="56" fill="#1c1c1e" />
+              <rect x="33" y="10" width="14" height="10" rx="4" fill="#636366" />
+              <line
+                x1="40"
+                y1="11.5"
+                x2="40"
+                y2="18.5"
+                stroke="#2c2c2e"
+                stroke-width="1.1"
+                stroke-linecap="round"
+              />
+              <rect x="38.75" y="11.25" width="2.5" height="5.5" rx="1.25" fill="#aeaeb2" />
+              <rect x="14" y="28" width="52" height="22" rx="5" fill="#2c2c2e" />
+              <rect x="20" y="34" width="8.5" height="5" rx="1.5" fill="#636366" />
+              <rect x="30.5" y="34" width="8.5" height="5" rx="1.5" fill="#636366" />
+              <rect x="41" y="34" width="8.5" height="5" rx="1.5" fill="#636366" />
+              <rect x="51.5" y="34" width="8.5" height="5" rx="1.5" fill="#636366" />
+              <rect x="20" y="41" width="40" height="5" rx="1.5" fill="#636366" />
             </svg>
           {:else if item.schematic === "appearance-system"}
             <!-- Full-bleed split chrome (fixed swatches, no wash). -->
@@ -256,7 +349,6 @@
     height: 100%;
     min-height: 0;
     box-sizing: border-box;
-    padding: 10px;
   }
 
   .choice-card--fill .schematic--bleed {
@@ -267,38 +359,6 @@
     display: block;
     width: 100%;
     height: 100%;
-  }
-
-  .schematic .stroke {
-    fill: none;
-    stroke: var(--app-muted);
-    stroke-width: 1.5;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-
-  .schematic .fill {
-    fill: color-mix(in srgb, var(--app-muted) 12%, transparent);
-  }
-
-  .schematic .glyph {
-    fill: var(--app-muted);
-    font-size: 7px;
-    font-weight: 700;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    letter-spacing: 0;
-  }
-
-  .choice-card:not(.choice-card--fill):has(input:checked) .schematic .stroke {
-    stroke: var(--app-accent);
-  }
-
-  .choice-card:not(.choice-card--fill):has(input:checked) .schematic .fill {
-    fill: var(--app-accent-soft);
-  }
-
-  .choice-card:not(.choice-card--fill):has(input:checked) .schematic .glyph {
-    fill: var(--app-accent);
   }
 
   .choice-label {
