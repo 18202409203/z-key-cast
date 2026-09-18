@@ -108,7 +108,7 @@ pub const MOUSE_RIPPLE_CHANNEL: &str = "cast://mouse-ripple";
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MouseRippleEvent {
-    /// Logical/CSS px from the primary monitor's top-left (CGEvent global, no Y flip).
+    /// Logical/CSS px from the primary monitor's top-left (no Y flip).
     pub x: f64,
     pub y: f64,
     pub button: MouseButton,

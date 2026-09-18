@@ -1,6 +1,7 @@
 mod chip;
 mod event;
 mod filter;
+mod ripple_coords;
 
 #[cfg(target_os = "macos")]
 mod macos;

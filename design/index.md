@@ -31,7 +31,7 @@ Overlay window（透明、置顶、点击穿透）
   └─ 角落 HUD 渲染与动画
 
 Ripple window（独立主屏全屏、透明、点击穿透；默认不创建）
-  └─ 点击圆环动画（macOS 一期）
+  └─ 点击圆环动画（macOS / Windows 一期）
 
 Settings + Tray
   └─ 位置、样式、开关、权限引导
@@ -67,7 +67,7 @@ type HudChip =
 - Text/Lite：共享操作时间线（`timelineMax` 默认 5，范围 1–10；右入左移）；每项独立 `dwellMs` 淡出
 - Full：空板常驻；高亮随物理按住；Status 仍独占（遮住 pin）
 - Status（如 hook offline）独占：清掉时间线与 held-set 后单独 dwell
-- 点击涟漪（可选）：独立主屏全屏透明层（非 HUD overlay）；默认关；与 `captureMouse` 解耦；一期仅 macOS
+- 点击涟漪（可选）：独立主屏全屏透明层（非 HUD overlay）；默认关；与 `captureMouse` 解耦；一期 macOS / Windows 主屏
 
 ## MVP
 
@@ -77,13 +77,13 @@ type HudChip =
 - 角落 HUD + 基础样式
 - 托盘开关 / 退出
 - macOS Accessibility 引导；Win/Linux 失败时有明确提示
-- macOS 主屏点击涟漪（独立开关 + 独立层；Windows 另开任务）
+- macOS / Windows 主屏点击涟漪（独立开关 + 独立层）
 - 纵向滚轮方向反馈（合并后 `scroll` chip；受 `captureMouse` 总闸；可用 `ignoredMouseActions` 含 `"scroll"` 关闭）
 
 **不做（二期）**
 
 - 皮肤市场、按应用过滤、历史回放
-- 鼠标轨迹 / 位置指示器；外接屏涟漪；Windows/Linux 涟漪
+- 鼠标轨迹 / 位置指示器；外接屏涟漪；Linux 涟漪
 - 输入法候选与死键完美还原
 - 横向滚轮 / tilt-wheel；滚速档位或真实速度映射
 

@@ -1,12 +1,12 @@
 //! Windows global input capture via WH_KEYBOARD_LL + WH_MOUSE_LL.
 //!
-//! No mouse-ripple emit on this platform (deferred). Display labels stay in the UI.
+//! Display labels stay in the UI. Click rings emit on `cast://mouse-ripple`.
 
 use std::collections::HashSet;
 use std::sync::{Mutex, OnceLock};
 
-use tauri::{AppHandle, Emitter};
-use windows::Win32::Foundation::{HINSTANCE, LPARAM, LRESULT, WPARAM};
+use tauri::{AppHandle, Emitter, Manager};
+use windows::Win32::Foundation::{HINSTANCE, LPARAM, LRESULT, POINT, WPARAM};
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     MapVirtualKeyW, MAPVK_VK_TO_VSC, VIRTUAL_KEY, VK_ADD, VK_APPS, VK_BACK, VK_CAPITAL, VK_CONTROL,
     VK_DECIMAL, VK_DELETE, VK_DIVIDE, VK_DOWN, VK_END, VK_ESCAPE, VK_F1, VK_F10, VK_F11, VK_F12,
@@ -29,10 +29,11 @@ use windows::Win32::UI::WindowsAndMessaging::{
 use super::chip::ChipReducer;
 use super::emit_hook_status;
 use super::event::{
-    HookStatus, KeyRef, MouseButton, Phase, RawInput, ScrollDirection, EVENT_CHANNEL,
-    IGNORE_KEY_CAPTURED_CHANNEL,
+    HookStatus, KeyRef, MouseButton, MouseRippleEvent, Phase, RawInput, ScrollDirection,
+    EVENT_CHANNEL, IGNORE_KEY_CAPTURED_CHANNEL, MOUSE_RIPPLE_CHANNEL,
 };
 use super::filter::{EventFilter, ScrollCoalescer};
+use super::ripple_coords::primary_local_from_screen_phys;
 use crate::settings;
 
 struct HookState {
@@ -155,8 +156,6 @@ fn process_raw(raw: RawInput) {
         }
     }
 
-    // No mouse-ripple emit on Windows this task.
-
     let chip = state
         .reducer
         .lock()
@@ -196,7 +195,13 @@ unsafe extern "system" fn keyboard_proc(code: i32, wparam: WPARAM, lparam: LPARA
 unsafe extern "system" fn mouse_proc(code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     if code >= 0 {
         let info = &*(lparam.0 as *const MSLLHOOKSTRUCT);
-        if let Some(raw) = normalize_mouse(wparam.0 as u32, info) {
+        let message = wparam.0 as u32;
+        if let Some(button) = mouse_down_button(message) {
+            if let Some(state) = STATE.get() {
+                maybe_emit_mouse_ripple(&state.app, info.pt, button);
+            }
+        }
+        if let Some(raw) = normalize_mouse(message, info) {
             process_raw(raw);
         }
     }
@@ -206,6 +211,45 @@ unsafe extern "system" fn mouse_proc(code: i32, wparam: WPARAM, lparam: LPARAM) 
         wparam,
         lparam,
     )
+}
+
+fn mouse_down_button(message: u32) -> Option<MouseButton> {
+    match message {
+        WM_LBUTTONDOWN => Some(MouseButton::Left),
+        WM_RBUTTONDOWN => Some(MouseButton::Right),
+        WM_MBUTTONDOWN => Some(MouseButton::Middle),
+        _ => None,
+    }
+}
+
+fn maybe_emit_mouse_ripple(app: &AppHandle, pt: POINT, button: MouseButton) {
+    if !settings::mouse_click_ripple_enabled() {
+        return;
+    }
+    let Ok(Some(monitor)) = app.primary_monitor() else {
+        return;
+    };
+    let origin = *monitor.position();
+    let size = *monitor.size();
+    let scale = monitor.scale_factor();
+    let Some((x, y)) = primary_local_from_screen_phys(
+        pt.x as f64,
+        pt.y as f64,
+        origin.x as f64,
+        origin.y as f64,
+        size.width as f64,
+        size.height as f64,
+        scale,
+    ) else {
+        return;
+    };
+    let Some(win) = app.get_webview_window(settings::RIPPLE_WINDOW_LABEL) else {
+        return;
+    };
+    let _ = win.emit(
+        MOUSE_RIPPLE_CHANNEL,
+        MouseRippleEvent { x, y, button },
+    );
 }
 
 fn normalize_keyboard(message: u32, info: &KBDLLHOOKSTRUCT) -> Option<RawInput> {

@@ -12,7 +12,7 @@ Corner HUD that shows keyboard and mouse actions during screen recording.
 - **Corner HUD** — Text · Lite · Full presets; corner placement with drag-to-place
 - **Global capture** — keyboard and mouse (macOS / Windows; Linux by platform support)
 - **Tray** — toggle HUD, open settings, quit
-- **Click rings** — optional click ripple on the macOS primary display
+- **Click rings** — optional click ripple on the macOS / Windows primary display
 - **i18n** — English / Chinese UI
 
 ## Stack

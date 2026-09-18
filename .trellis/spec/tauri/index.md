@@ -34,7 +34,7 @@ Durable settings live under `src-tauri/src/settings/` (`mod` facade + `types` / 
 
 - [ ] Payload shape matches `design/index.md` (`HudChip` with `phase` on key/mouse; `mouse`/`scroll` include `mods`; `scroll` without phase)
 - [ ] Non-macOS non-Windows path is an explicit stub (`unsupported_platform`), not a fake hook
-- [ ] Windows path uses `WH_KEYBOARD_LL` + `WH_MOUSE_LL` → same filter/reducer; `WM_MOUSEWHEEL` → scroll; drop `WM_MOUSEHWHEEL`; no Win ripple emit until a dedicated task
+- [ ] Windows path uses `WH_KEYBOARD_LL` + `WH_MOUSE_LL` → same filter/reducer; `WM_MOUSEWHEEL` → scroll; drop `WM_MOUSEHWHEEL`; Win emits `cast://mouse-ripple` on primary-monitor L/R/M down when `mouseClickRipple` is on; Linux does not emit ripple
 - [ ] `KeyRef` wire shape is `{ id }` only (no `label`)
 - [ ] Key autorepeat / spam filtering happens before `cast://event` emit; scroll bursts coalesce before emit
 - [ ] Chip reducer: emit bare mods + ups with `phase`; mouse/scroll snapshot `held_mods`; Text/Lite defer bare mods; Full held-sets may ignore mouse/scroll `mods`

@@ -63,12 +63,12 @@ export function formatHudLabel(chip: HudChip, legendLayout?: KeyboardLegendLayou
 | Field | Type | Notes |
 |-------|------|-------|
 | `x` | `number` | Logical/CSS px from **primary** monitor top-left |
-| `y` | `number` | Same top-left space as `x` (CGEvent global; no Y flip) |
+| `y` | `number` | Same top-left space as `x` (no Y flip; macOS CGEvent logical; Windows physical ÷ scale) |
 | `button` | `"left" \| "right" \| "middle"` | Mouse **down** only |
 
 - Emit only when `mouseClickRipple` is on; **ignores** `captureMouse` / `allows_chip`
-- Drop clicks whose CG location is outside the primary display bounds
-- **macOS emit path only**; Windows does **not** emit ripple in the Windows hooks task (reuse channel later)
+- Drop clicks whose location is outside the primary display bounds
+- **macOS and Windows emit**; Linux / stub does **not** emit ripple
 - Frontend: `$lib/cast` `isMouseRippleEvent`; route `/ripple` listens — do not redefine in other routes
 
 **`cast://hook-status` → `HookStatus`**
@@ -193,7 +193,7 @@ void listen(EVENT_CHANNEL, (event) => {
 - **Decision**: Peer toggle `mouseClickRipple` (omit → false); lazy primary-monitor fullscreen `ripple` webview; channel `cast://mouse-ripple` with `{ x, y, button }`
 - **Why**: Keep HUD overlay at corner size; keep `HudChip` free of coordinates; allow rings while mouse HUD is off
 - **Forbidden**: Extending `HudChip::Mouse` with coords; gating ripple on `captureMouse`; making the existing `overlay` window fullscreen for rings
-- **Platform**: macOS emit only; Windows hooks intentionally do **not** emit ripple yet
+- **Platform**: macOS and Windows emit; Linux / stub does **not** emit ripple
 
 ### Ignore key list (filter after reduce)
 
