@@ -168,6 +168,68 @@
 </main>
 
 <style>
+  /* Interpolable tokens so dark↔light crossfades (WKWebView / Chromium). */
+  @property --app-bg {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #1c1c1e;
+  }
+  @property --app-fg {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #f5f5f7;
+  }
+  @property --app-muted {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #98989d;
+  }
+  @property --app-faint {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #636366;
+  }
+  @property --app-accent {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #0a84ff;
+  }
+  @property --app-accent-soft {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #0a84ff38;
+  }
+  @property --app-inset {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #2c2c2e;
+  }
+  @property --app-hairline {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #ffffff14;
+  }
+  @property --app-hairline-strong {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #ffffff24;
+  }
+  @property --app-control-bg {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #3a3a3c;
+  }
+  @property --app-control-bg-hover {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #48484a;
+  }
+  @property --app-control-border {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #48484a;
+  }
+
   :global(:root),
   :global([data-appearance="dark"]) {
     --app-bg: #1c1c1e;
@@ -202,6 +264,30 @@
     --app-control-border: #d1d1d6;
     --radius-sm: 8px;
     --radius-md: 10px;
+  }
+
+  :global(html) {
+    transition:
+      --app-bg 240ms ease,
+      --app-fg 240ms ease,
+      --app-muted 240ms ease,
+      --app-faint 240ms ease,
+      --app-accent 240ms ease,
+      --app-accent-soft 240ms ease,
+      --app-inset 240ms ease,
+      --app-hairline 240ms ease,
+      --app-hairline-strong 240ms ease,
+      --app-control-bg 240ms ease,
+      --app-control-bg-hover 240ms ease,
+      --app-control-border 240ms ease,
+      background-color 240ms ease,
+      color 240ms ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(html) {
+      transition: none;
+    }
   }
 
   :global(html, body) {
