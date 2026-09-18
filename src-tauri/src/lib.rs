@@ -21,6 +21,8 @@ pub fn run() {
             settings::end_hud_place_mode,
             settings::get_ui_locale_settings,
             settings::set_ui_locale_settings,
+            settings::get_ui_appearance_settings,
+            settings::set_ui_appearance_settings,
         ])
         .setup(|app| {
             settings::load(app.handle());

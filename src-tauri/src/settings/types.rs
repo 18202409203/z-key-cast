@@ -58,6 +58,21 @@ pub struct UiLocalePayload {
     pub locale: UiLocale,
 }
 
+/// Main-window chrome appearance. Omit → treat as `system` on the frontend.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum UiAppearance {
+    System,
+    Dark,
+    Light,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct UiAppearancePayload {
+    pub appearance: UiAppearance,
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum HudCorner {
@@ -348,6 +363,8 @@ struct AppSettingsDe {
     hud_position: HudPositionSettings,
     #[serde(default)]
     ui_locale: Option<UiLocale>,
+    #[serde(default)]
+    ui_appearance: Option<UiAppearance>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -370,6 +387,9 @@ pub struct AppSettings {
     /// Absent until the frontend resolves (system guess or user choice).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ui_locale: Option<UiLocale>,
+    /// Absent → frontend treats as `system`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ui_appearance: Option<UiAppearance>,
 }
 
 impl Default for AppSettings {
@@ -384,6 +404,7 @@ impl Default for AppSettings {
             hud: HudStyleSettings::default(),
             hud_position: HudPositionSettings::default(),
             ui_locale: None,
+            ui_appearance: None,
         }
     }
 }
@@ -407,6 +428,7 @@ impl<'de> Deserialize<'de> for AppSettings {
             hud: raw.hud,
             hud_position: raw.hud_position,
             ui_locale: raw.ui_locale,
+            ui_appearance: raw.ui_appearance,
         })
     }
 }
@@ -506,6 +528,7 @@ mod tests {
             }
         );
         assert_eq!(parsed.ui_locale, None);
+        assert_eq!(parsed.ui_appearance, None);
     }
 
     #[test]
@@ -571,6 +594,7 @@ mod tests {
             hud: HudStyleSettings::default(),
             hud_position: HudPositionSettings::default(),
             ui_locale: None,
+            ui_appearance: None,
         };
         let raw = serde_json::to_string(&settings).unwrap();
         assert!(raw.contains("\"hasNumpad\":true"));
@@ -694,6 +718,7 @@ mod tests {
                 corner: HudCorner::Tl,
             },
             ui_locale: Some(UiLocale::Zh),
+            ui_appearance: Some(UiAppearance::Light),
         };
         let raw = serde_json::to_string(&settings).unwrap();
         let parsed: AppSettings = serde_json::from_str(&raw).unwrap();
@@ -715,6 +740,7 @@ mod tests {
             }
         );
         assert_eq!(parsed.ui_locale, Some(UiLocale::Zh));
+        assert_eq!(parsed.ui_appearance, Some(UiAppearance::Light));
     }
 
     #[test]
@@ -754,6 +780,25 @@ mod tests {
         let raw = r#"{"captureKeyboard":true,"captureMouse":true,"uiLocale":"zh"}"#;
         let parsed: AppSettings = serde_json::from_str(raw).unwrap();
         assert_eq!(parsed.ui_locale, Some(UiLocale::Zh));
+    }
+
+    #[test]
+    fn app_settings_parses_ui_appearance() {
+        let omitted = r#"{"captureKeyboard":true,"captureMouse":true}"#;
+        let parsed: AppSettings = serde_json::from_str(omitted).unwrap();
+        assert_eq!(parsed.ui_appearance, None);
+
+        let dark = r#"{"captureKeyboard":true,"captureMouse":true,"uiAppearance":"dark"}"#;
+        let parsed: AppSettings = serde_json::from_str(dark).unwrap();
+        assert_eq!(parsed.ui_appearance, Some(UiAppearance::Dark));
+
+        let light = r#"{"captureKeyboard":true,"captureMouse":true,"uiAppearance":"light"}"#;
+        let parsed: AppSettings = serde_json::from_str(light).unwrap();
+        assert_eq!(parsed.ui_appearance, Some(UiAppearance::Light));
+
+        let system = r#"{"captureKeyboard":true,"captureMouse":true,"uiAppearance":"system"}"#;
+        let parsed: AppSettings = serde_json::from_str(system).unwrap();
+        assert_eq!(parsed.ui_appearance, Some(UiAppearance::System));
     }
 
     #[test]

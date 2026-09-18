@@ -64,7 +64,7 @@
   .tabs {
     display: flex;
     gap: 6px;
-    border-bottom: 1px solid #334155;
+    border-bottom: 1px solid var(--app-hairline);
     padding-bottom: 0;
   }
 
@@ -74,7 +74,7 @@
     border-bottom: 2px solid transparent;
     margin-bottom: -1px;
     background: transparent;
-    color: #94a3b8;
+    color: var(--app-muted);
     font: inherit;
     font-size: 14px;
     font-weight: 550;
@@ -86,11 +86,11 @@
   }
 
   .tab:hover {
-    color: #e2e8f0;
+    color: var(--app-fg);
   }
 
   .tab.active {
-    color: #e2e8f0;
-    border-bottom-color: #38bdf8;
+    color: var(--app-fg);
+    border-bottom-color: var(--app-accent);
   }
 </style>

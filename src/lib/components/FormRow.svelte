@@ -96,19 +96,19 @@
   .form-row-label {
     font-size: 13px;
     font-weight: 500;
-    color: #e2e8f0;
+    color: var(--app-fg);
     line-height: 1.35;
   }
 
   .form-sublabel {
     font-size: 12px;
     font-weight: 500;
-    color: #94a3b8;
+    color: var(--app-muted);
   }
 
   .form-row-hint {
     margin: 0;
-    color: #64748b;
+    color: var(--app-faint);
     font-size: 12px;
     line-height: 1.4;
   }
@@ -161,32 +161,30 @@
 
   .form-row-control :global(select),
   .form-row-control :global(input[type="number"]) {
-    border: 1px solid #334155;
-    border-radius: 10px;
-    background: #0f172a;
-    color: #e2e8f0;
+    border: 1px solid var(--app-control-border);
+    border-radius: var(--radius-md);
+    background: var(--app-control-bg);
+    color: var(--app-fg);
     padding: 8px 12px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
   .form-row-control :global(input[type="color"]) {
     min-height: 36px;
     min-width: 72px;
-    border: 1px solid #334155;
-    border-radius: 10px;
-    background: #0f172a;
+    border: 1px solid var(--app-control-border);
+    border-radius: var(--radius-md);
+    background: var(--app-control-bg);
     padding: 4px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
   .form-row-control :global(input[type="range"]) {
-    accent-color: #38bdf8;
+    accent-color: var(--app-accent);
   }
 
   .form-row-control :global(input[type="checkbox"]) {
     width: 16px;
     height: 16px;
-    accent-color: #38bdf8;
+    accent-color: var(--app-accent);
     margin: 0;
   }
 

@@ -1,0 +1,5 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Panels, Tabs a11y, shell vs panel styling"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Where panels/components live; rename Settings→Appearance"}
+{"file": ".trellis/spec/tauri/index.md", "reason": "settings/ module layout; uiLocale sibling field pattern"}
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "Channels, permissions, preserve sibling settings fields"}

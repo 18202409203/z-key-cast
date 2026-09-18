@@ -45,28 +45,32 @@
   .segmented {
     display: grid;
     grid-template-columns: repeat(var(--segment-cols, 3), minmax(0, 1fr));
-    gap: 6px;
+    gap: 2px;
+    padding: 2px;
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--app-fg) 8%, transparent);
+    border: none;
   }
 
   .segment {
     position: relative;
     display: grid;
     place-items: center;
-    min-height: 36px;
-    padding: 6px 8px;
-    border-radius: 10px;
-    border: 1px solid #334155;
-    background: #0f172a;
-    color: #cbd5e1;
+    min-height: 30px;
+    padding: 5px 8px;
+    border-radius: calc(var(--radius-md) - 2px);
+    border: none;
+    background: transparent;
+    color: var(--app-muted);
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
   }
 
   .segment:has(input:checked) {
-    border-color: #38bdf8;
-    background: color-mix(in srgb, #0ea5e9 18%, #0f172a);
-    color: #e0f2fe;
+    background: var(--app-control-bg);
+    color: var(--app-fg);
+    box-shadow: 0 0.5px 1.5px rgba(0, 0, 0, 0.18);
   }
 
   .segment:has(input:disabled) {

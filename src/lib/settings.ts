@@ -9,6 +9,7 @@ export const HUD_STYLE_CHANNEL = "cast://hud-style";
 export const HUD_POSITION_CHANNEL = "cast://hud-position";
 export const HUD_PLACE_MODE_CHANNEL = "cast://hud-place-mode";
 export const UI_LOCALE_CHANNEL = "cast://ui-locale";
+export const UI_APPEARANCE_CHANNEL = "cast://ui-appearance";
 export const CAPTURE_SETTINGS_CHANNEL = "cast://capture-settings";
 
 export type IgnoredMouseAction = "left" | "right" | "middle" | "scroll";
@@ -453,4 +454,52 @@ export async function getUiLocaleSettings(): Promise<UiLocale | null> {
 export async function setUiLocaleSettings(locale: UiLocale): Promise<UiLocale> {
   const saved = await invoke<UiLocale>("set_ui_locale_settings", { locale });
   return isUiLocale(saved) ? saved : locale;
+}
+
+export type UiAppearance = "system" | "dark" | "light";
+
+export type ResolvedAppearance = "dark" | "light";
+
+export type UiAppearancePayload = {
+  appearance: UiAppearance;
+};
+
+export function isUiAppearance(value: unknown): value is UiAppearance {
+  return value === "system" || value === "dark" || value === "light";
+}
+
+export function isUiAppearancePayload(
+  value: unknown,
+): value is UiAppearancePayload {
+  if (!value || typeof value !== "object") return false;
+  return isUiAppearance((value as Record<string, unknown>).appearance);
+}
+
+/** Resolve stored mode to a concrete dark|light theme for CSS. */
+export function resolveAppearance(
+  stored: UiAppearance | null | undefined,
+): ResolvedAppearance {
+  const mode = stored ?? "system";
+  if (mode === "dark" || mode === "light") return mode;
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return "dark";
+  }
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+}
+
+/** `null` when unset (frontend treats as `system`). */
+export async function getUiAppearanceSettings(): Promise<UiAppearance | null> {
+  const raw = await invoke<UiAppearance | null>("get_ui_appearance_settings");
+  return isUiAppearance(raw) ? raw : null;
+}
+
+export async function setUiAppearanceSettings(
+  appearance: UiAppearance,
+): Promise<UiAppearance> {
+  const saved = await invoke<UiAppearance>("set_ui_appearance_settings", {
+    appearance,
+  });
+  return isUiAppearance(saved) ? saved : appearance;
 }

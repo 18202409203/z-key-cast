@@ -195,19 +195,19 @@
   }
 
   .clear {
-    border: 1px solid #334155;
-    border-radius: 8px;
-    background: #0f172a;
-    color: #94a3b8;
+    border: 1px solid var(--app-control-border);
+    border-radius: var(--radius-sm);
+    background: var(--app-control-bg);
+    color: var(--app-muted);
     font-size: 12px;
     padding: 6px 10px;
     cursor: pointer;
   }
 
   .clear:hover {
-    color: #e2e8f0;
-    border-color: #475569;
-    background: #1e293b;
+    color: var(--app-fg);
+    border-color: var(--app-hairline-strong);
+    background: var(--app-control-bg-hover);
   }
 
   .log {
@@ -229,14 +229,14 @@
   }
 
   .log-line {
-    color: #cbd5e1;
+    color: var(--app-fg);
     white-space: pre-wrap;
     word-break: break-word;
   }
 
   .muted {
     margin: 0;
-    color: #94a3b8;
+    color: var(--app-muted);
     font-size: 13px;
   }
 

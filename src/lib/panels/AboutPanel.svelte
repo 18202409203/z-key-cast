@@ -82,7 +82,7 @@
 
   .about-version {
     margin: 0;
-    color: #7dd3fc;
+    color: var(--app-accent);
     font-size: 13px;
     letter-spacing: 0.04em;
   }
@@ -90,7 +90,7 @@
   .lead {
     margin: 6px 0 0;
     /* max-width: 32ch; */
-    color: #94a3b8;
+    color: var(--app-muted);
     line-height: 1.5;
   }
 </style>

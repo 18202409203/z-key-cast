@@ -47,7 +47,7 @@
     font-size: 14px;
     font-weight: 600;
     letter-spacing: 0.01em;
-    color: #94a3b8;
+    color: var(--app-muted);
   }
 
   .form-section-actions {
@@ -61,11 +61,11 @@
     display: grid;
     min-width: 0;
     border-radius: 12px;
-    background: color-mix(in srgb, #94a3b8 10%, transparent);
+    background: var(--app-inset);
     overflow: hidden;
   }
 
   .form-group > :global(.form-row + .form-row) {
-    border-top: 1px solid color-mix(in srgb, #94a3b8 14%, transparent);
+    border-top: 1px solid var(--app-hairline);
   }
 </style>

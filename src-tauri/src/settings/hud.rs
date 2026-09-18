@@ -105,6 +105,7 @@ pub fn set_hud_style_settings(
         hud: hud.clone(),
         hud_position: previous.hud_position.clone(),
         ui_locale: previous.ui_locale,
+        ui_appearance: previous.ui_appearance,
     };
     persist_app_settings(&app, next)?;
     emit_hud_style(&app, &hud);
@@ -135,6 +136,7 @@ pub fn set_hud_position_settings(
         hud: previous.hud.clone(),
         hud_position: settings.clone(),
         ui_locale: previous.ui_locale,
+        ui_appearance: previous.ui_appearance,
     };
     persist_app_settings(&app, next)?;
     apply_hud_position(&app);
@@ -193,6 +195,7 @@ pub fn end_hud_place_mode(app: AppHandle) -> Result<HudPositionSettings, String>
         hud: previous.hud.clone(),
         hud_position: custom.clone(),
         ui_locale: previous.ui_locale,
+        ui_appearance: previous.ui_appearance,
     };
 
     if let Err(err) = persist_app_settings(&app, next) {

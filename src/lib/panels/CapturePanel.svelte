@@ -19,7 +19,6 @@
     cancelIgnoreKeyCapture,
     getCaptureSettings,
     getHudStyleSettings,
-    hudBackgroundCss,
     isHudStyleSettings,
     normalizeHudStyleSettings,
     setCaptureSettings,
@@ -69,9 +68,7 @@
   const offBoardIgnoredKeyIds = $derived(
     offBoardIgnoredIds(ignoredKeyIds, visibleLayoutIds),
   );
-  const ignoreBoardBackground = $derived(
-    hudBackgroundCss(hudStyle.backgroundColor, hudStyle.backgroundOpacity),
-  );
+  /** Main-window board chrome follows window appearance tokens, not HUD colors. */
   const ignoreBoardLegendLayout = $derived(
     resolveKeyboardLegendLayout(hudStyle.keyboardLegendLayout),
   );
@@ -299,7 +296,7 @@
         const style = await getHudStyleSettings();
         if (!cancelled) hudStyle = normalizeHudStyleSettings(style);
       } catch {
-        // Ignore board falls back to DEFAULT_HUD_STYLE colors.
+        // Ignore board falls back to DEFAULT_HUD_STYLE for legend layout only.
       }
 
       try {
@@ -507,8 +504,8 @@
             interactive={true}
             showNumpad={hasNumpad}
             disabled={ignoreBoardDisabled}
-            textColor={hudStyle.textColor}
-            backgroundCss={ignoreBoardBackground}
+            textColor="var(--app-fg)"
+            backgroundCss="var(--app-control-bg)"
             fontSizePx={KEYBOARD_MAP_FONT_PX}
             legendLayout={ignoreBoardLegendLayout}
             onToggleKey={onToggleIgnoredKey}
@@ -617,14 +614,14 @@
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    color: #e2e8f0;
+    color: var(--app-fg);
     cursor: pointer;
   }
 
   .category-toggle input {
     width: 14px;
     height: 14px;
-    accent-color: #38bdf8;
+    accent-color: var(--app-accent);
   }
 
   .ignore-actions {
@@ -648,17 +645,17 @@
     align-items: center;
     gap: 10px;
     padding: 6px 0;
-    border-bottom: 1px solid #1e293b;
+    border-bottom: 1px solid var(--app-hairline);
     font-size: 13px;
   }
 
   .ignore-label {
-    color: #e2e8f0;
+    color: var(--app-fg);
     font-weight: 550;
   }
 
   .ignore-id {
-    color: #64748b;
+    color: var(--app-faint);
     font-family: "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
     font-size: 11px;
     overflow: hidden;
@@ -670,24 +667,24 @@
   }
 
   .clear {
-    border: 1px solid #334155;
-    border-radius: 8px;
-    background: #0f172a;
-    color: #94a3b8;
+    border: 1px solid var(--app-control-border);
+    border-radius: var(--radius-sm);
+    background: var(--app-control-bg);
+    color: var(--app-muted);
     font-size: 12px;
     padding: 6px 10px;
     cursor: pointer;
   }
 
   .clear:hover {
-    color: #e2e8f0;
-    border-color: #475569;
-    background: #1e293b;
+    color: var(--app-fg);
+    border-color: var(--app-hairline-strong);
+    background: var(--app-control-bg-hover);
   }
 
   .muted {
     margin: 0;
-    color: #94a3b8;
+    color: var(--app-muted);
     font-size: 14px;
   }
 

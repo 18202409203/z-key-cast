@@ -1,0 +1,4 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Panel/tab a11y and styling contracts"}
+{"file": ".trellis/spec/tauri/index.md", "reason": "Settings module + TS/Rust alignment checklist"}
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "Command ACL and settings field preservation"}

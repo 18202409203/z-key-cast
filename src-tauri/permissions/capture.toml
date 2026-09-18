@@ -62,3 +62,13 @@ commands.allow = ["get_ui_locale_settings"]
 identifier = "allow-set-ui-locale-settings"
 description = "Allows updating persisted UI language"
 commands.allow = ["set_ui_locale_settings"]
+
+[[permission]]
+identifier = "allow-get-ui-appearance-settings"
+description = "Allows reading persisted main-window appearance"
+commands.allow = ["get_ui_appearance_settings"]
+
+[[permission]]
+identifier = "allow-set-ui-appearance-settings"
+description = "Allows updating persisted main-window appearance"
+commands.allow = ["set_ui_appearance_settings"]

@@ -236,7 +236,16 @@ void listen(EVENT_CHANNEL, (event) => {
 - **Commands**: `get_ui_locale_settings` → `Option<"en"|"zh">`; `set_ui_locale_settings` → persist + emit
 - **Channel**: `cast://ui-locale` → `{ locale: "en" | "zh" }` so overlay hot-updates status/place chrome
 - **Boot**: if unset, frontend guesses from `navigator.language` (`zh*` → `zh`, else `en`) and persists once; user choice then sticks
-- **Scope**: main Settings/Log/About + overlay status/place strings via `$lib/i18n` `t()`; do **not** translate `HudChip.id` or `summarizeHudChip` log lines; Capture failure copy is user-facing and platform-specific (`settings.captureFailedMac` / `captureFailedWin` / `captureFailedOther`); success/waiting hook status stays in the Log tab only (`summarizeHookStatus`)
+- **Scope**: main Appearance/Log/About + overlay status/place strings via `$lib/i18n` `t()`; do **not** translate `HudChip.id` or `summarizeHudChip` log lines; Capture failure copy is user-facing and platform-specific (`settings.captureFailedMac` / `captureFailedWin` / `captureFailedOther`); success/waiting hook status stays in the Log tab only (`summarizeHookStatus`)
+
+### UI appearance settings (main window chrome)
+
+- **Persist**: optional `uiAppearance` in `settings.json` as `"system"` | `"dark"` | `"light"` (omit → treat as `system`)
+- **Commands**: `get_ui_appearance_settings` → `Option<…>`; `set_ui_appearance_settings` → persist + emit (`settings/appearance.rs`)
+- **Channel**: `cast://ui-appearance` → `{ appearance: "system"|"dark"|"light" }` — **main window only** (overlay does not subscribe)
+- **Resolve**: shell maps stored mode to `data-appearance="dark"|"light"`; `system` uses `prefers-color-scheme` and listens for OS changes without rewriting persisted value
+- **IA**: Appearance tab = window appearance then language; HUD Theme (chip colors) + Position live under HUD — never bind chrome tokens to HUD color preset
+- **ACL**: get/set allowed like locale; every `AppSettings` reconstruct must preserve `ui_appearance`
 
 ### Mods encoding
 

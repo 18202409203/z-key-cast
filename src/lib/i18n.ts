@@ -6,7 +6,7 @@ export type MessageKey = keyof typeof en;
 
 const en = {
   "nav.hud": "HUD",
-  "nav.settings": "Settings",
+  "nav.appearance": "Appearance",
   "nav.capture": "Capture",
   "nav.log": "Log",
   "nav.about": "About",
@@ -19,6 +19,12 @@ const en = {
   "settings.language": "Language",
   "settings.language.en": "English",
   "settings.language.zh": "中文",
+
+  "settings.appearance": "Window appearance",
+  "settings.appearance.system": "System",
+  "settings.appearance.dark": "Dark",
+  "settings.appearance.light": "Light",
+  "settings.appearanceHint": "Main window chrome only — does not change HUD colors.",
 
   "settings.presentation": "Presentation",
   "settings.position": "Position",
@@ -116,7 +122,7 @@ const en = {
   "log.empty": "No events yet.",
 
   "overlay.captureUnavailable": "Can't capture keyboard & mouse — check system permissions",
-  "overlay.placeAffordance": "Drag to move · Done in Settings",
+  "overlay.placeAffordance": "Drag to move · Done in HUD",
   "overlay.placeAria": "HUD place mode — drag to move",
   "overlay.hudAria": "Key cast HUD",
 
@@ -129,7 +135,7 @@ const en = {
 
 const zh: Record<MessageKey, string> = {
   "nav.hud": "显示",
-  "nav.settings": "设置",
+  "nav.appearance": "外观",
   "nav.capture": "捕获",
   "nav.log": "日志",
   "nav.about": "关于",
@@ -141,6 +147,12 @@ const zh: Record<MessageKey, string> = {
   "settings.language": "语言",
   "settings.language.en": "English",
   "settings.language.zh": "中文",
+
+  "settings.appearance": "窗口外观",
+  "settings.appearance.system": "跟随系统",
+  "settings.appearance.dark": "深色",
+  "settings.appearance.light": "浅色",
+  "settings.appearanceHint": "仅主窗口外观，不影响面板配色。",
 
   "settings.presentation": "展示方式",
   "settings.position": "位置",
@@ -235,7 +247,7 @@ const zh: Record<MessageKey, string> = {
   "log.empty": "暂无事件。",
 
   "overlay.captureUnavailable": "无法捕获键盘和鼠标 — 请检查系统权限",
-  "overlay.placeAffordance": "拖动以移动 · 在设置中完成",
+  "overlay.placeAffordance": "拖动以移动 · 在显示中完成",
   "overlay.placeAria": "面板定位模式 — 拖动以移动",
   "overlay.hudAria": "按键投射面板",
 

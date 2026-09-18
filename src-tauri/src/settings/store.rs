@@ -10,7 +10,7 @@ use tauri::{AppHandle, Manager};
 
 use super::types::{
     normalize_ignored_mouse_actions, AppSettings, CaptureSettings, HudPositionSettings,
-    HudStyleSettings, UiLocale,
+    HudStyleSettings, UiAppearance, UiLocale,
 };
 
 pub(crate) static CAPTURE_KEYBOARD: AtomicBool = AtomicBool::new(true);
@@ -26,6 +26,7 @@ static HUD_POSITION: OnceLock<Mutex<HudPositionSettings>> = OnceLock::new();
 static IGNORED_KEYS: OnceLock<Mutex<IgnoredKeys>> = OnceLock::new();
 static IGNORED_MOUSE: OnceLock<Mutex<IgnoredMouseActions>> = OnceLock::new();
 static UI_LOCALE: OnceLock<Mutex<Option<UiLocale>>> = OnceLock::new();
+static UI_APPEARANCE: OnceLock<Mutex<Option<UiAppearance>>> = OnceLock::new();
 
 #[derive(Debug, Default)]
 pub(crate) struct IgnoredKeys {
@@ -91,6 +92,10 @@ pub(crate) fn ui_locale_lock() -> &'static Mutex<Option<UiLocale>> {
     UI_LOCALE.get_or_init(|| Mutex::new(None))
 }
 
+pub(crate) fn ui_appearance_lock() -> &'static Mutex<Option<UiAppearance>> {
+    UI_APPEARANCE.get_or_init(|| Mutex::new(None))
+}
+
 pub(crate) fn dedupe_preserve_order(ids: Vec<String>) -> Vec<String> {
     let mut seen = HashSet::new();
     let mut out = Vec::with_capacity(ids.len());
@@ -150,6 +155,7 @@ impl AppSettings {
             .map(|g| g.ids())
             .unwrap_or_default();
         let ui_locale = ui_locale_lock().lock().map(|g| *g).unwrap_or(None);
+        let ui_appearance = ui_appearance_lock().lock().map(|g| *g).unwrap_or(None);
         Self {
             capture_keyboard: CAPTURE_KEYBOARD.load(Ordering::Relaxed),
             capture_mouse: CAPTURE_MOUSE.load(Ordering::Relaxed),
@@ -160,6 +166,7 @@ impl AppSettings {
             hud,
             hud_position,
             ui_locale,
+            ui_appearance,
         }
     }
 
@@ -182,6 +189,9 @@ impl AppSettings {
         }
         if let Ok(mut guard) = ui_locale_lock().lock() {
             *guard = self.ui_locale;
+        }
+        if let Ok(mut guard) = ui_appearance_lock().lock() {
+            *guard = self.ui_appearance;
         }
     }
 }

@@ -142,17 +142,17 @@
     gap: 8px;
     min-width: 0;
     padding: 10px 6px 8px;
-    border-radius: 10px;
-    border: 1px solid #334155;
-    background: #0f172a;
-    color: #cbd5e1;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--app-control-border);
+    background: var(--app-control-bg);
+    color: var(--app-muted);
     cursor: pointer;
   }
 
   .choice-card:has(input:checked) {
-    border-color: #38bdf8;
-    background: color-mix(in srgb, #0ea5e9 18%, #0f172a);
-    color: #e0f2fe;
+    border-color: var(--app-accent);
+    background: var(--app-accent-soft);
+    color: var(--app-fg);
   }
 
   .choice-card:has(input:disabled) {
@@ -175,18 +175,18 @@
 
   .schematic .stroke {
     fill: none;
-    stroke: #94a3b8;
+    stroke: var(--app-muted);
     stroke-width: 1.5;
     stroke-linecap: round;
     stroke-linejoin: round;
   }
 
   .schematic .fill {
-    fill: color-mix(in srgb, #94a3b8 12%, transparent);
+    fill: color-mix(in srgb, var(--app-muted) 12%, transparent);
   }
 
   .schematic .glyph {
-    fill: #94a3b8;
+    fill: var(--app-muted);
     font-size: 7px;
     font-weight: 700;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -194,15 +194,15 @@
   }
 
   .choice-card:has(input:checked) .schematic .stroke {
-    stroke: #7dd3fc;
+    stroke: var(--app-accent);
   }
 
   .choice-card:has(input:checked) .schematic .fill {
-    fill: color-mix(in srgb, #38bdf8 16%, transparent);
+    fill: var(--app-accent-soft);
   }
 
   .choice-card:has(input:checked) .schematic .glyph {
-    fill: #7dd3fc;
+    fill: var(--app-accent);
   }
 
   .choice-label {

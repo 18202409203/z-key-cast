@@ -126,6 +126,7 @@ pub fn set_capture_settings(
         hud: previous.hud.clone(),
         hud_position: previous.hud_position.clone(),
         ui_locale: previous.ui_locale,
+        ui_appearance: previous.ui_appearance,
     };
     persist_app_settings(&app, next)?;
     ripple::sync_ripple_window(&app);

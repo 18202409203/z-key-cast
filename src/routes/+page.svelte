@@ -1,27 +1,39 @@
 <script lang="ts">
+  import { listen } from "@tauri-apps/api/event";
   import { getName } from "@tauri-apps/api/app";
   import { onMount } from "svelte";
   import Tabs from "$lib/components/Tabs.svelte";
   import AboutPanel from "$lib/panels/AboutPanel.svelte";
+  import AppearancePanel from "$lib/panels/AppearancePanel.svelte";
   import CapturePanel from "$lib/panels/CapturePanel.svelte";
   import HudPanel from "$lib/panels/HudPanel.svelte";
   import LogPanel from "$lib/panels/LogPanel.svelte";
-  import SettingsPanel from "$lib/panels/SettingsPanel.svelte";
   import { guessLocaleFromSystem, t, type UiLocale } from "$lib/i18n";
+  import {
+    UI_APPEARANCE_CHANNEL,
+    getUiAppearanceSettings,
+    isUiAppearancePayload,
+    resolveAppearance,
+    type ResolvedAppearance,
+    type UiAppearance,
+  } from "$lib/settings";
 
-  type MainTab = "hud" | "settings" | "capture" | "log" | "about";
+  type MainTab = "hud" | "appearance" | "capture" | "log" | "about";
 
   const MAX_LOG_LINES = 100;
   const FALLBACK_APP_NAME = "z-key-cast";
+  const SCHEME_QUERY = "(prefers-color-scheme: dark)";
 
   let locale = $state<UiLocale>(guessLocaleFromSystem());
+  let appearance = $state<UiAppearance>("system");
+  let resolvedAppearance = $state<ResolvedAppearance>("dark");
   let activeTab = $state<MainTab>("hud");
   let logLines = $state<string[]>([]);
   let appName = $state(FALLBACK_APP_NAME);
 
   const TABS = $derived<{ id: MainTab; label: string }[]>([
     { id: "hud", label: t("nav.hud", locale) },
-    { id: "settings", label: t("nav.settings", locale) },
+    { id: "appearance", label: t("nav.appearance", locale) },
     { id: "capture", label: t("nav.capture", locale) },
     { id: "log", label: t("nav.log", locale) },
     { id: "about", label: t("nav.about", locale) },
@@ -40,8 +52,31 @@
     locale = next;
   }
 
+  function applyResolved(mode: UiAppearance) {
+    const resolved = resolveAppearance(mode);
+    resolvedAppearance = resolved;
+    if (typeof document !== "undefined") {
+      document.documentElement.dataset.appearance = resolved;
+    }
+  }
+
+  function onAppearanceChange(next: UiAppearance) {
+    appearance = next;
+    applyResolved(next);
+  }
+
   onMount(() => {
     let cancelled = false;
+    const unsubs: Array<() => void> = [];
+    const media =
+      typeof window !== "undefined" && typeof window.matchMedia === "function"
+        ? window.matchMedia(SCHEME_QUERY)
+        : null;
+
+    const onSchemeChange = () => {
+      if (appearance === "system") applyResolved("system");
+    };
+
     void (async () => {
       try {
         const name = await getName();
@@ -49,14 +84,49 @@
       } catch {
         // Keep package fallback when not running under Tauri.
       }
+
+      try {
+        const stored = await getUiAppearanceSettings();
+        if (!cancelled) {
+          onAppearanceChange(stored ?? "system");
+        }
+      } catch {
+        if (!cancelled) onAppearanceChange("system");
+      }
+
+      try {
+        const unlisten = await listen(UI_APPEARANCE_CHANNEL, (event) => {
+          if (!isUiAppearancePayload(event.payload)) return;
+          onAppearanceChange(event.payload.appearance);
+        });
+        if (cancelled) {
+          unlisten();
+          return;
+        }
+        unsubs.push(unlisten);
+      } catch {
+        // Channel optional outside Tauri.
+      }
     })();
+
+    if (media) {
+      media.addEventListener("change", onSchemeChange);
+    }
+    applyResolved(appearance);
+
     return () => {
       cancelled = true;
+      for (const unlisten of unsubs) {
+        unlisten();
+      }
+      if (media) {
+        media.removeEventListener("change", onSchemeChange);
+      }
     };
   });
 </script>
 
-<main class="shell">
+<main class="shell" data-appearance={resolvedAppearance}>
   <header class="top">
     <p class="brand">{appName}</p>
     <Tabs
@@ -73,11 +143,13 @@
       {locale}
       {appendLog}
     />
-    <SettingsPanel
-      active={activeTab === "settings"}
+    <AppearancePanel
+      active={activeTab === "appearance"}
       {locale}
+      {appearance}
       {appendLog}
       {onLocaleChange}
+      {onAppearanceChange}
     />
     <CapturePanel
       active={activeTab === "capture"}
@@ -96,22 +168,53 @@
 </main>
 
 <style>
+  :global(:root),
+  :global([data-appearance="dark"]) {
+    --app-bg: #1c1c1e;
+    --app-fg: #f5f5f7;
+    --app-muted: #98989d;
+    --app-faint: #636366;
+    --app-accent: #0a84ff;
+    --app-accent-soft: color-mix(in srgb, #0a84ff 22%, transparent);
+    --app-inset: #2c2c2e;
+    --app-hairline: rgba(255, 255, 255, 0.08);
+    --app-hairline-strong: rgba(255, 255, 255, 0.14);
+    --app-control-bg: #3a3a3c;
+    --app-control-bg-hover: #48484a;
+    --app-control-border: #48484a;
+    --radius-sm: 8px;
+    --radius-md: 10px;
+  }
+
+  /* Light: white page → soft inset → floated controls (mirrors dark deep→shallow). */
+  :global([data-appearance="light"]) {
+    --app-bg: #ffffff;
+    --app-fg: #1d1d1f;
+    --app-muted: #6e6e73;
+    --app-faint: #8e8e93;
+    --app-accent: #007aff;
+    --app-accent-soft: color-mix(in srgb, #007aff 16%, transparent);
+    --app-inset: #f2f2f7;
+    --app-hairline: rgba(0, 0, 0, 0.08);
+    --app-hairline-strong: rgba(0, 0, 0, 0.14);
+    --app-control-bg: #ffffff;
+    --app-control-bg-hover: #e8e8ed;
+    --app-control-border: #d1d1d6;
+    --radius-sm: 8px;
+    --radius-md: 10px;
+  }
+
   :global(html, body) {
     margin: 0;
     height: 100%;
     width: 100%;
     overflow: hidden;
-    background:
-      radial-gradient(circle at 12% 18%, rgba(56, 189, 248, 0.18), transparent 42%),
-      radial-gradient(circle at 88% 12%, rgba(251, 146, 60, 0.16), transparent 36%),
-      linear-gradient(160deg, #0f172a 0%, #1e293b 55%, #0b1220 100%);
-    color: #e2e8f0;
+    background: var(--app-bg);
+    color: var(--app-fg);
     font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
   }
 
   .shell {
-    --radius-sm: 8px;
-    --radius-md: 10px;
     /* Content column: 560 + 40 pad ≈ 600 default window; stays centered if wider / fullscreen. */
     --shell-max: 560px;
     box-sizing: border-box;
@@ -125,6 +228,7 @@
     gap: 16px;
     overflow-x: hidden;
     overflow-y: hidden;
+    color: var(--app-fg);
   }
 
   .top {
@@ -137,9 +241,9 @@
   .brand {
     margin: 0;
     font-size: 13px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: #7dd3fc;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--app-muted);
   }
 
   .panels {

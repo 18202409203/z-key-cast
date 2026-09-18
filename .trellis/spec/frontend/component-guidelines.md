@@ -28,15 +28,16 @@ Route files compose these; they do not redefine cast/settings wire types. Do not
 
 - Panels that can append diagnostics take `appendLog: (line: string) => void` from the shell
 - Tab bodies take `active: boolean` and set `hidden` / `inert` from it — do not gate mount with `{#if}`
-- `SettingsPanel` notifies locale via `onLocaleChange` rather than writing shell state directly beyond the callback
+- `AppearancePanel` notifies locale / appearance via `onLocaleChange` / `onAppearanceChange` rather than writing shell state directly beyond the callbacks
 
 ---
 
 ## Styling Patterns
 
 - Scoped `<style>` per component/panel
-- Shell keeps global `html, body` tokens and `--shell-max`
-- Prefer matching existing slate / sky accent look; no new design system in extraction PRs
+- Shell owns `data-appearance` (`dark` \| `light` resolved) and `--app-*` tokens; panels/components consume tokens — do not hard-code slate/sky hex for main chrome
+- Main chrome depth ladder: page `--app-bg` → group `--app-inset` → control `--app-control-bg` (dark: deep→elevated; light: whitest page → soft `#f2f2f7` inset → white controls). HUD overlay colors stay on HUD Theme settings, not `--app-*`
+- Capture ignore-board `KeyboardMap` in the main window uses window tokens (`--app-fg` / `--app-control-bg`), not HUD `textColor` / `backgroundCss`
 
 ---
 
@@ -55,4 +56,4 @@ Route files compose these; they do not redefine cast/settings wire types. Do not
 - Importing moved HUD files from flat `$lib/*.svelte` instead of `$lib/components/`
 - Putting overlay HUD / slots under `$lib/panels/` (panels are main-window tabs only)
 - Redefining `HudChip` / channel strings in panels instead of `$lib/cast.ts` / `$lib/settings.ts`
-- Saving locale from both shell and Settings (double-persist) — Settings owns persist; shell mirrors via callback
+- Saving locale / appearance from both shell and Appearance (double-persist) — Appearance owns persist; shell mirrors via callback / channel

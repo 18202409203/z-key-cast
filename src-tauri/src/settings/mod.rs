@@ -1,5 +1,6 @@
 //! Durable app settings: capture toggles + HUD appearance + position + ignored keys.
 
+mod appearance;
 mod capture;
 mod hud;
 mod locale;
@@ -17,13 +18,15 @@ pub use hud::{
     abandon_hud_place_mode, apply_hud_position, end_hud_place_mode, get_hud_position_settings,
     get_hud_style_settings, set_hud_position_settings, set_hud_style_settings, start_hud_place_mode,
 };
+pub use appearance::{get_ui_appearance_settings, set_ui_appearance_settings};
 pub use locale::{get_ui_locale_settings, set_ui_locale_settings};
 pub use ripple::sync_ripple_window;
 pub use store::{load, mouse_click_ripple_enabled};
 #[allow(unused_imports)] // public API surface for TS-aligned types / helpers
 pub use types::{
     AppSettings, CaptureSettings, HudCorner, HudPlaceModePayload, HudPositionSettings, HudPreset,
-    HudStyleSettings, KeyMouseLayout, KeyboardLegendLayout, UiLocale, UiLocalePayload,
+    HudStyleSettings, KeyMouseLayout, KeyboardLegendLayout, UiAppearance, UiAppearancePayload,
+    UiLocale, UiLocalePayload,
 };
 
 // `tauri::generate_handler![settings::…]` resolves `__cmd__*` / `__tauri_command_name_*`
@@ -48,10 +51,16 @@ pub use locale::{
     __cmd__get_ui_locale_settings, __cmd__set_ui_locale_settings,
     __tauri_command_name_get_ui_locale_settings, __tauri_command_name_set_ui_locale_settings,
 };
+#[doc(hidden)]
+pub use appearance::{
+    __cmd__get_ui_appearance_settings, __cmd__set_ui_appearance_settings,
+    __tauri_command_name_get_ui_appearance_settings, __tauri_command_name_set_ui_appearance_settings,
+};
 
 pub const HUD_STYLE_CHANNEL: &str = "cast://hud-style";
 pub const HUD_POSITION_CHANNEL: &str = "cast://hud-position";
 pub const HUD_PLACE_MODE_CHANNEL: &str = "cast://hud-place-mode";
 pub const UI_LOCALE_CHANNEL: &str = "cast://ui-locale";
+pub const UI_APPEARANCE_CHANNEL: &str = "cast://ui-appearance";
 pub const CAPTURE_SETTINGS_CHANNEL: &str = "cast://capture-settings";
 pub const RIPPLE_WINDOW_LABEL: &str = "ripple";
