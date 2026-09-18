@@ -1,6 +1,5 @@
 <script lang="ts">
   import { listen } from "@tauri-apps/api/event";
-  import { getName } from "@tauri-apps/api/app";
   import { onMount } from "svelte";
   import Tabs from "$lib/components/Tabs.svelte";
   import AboutPanel from "$lib/panels/AboutPanel.svelte";
@@ -21,7 +20,6 @@
   type MainTab = "hud" | "appearance" | "capture" | "log" | "about";
 
   const MAX_LOG_LINES = 100;
-  const FALLBACK_APP_NAME = "z-key-cast";
   const SCHEME_QUERY = "(prefers-color-scheme: dark)";
 
   let locale = $state<UiLocale>(guessLocaleFromSystem());
@@ -29,7 +27,6 @@
   let resolvedAppearance = $state<ResolvedAppearance>("dark");
   let activeTab = $state<MainTab>("hud");
   let logLines = $state<string[]>([]);
-  let appName = $state(FALLBACK_APP_NAME);
 
   const TABS = $derived<{ id: MainTab; label: string }[]>([
     { id: "hud", label: t("nav.hud", locale) },
@@ -79,13 +76,6 @@
 
     void (async () => {
       try {
-        const name = await getName();
-        if (!cancelled && name) appName = name;
-      } catch {
-        // Keep package fallback when not running under Tauri.
-      }
-
-      try {
         const stored = await getUiAppearanceSettings();
         if (!cancelled) {
           onAppearanceChange(stored ?? "system");
@@ -128,7 +118,6 @@
 
 <main class="shell" data-appearance={resolvedAppearance}>
   <header class="top">
-    <p class="brand">{appName}</p>
     <Tabs
       items={TABS}
       value={activeTab}
@@ -308,7 +297,7 @@
     width: 100%;
     max-width: var(--shell-max);
     margin-inline: auto;
-    padding: 20px 20px 24px;
+    padding: 0px 0px 16px;
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -319,17 +308,6 @@
 
   .top {
     flex: none;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  .brand {
-    margin: 0;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    color: var(--app-muted);
   }
 
   .panels {
