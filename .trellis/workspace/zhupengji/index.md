@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 16
+- **Total Sessions**: 17
 - **Last Active**: 2026-09-18
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~642 | Active |
+| `journal-1.md` | ~675 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 17 | 2026-09-18 | Main UI polish | `66624c6` | `main` |
 | 16 | 2026-09-18 | Main window appearance | `c2ed29d` | `main` |
 | 15 | 2026-09-17 | Text/Lite timelineMax + archive mod-chord | `332e86c`, `0d77e4a`, `ad6aed7`, `2868a50` | `main` |
 | 14 | 2026-09-17 | Archive design/03 HUD UX parent | `b5e998c` | `main` |

@@ -640,3 +640,36 @@ Persisted system/dark/light main chrome with flat tokens and page→inset→cont
 ### Next Steps
 
 - None - task complete
+
+
+## Session 17: Main UI polish
+
+**Date**: 2026-09-18
+**Task**: Main UI polish
+**Branch**: `main`
+
+### Summary
+
+Panel inset/radius tokens, fixed tab height, fail-only capture banner, unified fill ChoiceCardGroup with outline selection; ring research captured.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `66624c6` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
