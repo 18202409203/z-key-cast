@@ -20,3 +20,4 @@ src-tauri/gen/schemas
 # Trellis local
 .trellis/.developer
 .trellis/.runtime
+.codebuddy
