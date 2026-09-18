@@ -87,7 +87,7 @@ const en = {
   "settings.mouseSection": "Mouse",
   "settings.mouseClickRipple": "Click ripple (primary screen)",
   "settings.mouseClickRippleHint":
-    "Shows a brief ring at click locations on the main display. Independent of mouse HUD listening. macOS only for now.",
+    "Shows a brief ring at click locations on the primary display.",
   "settings.hasNumpad": "Has numpad",
   "settings.hasNumpadHint":
     "Select whether your keyboard has a numpad.",
@@ -97,7 +97,7 @@ const en = {
   "settings.ignoreCategories": "Ignore categories",
   "settings.ignoreMouse": "Ignore mouse actions",
   "settings.ignoreMouseHint":
-    "Hide those mouse categories from the HUD. Click ripple is separate and stays available.",
+    "Hide those mouse categories from the HUD.",
   "settings.ignoreMouse.left": "Left",
   "settings.ignoreMouse.right": "Right",
   "settings.ignoreMouse.middle": "Middle",
@@ -212,7 +212,7 @@ const zh: Record<MessageKey, string> = {
   "settings.mouseSection": "鼠标",
   "settings.mouseClickRipple": "点击涟漪",
   "settings.mouseClickRippleHint":
-    "在主显示器点击位置显示短暂圆环。与鼠标 HUD 监听无关，目前仅 macOS。",
+    "在主显示器点击位置显示短暂圆环。",
   "settings.hasNumpad": "有小键盘",
   "settings.hasNumpadHint":
     "选择您的键盘是否带有小键盘。",
@@ -222,7 +222,7 @@ const zh: Record<MessageKey, string> = {
   "settings.ignoreCategories": "忽略分类",
   "settings.ignoreMouse": "忽略鼠标操作",
   "settings.ignoreMouseHint":
-    "在 HUD 中隐藏这些鼠标类别。点击涟漪独立开关，不受此列表影响。",
+    "在 HUD 中隐藏这些鼠标类别。",
   "settings.ignoreMouse.left": "左键",
   "settings.ignoreMouse.right": "右键",
   "settings.ignoreMouse.middle": "中键",
