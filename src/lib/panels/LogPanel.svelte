@@ -1,6 +1,7 @@
 <script lang="ts">
   import { listen } from "@tauri-apps/api/event";
   import { onMount } from "svelte";
+  import FormSection from "$lib/components/FormSection.svelte";
   import {
     EVENT_CHANNEL,
     HOOK_STATUS_CHANNEL,
@@ -140,27 +141,28 @@
   hidden={!active}
   inert={!active}
 >
-  <div class="log-header">
-    <h2>{t("log.title", locale)}</h2>
-    <button type="button" class="clear" onclick={clearLog}
-      >{t("log.clear", locale)}</button
+  <FormSection title={t("log.title", locale)} titleId="log-heading">
+    {#snippet actions()}
+      <button type="button" class="clear" onclick={clearLog}
+        >{t("log.clear", locale)}</button
+      >
+    {/snippet}
+    <div
+      class="log"
+      role="log"
+      aria-live="polite"
+      bind:this={logEl}
+      onscroll={onLogScroll}
     >
-  </div>
-  <div
-    class="log"
-    role="log"
-    aria-live="polite"
-    bind:this={logEl}
-    onscroll={onLogScroll}
-  >
-    {#if logLines.length === 0}
-      <p class="muted empty">{t("log.empty", locale)}</p>
-    {:else}
-      {#each logLines as line, i (i)}
-        <div class="log-line">{line}</div>
-      {/each}
-    {/if}
-  </div>
+      {#if logLines.length === 0}
+        <p class="muted empty">{t("log.empty", locale)}</p>
+      {:else}
+        {#each logLines as line, i (i)}
+          <div class="log-line">{line}</div>
+        {/each}
+      {/if}
+    </div>
+  </FormSection>
 </div>
 
 <style>
@@ -170,7 +172,7 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 16px;
     overflow: hidden;
   }
 
@@ -178,20 +180,18 @@
     display: none;
   }
 
-  h2 {
-    margin: 0;
-    font-size: 13px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #64748b;
+  .panel :global(.form-section) {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
 
-  .log-header {
-    flex: none;
+  .panel :global(.form-group) {
+    flex: 1;
+    min-height: 0;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+    flex-direction: column;
   }
 
   .clear {
@@ -217,10 +217,7 @@
     overflow: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    border: 1px solid #334155;
-    border-radius: 10px;
-    background: rgba(15, 23, 42, 0.9);
-    padding: 10px 12px;
+    padding: 12px 14px;
     font-family: "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
     font-size: 12px;
     line-height: 1.45;
@@ -240,7 +237,7 @@
   .muted {
     margin: 0;
     color: #94a3b8;
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .empty {

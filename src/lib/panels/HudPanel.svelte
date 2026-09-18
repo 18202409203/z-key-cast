@@ -2,6 +2,8 @@
   import { listen } from "@tauri-apps/api/event";
   import { onMount } from "svelte";
   import ChoiceCardGroup from "$lib/components/ChoiceCardGroup.svelte";
+  import FormRow from "$lib/components/FormRow.svelte";
+  import FormSection from "$lib/components/FormSection.svelte";
   import {
     DEFAULT_HUD_STYLE,
     HUD_STYLE_CHANNEL,
@@ -35,6 +37,14 @@
   const showDwellMs = $derived(hudStyle.hudPreset !== "full");
   const showFontSize = $derived(showDwellMs);
   const showTimelineMax = $derived(showDwellMs);
+
+  const presetHint = $derived(
+    hudStyle.hudPreset === "lite"
+      ? t("settings.hudPreset.liteHint", locale)
+      : hudStyle.hudPreset === "full"
+        ? t("settings.hudPreset.fullHint", locale)
+        : t("settings.hudPreset.textHint", locale),
+  );
 
   const presetItems = $derived([
     {
@@ -181,12 +191,14 @@
   hidden={!active}
   inert={!active}
 >
-  <section>
-    <h2>{t("settings.presentation", locale)}</h2>
-    <div class="field">
-      <span class="field-label" id="hud-preset-label"
-        >{t("settings.hudPreset", locale)}</span
-      >
+  <FormSection title={t("settings.presentation", locale)}>
+    <FormRow
+      label={t("settings.hudPreset", locale)}
+      labelId="hud-preset-label"
+      hint={presetHint}
+      hintId="hud-preset-hint"
+      stack
+    >
       <ChoiceCardGroup
         name="hud-preset"
         value={hudStyle.hudPreset ?? "text"}
@@ -196,21 +208,13 @@
         columns={3}
         onChange={onHudPresetChange}
       />
-      <p class="field-hint" id="hud-preset-hint">
-        {#if hudStyle.hudPreset === "lite"}
-          {t("settings.hudPreset.liteHint", locale)}
-        {:else if hudStyle.hudPreset === "full"}
-          {t("settings.hudPreset.fullHint", locale)}
-        {:else}
-          {t("settings.hudPreset.textHint", locale)}
-        {/if}
-      </p>
-    </div>
+    </FormRow>
     {#if showKeyMouseLayout}
-      <div class="field">
-        <span class="field-label" id="hud-km-layout-label"
-          >{t("settings.keyMouseLayout", locale)}</span
-        >
+      <FormRow
+        label={t("settings.keyMouseLayout", locale)}
+        labelId="hud-km-layout-label"
+        stack
+      >
         <ChoiceCardGroup
           name="hud-km-layout"
           value={hudStyle.keyMouseLayout ?? "key-left-mouse-right"}
@@ -220,13 +224,13 @@
           columns={4}
           onChange={onKeyMouseLayoutChange}
         />
-      </div>
+      </FormRow>
     {/if}
     {#if showLegendLayout}
-      <div class="field">
-        <span class="field-label" id="hud-legend-layout-label"
-          >{t("settings.legendLayout", locale)}</span
-        >
+      <FormRow
+        label={t("settings.legendLayout", locale)}
+        labelId="hud-legend-layout-label"
+      >
         <select
           id="hud-legend-layout"
           value={hudStyle.keyboardLegendLayout ?? "auto"}
@@ -242,15 +246,15 @@
             >{t("settings.legendLayout.winUs", locale)}</option
           >
         </select>
-      </div>
+      </FormRow>
     {/if}
     {#if showFontSize}
-      <div class="field">
-        <span class="field-label" id="hud-font-size-label"
-          >{t("settings.fontSize", locale, {
-            n: hudStyle.fontSizePx,
-          })}</span
-        >
+      <FormRow
+        label={t("settings.fontSize", locale, {
+          n: hudStyle.fontSizePx,
+        })}
+        labelId="hud-font-size-label"
+      >
         <input
           id="hud-font-size"
           type="range"
@@ -262,13 +266,15 @@
           aria-labelledby="hud-font-size-label"
           onchange={onFontSizeChange}
         />
-      </div>
+      </FormRow>
     {/if}
     {#if showDwellMs}
-      <div class="field">
-        <span class="field-label" id="hud-dwell-ms-label"
-          >{t("settings.dwellMs", locale)}</span
-        >
+      <FormRow
+        label={t("settings.dwellMs", locale)}
+        labelId="hud-dwell-ms-label"
+        hint={t("settings.dwellMsHint", locale)}
+        hintId="hud-dwell-ms-hint"
+      >
         <input
           id="hud-dwell-ms"
           type="number"
@@ -282,18 +288,17 @@
           title={t("settings.dwellMsHint", locale)}
           onchange={onDwellMsChange}
         />
-        <p class="field-hint" id="hud-dwell-ms-hint"
-          >{t("settings.dwellMsHint", locale)}</p
-        >
-      </div>
+      </FormRow>
     {/if}
     {#if showTimelineMax}
-      <div class="field">
-        <span class="field-label" id="hud-timeline-max-label"
-          >{t("settings.timelineMax", locale, {
-            n: hudStyle.timelineMax ?? 5,
-          })}</span
-        >
+      <FormRow
+        label={t("settings.timelineMax", locale, {
+          n: hudStyle.timelineMax ?? 5,
+        })}
+        labelId="hud-timeline-max-label"
+        hint={t("settings.timelineMaxHint", locale)}
+        hintId="hud-timeline-max-hint"
+      >
         <input
           id="hud-timeline-max"
           type="range"
@@ -307,12 +312,9 @@
           title={t("settings.timelineMaxHint", locale)}
           onchange={onTimelineMaxChange}
         />
-        <p class="field-hint" id="hud-timeline-max-hint"
-          >{t("settings.timelineMaxHint", locale)}</p
-        >
-      </div>
+      </FormRow>
     {/if}
-  </section>
+  </FormSection>
 </div>
 
 <style>
@@ -336,66 +338,5 @@
   .panel::-webkit-scrollbar {
     width: 0;
     height: 0;
-  }
-
-  section {
-    display: grid;
-    gap: 12px;
-    min-width: 0;
-  }
-
-  h2 {
-    margin: 0;
-    font-size: 13px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #64748b;
-  }
-
-  .field {
-    display: grid;
-    gap: 10px;
-    min-width: 0;
-    font-size: 14px;
-  }
-
-  .field-label {
-    color: #e2e8f0;
-  }
-
-  .field-hint {
-    margin: 0;
-    color: #64748b;
-    font-size: 12px;
-    line-height: 1.4;
-  }
-
-  select,
-  input[type="number"],
-  input[type="range"] {
-    box-sizing: border-box;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-  }
-
-  select,
-  input[type="number"] {
-    border: 1px solid #334155;
-    border-radius: 10px;
-    background: #0f172a;
-    color: #e2e8f0;
-    padding: 10px 12px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  }
-
-  input[type="range"] {
-    accent-color: #38bdf8;
-  }
-
-  select:disabled,
-  input:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
   }
 </style>

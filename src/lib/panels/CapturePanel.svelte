@@ -1,6 +1,8 @@
 <script lang="ts">
   import { listen } from "@tauri-apps/api/event";
   import { onMount } from "svelte";
+  import FormRow from "$lib/components/FormRow.svelte";
+  import FormSection from "$lib/components/FormSection.svelte";
   import KeyboardMap from "$lib/components/KeyboardMap.svelte";
   import {
     HOOK_STATUS_CHANNEL,
@@ -367,7 +369,7 @@
   });
 </script>
 
-  <div
+<div
   class="panel settings-panel"
   id="panel-capture"
   role="tabpanel"
@@ -379,9 +381,11 @@
     <p class="muted error">{captureFailedMessage}</p>
   {/if}
 
-  <section class="capture-section" aria-labelledby="capture-mouse-heading">
-    <h2 id="capture-mouse-heading">{t("settings.mouseSection", locale)}</h2>
-    <div class="field field-toggle">
+  <FormSection
+    title={t("settings.mouseSection", locale)}
+    titleId="capture-mouse-heading"
+  >
+    <FormRow label={t("settings.listenMouse", locale)} htmlFor="capture-mouse">
       <input
         id="capture-mouse"
         type="checkbox"
@@ -389,32 +393,41 @@
         disabled={!captureReady || captureSaving}
         onchange={onCaptureMouseChange}
       />
-      <label for="capture-mouse">{t("settings.listenMouse", locale)}</label>
-    </div>
+    </FormRow>
 
-    <div class="ignore-block" class:section-disabled={!captureMouse}>
-      <p class="field-label">{t("settings.ignoreMouse", locale)}</p>
-      <p class="muted ignore-hint">{t("settings.ignoreMouseHint", locale)}</p>
+    <FormRow
+      label={t("settings.ignoreMouse", locale)}
+      hint={t("settings.ignoreMouseHint", locale)}
+      sublabel
+      stack
+    >
       <div
-        class="category-grid"
+        class="ignore-stack"
+        class:section-disabled={!captureMouse}
         role="group"
         aria-label={t("settings.ignoreMouse", locale)}
       >
-        {#each IGNORED_MOUSE_ACTIONS as action (action)}
-          <label class="category-toggle">
-            <input
-              type="checkbox"
-              checked={ignoredMouseSet.has(action)}
-              disabled={mouseIgnoreDisabled}
-              onchange={(e) => onIgnoreMouseActionChange(action, e)}
-            />
-            <span>{t(mouseActionLabelKey(action), locale)}</span>
-          </label>
-        {/each}
+        <div class="category-grid">
+          {#each IGNORED_MOUSE_ACTIONS as action (action)}
+            <label class="category-toggle">
+              <input
+                type="checkbox"
+                checked={ignoredMouseSet.has(action)}
+                disabled={mouseIgnoreDisabled}
+                onchange={(e) => onIgnoreMouseActionChange(action, e)}
+              />
+              <span>{t(mouseActionLabelKey(action), locale)}</span>
+            </label>
+          {/each}
+        </div>
       </div>
-    </div>
+    </FormRow>
 
-    <div class="field field-toggle">
+    <FormRow
+      label={t("settings.mouseClickRipple", locale)}
+      htmlFor="mouse-click-ripple"
+      hint={t("settings.mouseClickRippleHint", locale)}
+    >
       <input
         id="mouse-click-ripple"
         type="checkbox"
@@ -422,18 +435,17 @@
         disabled={!captureReady || captureSaving}
         onchange={onMouseClickRippleChange}
       />
-      <label for="mouse-click-ripple"
-        >{t("settings.mouseClickRipple", locale)}</label
-      >
-    </div>
-    <p class="muted ignore-hint">
-      {t("settings.mouseClickRippleHint", locale)}
-    </p>
-  </section>
+    </FormRow>
+  </FormSection>
 
-  <section class="capture-section" aria-labelledby="capture-keyboard-heading">
-    <h2 id="capture-keyboard-heading">{t("settings.keyboardSection", locale)}</h2>
-    <div class="field field-toggle">
+  <FormSection
+    title={t("settings.keyboardSection", locale)}
+    titleId="capture-keyboard-heading"
+  >
+    <FormRow
+      label={t("settings.listenKeyboard", locale)}
+      htmlFor="capture-keyboard"
+    >
       <input
         id="capture-keyboard"
         type="checkbox"
@@ -441,11 +453,13 @@
         disabled={!captureReady || captureSaving}
         onchange={onCaptureKeyboardChange}
       />
-      <label for="capture-keyboard"
-        >{t("settings.listenKeyboard", locale)}</label
-      >
-    </div>
-    <div class="field field-toggle">
+    </FormRow>
+
+    <FormRow
+      label={t("settings.hasNumpad", locale)}
+      htmlFor="has-numpad"
+      hint={t("settings.hasNumpadHint", locale)}
+    >
       <input
         id="has-numpad"
         type="checkbox"
@@ -453,97 +467,103 @@
         disabled={keyboardControlsDisabled}
         onchange={onHasNumpadChange}
       />
-      <label for="has-numpad">{t("settings.hasNumpad", locale)}</label>
-    </div>
-    <p class="muted ignore-hint">{t("settings.hasNumpadHint", locale)}</p>
+    </FormRow>
 
-    <div class="ignore-block" class:section-disabled={!captureKeyboard}>
-      <p class="field-label">{t("settings.ignoreKeys", locale)}</p>
-      <p class="muted ignore-hint">{t("settings.ignoreHint", locale)}</p>
+    <FormRow
+      label={t("settings.ignoreKeys", locale)}
+      hint={t("settings.ignoreHint", locale)}
+      sublabel
+      stack
+    >
       <div
-        class="category-grid"
-        role="group"
-        aria-label={t("settings.ignoreCategories", locale)}
+        class="ignore-stack"
+        class:section-disabled={!captureKeyboard}
       >
-        {#each IGNORE_CATEGORIES as category (category.id)}
-          {@const state = categoryToggleState(ignoredKeyIds, category.ids)}
-          {@const labelKey = categoryLabelKey(category.id)}
-          <label class="category-toggle">
-            <input
-              type="checkbox"
-              disabled={ignoreBoardDisabled}
-              use:bindCategoryCheckbox={state}
-              onchange={(e) => onIgnoreCategoryChange(category.id, e)}
-            />
-            <span
-              >{labelKey ? t(labelKey, locale) : category.label}</span
+        <div
+          class="category-grid"
+          role="group"
+          aria-label={t("settings.ignoreCategories", locale)}
+        >
+          {#each IGNORE_CATEGORIES as category (category.id)}
+            {@const state = categoryToggleState(ignoredKeyIds, category.ids)}
+            {@const labelKey = categoryLabelKey(category.id)}
+            <label class="category-toggle">
+              <input
+                type="checkbox"
+                disabled={ignoreBoardDisabled}
+                use:bindCategoryCheckbox={state}
+                onchange={(e) => onIgnoreCategoryChange(category.id, e)}
+              />
+              <span
+                >{labelKey ? t(labelKey, locale) : category.label}</span
+              >
+            </label>
+          {/each}
+        </div>
+
+        <div class="ignore-board">
+          <KeyboardMap
+            ignoredIds={ignoredIdSet}
+            interactive={true}
+            showNumpad={hasNumpad}
+            disabled={ignoreBoardDisabled}
+            textColor={hudStyle.textColor}
+            backgroundCss={ignoreBoardBackground}
+            fontSizePx={KEYBOARD_MAP_FONT_PX}
+            legendLayout={ignoreBoardLegendLayout}
+            onToggleKey={onToggleIgnoredKey}
+          />
+        </div>
+
+        <div class="ignore-actions">
+          {#if ignoreCapturing}
+            <button
+              type="button"
+              class="clear"
+              disabled={!captureReady || captureSaving}
+              onclick={() => void onCancelIgnoreKey()}
             >
-          </label>
-        {/each}
-      </div>
+              {t("settings.cancel", locale)}
+            </button>
+            <span class="muted">{t("settings.pressKey", locale)}</span>
+          {:else}
+            <button
+              type="button"
+              class="clear"
+              disabled={keyboardControlsDisabled}
+              onclick={() => void onAddIgnoreKey()}
+            >
+              {t("settings.addKey", locale)}
+            </button>
+          {/if}
+        </div>
 
-      <div class="ignore-board">
-        <KeyboardMap
-          ignoredIds={ignoredIdSet}
-          interactive={true}
-          showNumpad={hasNumpad}
-          disabled={ignoreBoardDisabled}
-          textColor={hudStyle.textColor}
-          backgroundCss={ignoreBoardBackground}
-          fontSizePx={KEYBOARD_MAP_FONT_PX}
-          legendLayout={ignoreBoardLegendLayout}
-          onToggleKey={onToggleIgnoredKey}
-        />
-      </div>
-
-      <div class="ignore-actions">
-        {#if ignoreCapturing}
-          <button
-            type="button"
-            class="clear"
-            disabled={!captureReady || captureSaving}
-            onclick={() => void onCancelIgnoreKey()}
-          >
-            {t("settings.cancel", locale)}
-          </button>
-          <span class="muted">{t("settings.pressKey", locale)}</span>
-        {:else}
-          <button
-            type="button"
-            class="clear"
-            disabled={keyboardControlsDisabled}
-            onclick={() => void onAddIgnoreKey()}
-          >
-            {t("settings.addKey", locale)}
-          </button>
+        {#if offBoardIgnoredKeyIds.length > 0}
+          <ul class="ignore-list">
+            {#each offBoardIgnoredKeyIds as id (id)}
+              <li class="ignore-item">
+                <span class="ignore-label"
+                  >{labelForKeyId(id, ignoreBoardLegendLayout)}</span
+                >
+                <code class="ignore-id">{id}</code>
+                <button
+                  type="button"
+                  class="clear ignore-remove"
+                  disabled={ignoreBoardDisabled}
+                  aria-label={t("settings.removeAria", locale, { id })}
+                  onclick={() => removeIgnoredKey(id)}
+                >
+                  {t("settings.remove", locale)}
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {:else if ignoredKeyIds.length === 0}
+          <p class="muted">{t("settings.noIgnoredKeys", locale)}</p>
         {/if}
       </div>
-
-      {#if offBoardIgnoredKeyIds.length > 0}
-        <ul class="ignore-list">
-          {#each offBoardIgnoredKeyIds as id (id)}
-            <li class="ignore-item">
-              <span class="ignore-label"
-                >{labelForKeyId(id, ignoreBoardLegendLayout)}</span
-              >
-              <code class="ignore-id">{id}</code>
-              <button
-                type="button"
-                class="clear ignore-remove"
-                disabled={ignoreBoardDisabled}
-                aria-label={t("settings.removeAria", locale, { id })}
-                onclick={() => removeIgnoredKey(id)}
-              >
-                {t("settings.remove", locale)}
-              </button>
-            </li>
-          {/each}
-        </ul>
-      {:else if ignoredKeyIds.length === 0}
-        <p class="muted">{t("settings.noIgnoredKeys", locale)}</p>
-      {/if}
-    </div>
-  </section>
+    </FormRow>
+  </FormSection>
 </div>
 
 <style>
@@ -569,59 +589,16 @@
     height: 0;
   }
 
-  section {
-    display: grid;
-    gap: 12px;
-    min-width: 0;
-  }
-
-  .capture-section {
-    padding-top: 4px;
-  }
-
-  h2 {
-    margin: 0;
-    font-size: 13px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #64748b;
-  }
-
-  .field {
+  .ignore-stack {
     display: grid;
     gap: 10px;
     min-width: 0;
-    font-size: 14px;
+    justify-self: stretch;
+    width: 100%;
   }
 
-  .field-label {
-    color: #e2e8f0;
-  }
-
-  .field-toggle {
-    grid-template-columns: auto 1fr;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .field-toggle input {
-    width: 16px;
-    height: 16px;
-    accent-color: #38bdf8;
-  }
-
-  .ignore-block {
-    display: grid;
-    gap: 10px;
-    margin-top: 4px;
-  }
-
-  .ignore-block.section-disabled {
+  .ignore-stack.section-disabled {
     opacity: 0.55;
-  }
-
-  .ignore-hint {
-    font-size: 13px;
   }
 
   .category-grid {

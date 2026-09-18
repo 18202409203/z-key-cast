@@ -1,6 +1,8 @@
 <script lang="ts">
   import { listen } from "@tauri-apps/api/event";
   import { onMount } from "svelte";
+  import FormRow from "$lib/components/FormRow.svelte";
+  import FormSection from "$lib/components/FormSection.svelte";
   import {
     DEFAULT_HUD_POSITION,
     DEFAULT_HUD_STYLE,
@@ -294,12 +296,8 @@
   hidden={!active}
   inert={!active}
 >
-  <section>
-    <h2>{t("settings.theme", locale)}</h2>
-    <div class="field">
-      <span class="field-label" id="hud-color-preset-label"
-        >{t("settings.colorPreset", locale)}</span
-      >
+  <FormSection title={t("settings.theme", locale)}>
+    <FormRow label={t("settings.colorPreset", locale)} labelId="hud-color-preset-label">
       <select
         id="hud-color-preset"
         value={colorPresetSelect}
@@ -318,12 +316,9 @@
           >{t("settings.colorPreset.custom", locale)}</option
         >
       </select>
-    </div>
+    </FormRow>
     {#if showCustomColors}
-      <div class="field">
-        <span class="field-label" id="hud-text-color-label"
-          >{t("settings.textColor", locale)}</span
-        >
+      <FormRow label={t("settings.textColor", locale)} labelId="hud-text-color-label">
         <input
           id="hud-text-color"
           type="color"
@@ -332,11 +327,8 @@
           aria-labelledby="hud-text-color-label"
           onchange={onTextColorChange}
         />
-      </div>
-      <div class="field">
-        <span class="field-label" id="hud-bg-color-label"
-          >{t("settings.bgColor", locale)}</span
-        >
+      </FormRow>
+      <FormRow label={t("settings.bgColor", locale)} labelId="hud-bg-color-label">
         <input
           id="hud-bg-color"
           type="color"
@@ -345,13 +337,13 @@
           aria-labelledby="hud-bg-color-label"
           onchange={onBackgroundColorChange}
         />
-      </div>
-      <div class="field">
-        <span class="field-label" id="hud-bg-opacity-label"
-          >{t("settings.bgOpacity", locale, {
-            n: hudStyle.backgroundOpacity.toFixed(2),
-          })}</span
-        >
+      </FormRow>
+      <FormRow
+        label={t("settings.bgOpacity", locale, {
+          n: hudStyle.backgroundOpacity.toFixed(2),
+        })}
+        labelId="hud-bg-opacity-label"
+      >
         <input
           id="hud-bg-opacity"
           type="range"
@@ -363,16 +355,12 @@
           aria-labelledby="hud-bg-opacity-label"
           onchange={onBackgroundOpacityChange}
         />
-      </div>
+      </FormRow>
     {/if}
-  </section>
+  </FormSection>
 
-  <section>
-    <h2>{t("settings.position", locale)}</h2>
-    <div class="field">
-      <span class="field-label" id="setting-corner-label"
-        >{t("settings.corner", locale)}</span
-      >
+  <FormSection title={t("settings.position", locale)}>
+    <FormRow label={t("settings.corner", locale)} labelId="setting-corner-label">
       <select
         id="setting-corner"
         value={cornerSelectDisplay}
@@ -386,12 +374,13 @@
         <option value="tl">{t("settings.corner.tl", locale)}</option>
         <option value="custom">{t("settings.corner.custom", locale)}</option>
       </select>
-    </div>
+    </FormRow>
     {#if showPlaceControls}
-      <div class="field">
-        <span class="field-label" id="setting-place-label"
-          >{t("settings.hudPosition", locale)}</span
-        >
+      <FormRow
+        label={t("settings.hudPosition", locale)}
+        labelId="setting-place-label"
+        hint={placeModeActive ? t("settings.placeHint", locale) : undefined}
+      >
         <button
           type="button"
           class="clear"
@@ -404,16 +393,15 @@
             ? t("settings.done", locale)
             : t("settings.moveHud", locale)}
         </button>
-        {#if placeModeActive}
-          <p class="muted">{t("settings.placeHint", locale)}</p>
-        {/if}
-      </div>
+      </FormRow>
     {/if}
-  </section>
+  </FormSection>
 
-  <section>
-    <h2 id="setting-language-heading">{t("settings.language", locale)}</h2>
-    <div class="field">
+  <FormSection
+    title={t("settings.language", locale)}
+    titleId="setting-language-heading"
+  >
+    <FormRow>
       <select
         id="setting-language"
         value={locale}
@@ -424,8 +412,8 @@
         <option value="en">{t("settings.language.en", locale)}</option>
         <option value="zh">{t("settings.language.zh", locale)}</option>
       </select>
-    </div>
-  </section>
+    </FormRow>
+  </FormSection>
 </div>
 
 <style>
@@ -451,31 +439,6 @@
     height: 0;
   }
 
-  section {
-    display: grid;
-    gap: 12px;
-    min-width: 0;
-  }
-
-  h2 {
-    margin: 0;
-    font-size: 13px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #64748b;
-  }
-
-  .field {
-    display: grid;
-    gap: 10px;
-    min-width: 0;
-    font-size: 14px;
-  }
-
-  .field-label {
-    color: #e2e8f0;
-  }
-
   .clear {
     border: 1px solid #334155;
     border-radius: 8px;
@@ -484,56 +447,11 @@
     font-size: 12px;
     padding: 6px 10px;
     cursor: pointer;
-    justify-self: start;
   }
 
   .clear:hover {
     color: #e2e8f0;
     border-color: #475569;
     background: #1e293b;
-  }
-
-  .muted {
-    margin: 0;
-    color: #94a3b8;
-    font-size: 14px;
-  }
-
-  select,
-  input[type="color"],
-  input[type="range"] {
-    box-sizing: border-box;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-  }
-
-  select {
-    border: 1px solid #334155;
-    border-radius: 10px;
-    background: #0f172a;
-    color: #e2e8f0;
-    padding: 10px 12px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  }
-
-  input[type="color"] {
-    min-height: 40px;
-    border: 1px solid #334155;
-    border-radius: 10px;
-    background: #0f172a;
-    padding: 4px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  }
-
-  input[type="range"] {
-    accent-color: #38bdf8;
-  }
-
-  select:disabled,
-  input:disabled,
-  button:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
   }
 </style>
