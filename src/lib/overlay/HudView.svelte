@@ -22,6 +22,7 @@
   import {
     DEFAULT_HUD_STYLE,
     hudBackgroundCss,
+    type HudCorner,
     type HudStyleSettings,
   } from "$lib/settings";
   import { t, type UiLocale } from "$lib/i18n";
@@ -34,57 +35,12 @@
   const TIMELINE_OUT_MS = 280;
   const TIMELINE_FLIP_MS = 220;
 
-  /** Enter from the right (timeline grows toward the right edge). */
-  function timelineIn(
-    _node: Element,
-    { duration = TIMELINE_IN_MS }: { duration?: number } = {},
-  ) {
-    return {
-      duration,
-      easing: cubicOut,
-      css: (t: number) => {
-        const x = (1 - t) * 28;
-        const s = 0.94 + t * 0.06;
-        return `opacity: ${t}; transform: translateX(${x}px) scale(${s});`;
-      },
-    };
-  }
-
-  /** Exit: pin to viewport so flex-end reflow cannot drag the outro to the right. */
-  function timelineOut(
-    node: Element,
-    { duration = TIMELINE_OUT_MS }: { duration?: number } = {},
-  ) {
-    const rect = (node as HTMLElement).getBoundingClientRect();
-    return {
-      duration,
-      easing: cubicOut,
-      css: (t: number) => {
-        // outro: t goes 1 → 0
-        const x = (1 - t) * -22;
-        const s = 0.88 + t * 0.12;
-        return [
-          "position: fixed",
-          `left: ${rect.left}px`,
-          `top: ${rect.top}px`,
-          `width: ${rect.width}px`,
-          `height: ${rect.height}px`,
-          "margin: 0",
-          "box-sizing: border-box",
-          "pointer-events: none",
-          "z-index: 20",
-          `opacity: ${t}`,
-          `transform: translateX(${x}px) scale(${s})`,
-          "transform-origin: center center",
-        ].join(";");
-      },
-    };
-  }
-
   type Props = {
     style: HudStyleSettings;
     locale: UiLocale;
     placeMode: boolean;
+    /** Inner content anchor; custom position maps to br upstream. */
+    contentCorner?: HudCorner;
     timeline: TimelineItem[];
     statusActive: boolean;
     activeKeyIds: ReadonlySet<string>;
@@ -104,6 +60,7 @@
     style,
     locale,
     placeMode,
+    contentCorner = "br",
     timeline,
     statusActive,
     activeKeyIds,
@@ -118,6 +75,59 @@
     showNumpad = true,
     onPlacePointerDown,
   }: Props = $props();
+
+  const timelineFromLeft = $derived(
+    contentCorner === "bl" || contentCorner === "tl",
+  );
+
+  /** Enter from the right (or left when left-anchored). */
+  function timelineIn(
+    _node: Element,
+    { duration = TIMELINE_IN_MS }: { duration?: number } = {},
+  ) {
+    const sign = timelineFromLeft ? -1 : 1;
+    return {
+      duration,
+      easing: cubicOut,
+      css: (t: number) => {
+        const x = (1 - t) * 28 * sign;
+        const s = 0.94 + t * 0.06;
+        return `opacity: ${t}; transform: translateX(${x}px) scale(${s});`;
+      },
+    };
+  }
+
+  /** Exit: pin to viewport so flex reflow cannot drag the outro. */
+  function timelineOut(
+    node: Element,
+    { duration = TIMELINE_OUT_MS }: { duration?: number } = {},
+  ) {
+    const rect = (node as HTMLElement).getBoundingClientRect();
+    const sign = timelineFromLeft ? 1 : -1;
+    return {
+      duration,
+      easing: cubicOut,
+      css: (t: number) => {
+        // outro: t goes 1 → 0
+        const x = (1 - t) * 22 * sign;
+        const s = 0.88 + t * 0.12;
+        return [
+          "position: fixed",
+          `left: ${rect.left}px`,
+          `top: ${rect.top}px`,
+          `width: ${rect.width}px`,
+          `height: ${rect.height}px`,
+          "margin: 0",
+          "box-sizing: border-box",
+          "pointer-events: none",
+          "z-index: 20",
+          `opacity: ${t}`,
+          `transform: translateX(${x}px) scale(${s})`,
+          "transform-origin: center center",
+        ].join(";");
+      },
+    };
+  }
 
   const statusText = $derived(
     statusActive ? t("overlay.captureUnavailable", locale) : null,
@@ -141,7 +151,7 @@
 </script>
 
 <div
-  class="hud"
+  class="hud hud-anchor-{contentCorner}"
   class:placing={placeMode}
   role="application"
   aria-label={placeMode
@@ -382,6 +392,21 @@
     font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
   }
 
+  .hud.hud-anchor-bl {
+    justify-content: flex-end;
+    align-items: flex-start;
+  }
+
+  .hud.hud-anchor-tr {
+    justify-content: flex-start;
+    align-items: flex-end;
+  }
+
+  .hud.hud-anchor-tl {
+    justify-content: flex-start;
+    align-items: flex-start;
+  }
+
   .hud.placing {
     pointer-events: auto;
     cursor: grab;
@@ -409,9 +434,28 @@
 
   .km-group {
     display: flex;
+    /* Default br: row → bottom-align; column → right-align. */
     align-items: flex-end;
     gap: 10px;
     max-width: 100%;
+  }
+
+  /*
+   * align-items is cross-axis: vertical in row layouts, horizontal in column.
+   * tl wants start on both; tr only top (row); bl only left (column).
+   */
+  .hud.hud-anchor-tl .km-group {
+    align-items: flex-start;
+  }
+
+  .hud.hud-anchor-tr .km-group.km-klmr,
+  .hud.hud-anchor-tr .km-group.km-krml {
+    align-items: flex-start;
+  }
+
+  .hud.hud-anchor-bl .km-group.km-ktmb,
+  .hud.hud-anchor-bl .km-group.km-kbmt {
+    align-items: flex-start;
   }
 
   .km-group.km-klmr,
@@ -453,12 +497,29 @@
     overflow: visible;
   }
 
+  /* Mirror grow edge: newest at left; older items shift right (左入右移). */
+  .hud.hud-anchor-bl .timeline,
+  .hud.hud-anchor-tl .timeline {
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+  }
+
+  .hud.hud-anchor-tr .timeline,
+  .hud.hud-anchor-tl .timeline {
+    align-items: flex-start;
+  }
+
   .timeline-item {
     flex: 0 0 auto;
     display: flex;
     align-items: flex-end;
     /* Transforms owned by in:/out:/flip — avoid CSS fighting Svelte transitions. */
     will-change: transform, opacity;
+  }
+
+  .hud.hud-anchor-tr .timeline-item,
+  .hud.hud-anchor-tl .timeline-item {
+    align-items: flex-start;
   }
 
   .chip {
@@ -534,5 +595,15 @@
     align-items: flex-end;
     gap: 6px;
     max-width: 100%;
+  }
+
+  .hud.hud-anchor-bl .card-row,
+  .hud.hud-anchor-tl .card-row {
+    justify-content: flex-start;
+  }
+
+  .hud.hud-anchor-tr .card-row,
+  .hud.hud-anchor-tl .card-row {
+    align-items: flex-start;
   }
 </style>

@@ -13,18 +13,24 @@
   } from "$lib/cast";
   import {
     CAPTURE_SETTINGS_CHANNEL,
+    DEFAULT_HUD_POSITION,
     HUD_PLACE_MODE_CHANNEL,
+    HUD_POSITION_CHANNEL,
     HUD_STYLE_CHANNEL,
     UI_LOCALE_CHANNEL,
+    contentCornerFromPosition,
     getCaptureSettings,
+    getHudPositionSettings,
     getHudStyleSettings,
     getUiLocaleSettings,
     isCaptureSettings,
     isHudPlaceModePayload,
+    isHudPositionSettings,
     isHudStyleSettings,
     isUiLocalePayload,
     normalizeCaptureSettings,
     setUiLocaleSettings,
+    type HudCorner,
   } from "$lib/settings";
   import {
     guessLocaleFromSystem,
@@ -35,6 +41,7 @@
   let placeMode = $state(false);
   let locale = $state<UiLocale>("en");
   let hasNumpad = $state(false);
+  let contentCorner = $state<HudCorner>("br");
 
   async function onPlacePointerDown(event: PointerEvent) {
     if (!placeMode) return;
@@ -85,6 +92,15 @@
         // Keep default true when invoke is unavailable.
       }
 
+      try {
+        const position = await getHudPositionSettings();
+        if (!cancelled) contentCorner = contentCornerFromPosition(position);
+      } catch {
+        if (!cancelled) {
+          contentCorner = contentCornerFromPosition(DEFAULT_HUD_POSITION);
+        }
+      }
+
       const unlistenLocale = await listen(UI_LOCALE_CHANNEL, (event) => {
         if (!isUiLocalePayload(event.payload)) return;
         locale = event.payload.locale;
@@ -104,6 +120,16 @@
         return;
       }
       unsubs.push(unlistenStyle);
+
+      const unlistenPosition = await listen(HUD_POSITION_CHANNEL, (event) => {
+        if (!isHudPositionSettings(event.payload)) return;
+        contentCorner = contentCornerFromPosition(event.payload);
+      });
+      if (cancelled) {
+        unlistenPosition();
+        return;
+      }
+      unsubs.push(unlistenPosition);
 
       const unlistenCapture = await listen(CAPTURE_SETTINGS_CHANNEL, (event) => {
         if (!isCaptureSettings(event.payload)) return;
@@ -167,6 +193,7 @@
   style={hud.style}
   {locale}
   {placeMode}
+  {contentCorner}
   timeline={hud.timeline}
   statusActive={hud.statusActive}
   activeKeyIds={hud.activeKeyIds}

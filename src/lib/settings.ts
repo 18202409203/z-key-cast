@@ -6,6 +6,7 @@ import {
 import { isUiLocale, type UiLocale } from "$lib/i18n";
 
 export const HUD_STYLE_CHANNEL = "cast://hud-style";
+export const HUD_POSITION_CHANNEL = "cast://hud-position";
 export const HUD_PLACE_MODE_CHANNEL = "cast://hud-place-mode";
 export const UI_LOCALE_CHANNEL = "cast://ui-locale";
 export const CAPTURE_SETTINGS_CHANNEL = "cast://capture-settings";
@@ -404,6 +405,13 @@ export function isHudPlaceModePayload(
 
 export function cornerSelectValue(position: HudPositionSettings): string {
   return position.mode === "custom" ? "custom" : position.corner;
+}
+
+/** Overlay content anchor: corner mode uses that corner; custom stays br. */
+export function contentCornerFromPosition(
+  position: HudPositionSettings,
+): HudCorner {
+  return position.mode === "corner" ? position.corner : "br";
 }
 
 export async function getHudPositionSettings(): Promise<HudPositionSettings> {

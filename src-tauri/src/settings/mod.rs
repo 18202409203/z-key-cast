@@ -50,6 +50,7 @@ pub use locale::{
 };
 
 pub const HUD_STYLE_CHANNEL: &str = "cast://hud-style";
+pub const HUD_POSITION_CHANNEL: &str = "cast://hud-position";
 pub const HUD_PLACE_MODE_CHANNEL: &str = "cast://hud-place-mode";
 pub const UI_LOCALE_CHANNEL: &str = "cast://ui-locale";
 pub const CAPTURE_SETTINGS_CHANNEL: &str = "cast://capture-settings";

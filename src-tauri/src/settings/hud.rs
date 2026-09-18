@@ -10,10 +10,14 @@ use super::store::{
 use super::types::{
     AppSettings, HudCorner, HudPlaceModePayload, HudPositionSettings, HudStyleSettings,
 };
-use super::{HUD_PLACE_MODE_CHANNEL, HUD_STYLE_CHANNEL};
+use super::{HUD_PLACE_MODE_CHANNEL, HUD_POSITION_CHANNEL, HUD_STYLE_CHANNEL};
 
 fn emit_hud_style(app: &AppHandle, hud: &HudStyleSettings) {
     let _ = app.emit(HUD_STYLE_CHANNEL, hud);
+}
+
+fn emit_hud_position(app: &AppHandle, position: &HudPositionSettings) {
+    let _ = app.emit(HUD_POSITION_CHANNEL, position);
 }
 
 fn emit_hud_place_mode(app: &AppHandle, active: bool) {
@@ -134,6 +138,7 @@ pub fn set_hud_position_settings(
     };
     persist_app_settings(&app, next)?;
     apply_hud_position(&app);
+    emit_hud_position(&app, &settings);
     Ok(settings)
 }
 
@@ -199,6 +204,7 @@ pub fn end_hud_place_mode(app: AppHandle) -> Result<HudPositionSettings, String>
     // Position is saved; always leave place mode even if ignore-cursor restore flakes.
     HUD_PLACE_MODE.store(false, Ordering::SeqCst);
     emit_hud_place_mode(&app, false);
+    emit_hud_position(&app, &custom);
     let _ = overlay.set_ignore_cursor_events(true);
     Ok(custom)
 }
