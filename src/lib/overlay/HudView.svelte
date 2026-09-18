@@ -76,40 +76,34 @@
     onPlacePointerDown,
   }: Props = $props();
 
-  const timelineFromLeft = $derived(
-    contentCorner === "bl" || contentCorner === "tl",
-  );
-
-  /** Enter from the right (or left when left-anchored). */
+  /** Enter at the right end of the strip (fixed LTR grow). */
   function timelineIn(
     _node: Element,
     { duration = TIMELINE_IN_MS }: { duration?: number } = {},
   ) {
-    const sign = timelineFromLeft ? -1 : 1;
     return {
       duration,
       easing: cubicOut,
       css: (t: number) => {
-        const x = (1 - t) * 28 * sign;
+        const x = (1 - t) * 28;
         const s = 0.94 + t * 0.06;
         return `opacity: ${t}; transform: translateX(${x}px) scale(${s});`;
       },
     };
   }
 
-  /** Exit: pin to viewport so flex reflow cannot drag the outro. */
+  /** Exit leftward; pin to viewport so flex reflow cannot drag the outro. */
   function timelineOut(
     node: Element,
     { duration = TIMELINE_OUT_MS }: { duration?: number } = {},
   ) {
     const rect = (node as HTMLElement).getBoundingClientRect();
-    const sign = timelineFromLeft ? 1 : -1;
     return {
       duration,
       easing: cubicOut,
       css: (t: number) => {
         // outro: t goes 1 → 0
-        const x = (1 - t) * 22 * sign;
+        const x = (1 - t) * -22;
         const s = 0.88 + t * 0.12;
         return [
           "position: fixed",
@@ -495,13 +489,14 @@
     gap: 8px;
     max-width: 100%;
     overflow: visible;
+    /* Pack against content corner: right = live edge, left = origin. */
+    align-self: flex-end;
   }
 
-  /* Mirror grow edge: newest at left; older items shift right (左入右移). */
   .hud.hud-anchor-bl .timeline,
   .hud.hud-anchor-tl .timeline {
-    flex-direction: row-reverse;
-    justify-content: flex-end;
+    align-self: flex-start;
+    justify-content: flex-start;
   }
 
   .hud.hud-anchor-tr .timeline,

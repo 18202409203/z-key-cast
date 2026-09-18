@@ -36,6 +36,7 @@
 ## Out of scope
 
 - custom 模式下的内容贴边用户选项（后续任务）。
+- Text/Lite 时间线出字方向强制选项（后续任务 `09-18-timeline-grow-direction`）。
 - 按屏幕象限自动猜测锚点。
 - 改 `keyMouseLayout` 选项含义或预设图卡。
 - 设置表单视觉分区（姐妹任务 `09-17-form-section-hierarchy`）。

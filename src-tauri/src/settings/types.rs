@@ -464,6 +464,25 @@ mod tests {
     }
 
     #[test]
+    fn legacy_timeline_grow_field_ignored() {
+        let with_legacy = r##"{
+            "captureKeyboard":true,
+            "captureMouse":true,
+            "hud":{
+                "fontSizePx":15,
+                "textColor":"#f8fafc",
+                "backgroundColor":"#0f172a",
+                "backgroundOpacity":0.82,
+                "dwellMs":1000,
+                "timelineGrow":"to-left"
+            }
+        }"##;
+        let parsed: AppSettings = serde_json::from_str(with_legacy).unwrap();
+        assert_eq!(parsed.hud.timeline_max, 5);
+        assert_eq!(parsed.hud.hud_preset, HudPreset::Text);
+    }
+
+    #[test]
     fn app_settings_default_hud_when_missing() {
         let raw = r#"{"captureKeyboard":false,"captureMouse":true}"#;
         let parsed: AppSettings = serde_json::from_str(raw).unwrap();

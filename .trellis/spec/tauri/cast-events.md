@@ -178,8 +178,8 @@ void listen(EVENT_CHANNEL, (event) => {
 ### Chip reduce scope
 
 - **Decision**: Emit precise down/up for primary keys, bare modifiers, and mouse; snapshot `held_mods` onto mouse/scroll; autorepeat / short debounce still drop before reduce
-- **Consumers**: Text/Lite defer modifier downs; companion key/mouse/scroll enqueue with mods and mark those mod ids consumed; unconsumed modifier ups synthesize a display `key` chip (`phase: "down"`); consumed ups silent; shared operation timeline (`timelineMax`, default 5, range 1–10; same-direction scroll at tail refreshes dwell only when mods multiset matches). Full maintains held-sets + scroll pulse (may ignore mouse/scroll `mods`). Log records both phases and mods on mouse/scroll.
-- **Out of scope**: AxN combo badges; timeline direction settings; Caps Lock as chord modifier
+- **Consumers**: Text/Lite defer modifier downs; companion key/mouse/scroll enqueue with mods and mark those mod ids consumed; unconsumed modifier ups synthesize a display `key` chip (`phase: "down"`); consumed ups silent; shared operation timeline (`timelineMax`, default 5, clamp 1–10; fixed LTR right-enter — newest on right; same-direction scroll at tail refreshes dwell only when mods multiset matches). Full maintains held-sets + scroll pulse (may ignore mouse/scroll `mods`). Log records both phases and mods on mouse/scroll.
+- **Out of scope**: AxN combo badges; Caps Lock as chord modifier
 
 ### Capture toggles (filter after reduce)
 
@@ -212,8 +212,8 @@ void listen(EVENT_CHANNEL, (event) => {
 | `text` | operation timeline of text chips (key + mouse + scroll, length = `timelineMax`) | no | per-item `dwellMs`; deferred mod commit |
 | `lite` | same timeline: KeyCard + compact MouseSchematic five frames (mods KeyCards precede mouse/scroll frame) | no | per-item `dwellMs`; deferred mod commit |
 | `full` | keyboard map + MouseSchematic board | always | held-set from down/up; scroll pulse; ignore dwell; ignore mouse/scroll `mods` |
-- **Migration**: if `hudPreset` absent, map legacy `keyboardDisplayMode` (`text`→text, `key-card`→lite, `keyboard`→full); else `"text"`. Strip legacy fields on next write.
-- **Overlay**: load on mount + `listen`; Text/Lite unified timeline (enter/exit mirrors content corner: br/tr/custom right→left, bl/tl left→right; drop oldest when full or when `timelineMax` shrinks; scroll tail-refresh when direction **and** mods multiset match; deferred modifier chord commit via `consumedModIds`); Full held key-id / mouse-button sets + scroll pulse; status message is exclusive (clears timeline + held sets + consumed mods); defaults `dwellMs=1000`, `timelineMax=5`, `hudPreset="text"`
+- **Migration**: if `hudPreset` absent, map legacy `keyboardDisplayMode` (`text`→text, `key-card`→lite, `keyboard`→full); else `"text"`. Strip legacy fields on next write. Legacy `timelineGrow` is ignored (removed; fixed LTR).
+- **Overlay**: load on mount + `listen`; Text/Lite unified timeline (always LTR right-enter: newest on right; strip pack from content corner — left corner = origin/oldest at left, newest grows toward center; right corner = live edge at right; drop oldest when full or when `timelineMax` shrinks; scroll tail-refresh when direction **and** mods multiset match; deferred modifier chord commit via `consumedModIds`); Full held key-id / mouse-button sets + scroll pulse; status message is exclusive (clears timeline + held sets + consumed mods); defaults `dwellMs=1000`, `timelineMax=5`, `hudPreset="text"`
 - **Settings UI**: ChoiceCardGroup Text·Lite·Full; **hide** dwell / `timelineMax` when Full; **hide** `keyMouseLayout` unless Full (value still persisted)
 - **`MouseSchematic`**: `size` `"board"` \| `"timeline"`; board uses `activeButtons` + scroll pulse; timeline uses fixed `frame` (L/R/M/scroll-up/scroll-down)
 - **Clamp**: font 10–48, dwell 200–5000, `timelineMax` 1–10 (omit → 5), opacity 0–1, colors `#rgb`/`#rrggbb`
@@ -226,7 +226,7 @@ void listen(EVENT_CHANNEL, (event) => {
 - **Default**: `{ mode: "corner", corner: "br" }` when missing
 - **Commands**: `get_hud_position_settings` / `set_hud_position_settings` (apply immediately); `start_hud_place_mode` / `end_hud_place_mode` (toggle overlay `ignore_cursor_events`; Done persists `custom` from `outer_position`)
 - **Channel**: `cast://hud-position` → `HudPositionSettings` after successful `set_hud_position_settings` / `end_hud_place_mode` so overlay content-anchor hot-updates (mirror `cast://hud-style`); `cast://hud-place-mode` → `{ active: boolean }` for overlay drag chrome + `startDragging`
-- **Content anchor**: corner mode → that corner; custom → fixed `"br"` (timeline enter/exit mirrors on bl/tl)
+- **Content anchor**: corner mode → that corner; custom → fixed `"br"`; Text/Lite timeline enter/exit is always right-enter (strip horizontal pack follows content corner only)
 - **Margins** (corner): ~24× / 48y CSS-px × monitor scale (same as prior hardcoded BR)
 - **Exit safety**: closing Settings / app quit while placing calls `abandon_hud_place_mode` (restore click-through, clear flag, snap back to persisted position — no custom persist without Done)
 

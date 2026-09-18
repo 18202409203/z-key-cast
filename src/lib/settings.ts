@@ -185,6 +185,7 @@ export function isHudStyleSettings(value: unknown): value is HudStyleSettings {
     return false;
   }
   // Invalid hudPreset is tolerated here; `normalizeHudStyleSettings` coerces to a valid preset.
+  // Legacy `timelineGrow` (if present) is ignored.
   if (
     s.hudPreset !== undefined &&
     typeof s.hudPreset !== "string"
