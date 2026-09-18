@@ -673,3 +673,37 @@ Panel inset/radius tokens, fixed tab height, fail-only capture banner, unified f
 ### Next Steps
 
 - None - task complete
+
+
+## Session 18: Windows click ripple
+
+**Date**: 2026-09-19
+**Task**: Windows click ripple
+**Branch**: `main`
+
+### Summary
+
+Win WH_MOUSE_LL downs emit cast://mouse-ripple with primary-local CSS coords; owner smoke on real Windows.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9205d68` | (see git log) |
+| `7a5e3a2` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
