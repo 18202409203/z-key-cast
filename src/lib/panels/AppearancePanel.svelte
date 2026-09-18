@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import ChoiceCardGroup from "$lib/components/ChoiceCardGroup.svelte";
   import FormRow from "$lib/components/FormRow.svelte";
   import FormSection from "$lib/components/FormSection.svelte";
-  import SegmentedControl from "$lib/components/SegmentedControl.svelte";
   import {
     getUiLocaleSettings,
     isUiAppearance,
@@ -43,14 +43,17 @@
     {
       value: "system",
       label: t("settings.appearance.system", locale),
+      schematic: "appearance-system" as const,
     },
     {
       value: "dark",
       label: t("settings.appearance.dark", locale),
+      schematic: "appearance-dark" as const,
     },
     {
       value: "light",
       label: t("settings.appearance.light", locale),
+      schematic: "appearance-light" as const,
     },
   ]);
 
@@ -139,7 +142,7 @@
       hintId="setting-appearance-hint"
       stack
     >
-      <SegmentedControl
+      <ChoiceCardGroup
         name="ui-appearance"
         value={appearance}
         items={appearanceItems}
@@ -177,6 +180,7 @@
     display: flex;
     flex-direction: column;
     gap: 24px;
+    padding-inline: var(--panel-pad-x);
     overflow-x: hidden;
     overflow-y: auto;
     scrollbar-width: none;

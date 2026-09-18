@@ -70,6 +70,11 @@
 
   .tab {
     appearance: none;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
     border: none;
     border-bottom: 2px solid transparent;
     margin-bottom: -1px;
@@ -78,7 +83,8 @@
     font: inherit;
     font-size: 14px;
     font-weight: 550;
-    padding: 8px 12px;
+    line-height: 1;
+    padding: 0 12px;
     cursor: pointer;
     transition:
       color 120ms ease,

@@ -57,6 +57,14 @@ These guides help you **ask the right questions before coding**.
 
 → Read [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md)
 
+### When Touching Chrome Hairlines / Rings / Radii
+
+- [ ] Changed a selected ring, focus ring, or hairline border? Verify the rendered color at **real 2× device pixels** — never sign off from a 1× or 8× screenshot
+- [ ] Added a `box-shadow` ring on a bordered rounded element? A 1px arc washes out at the corners; use one 2px border instead
+- [ ] Adding a gap between a border and its inner content? `overflow: hidden` clips to the padding box — the child needs its own rounded, inset box
+
+→ Read [Component Guidelines](../frontend/component-guidelines.md) (Styling Patterns / Visual Verification)
+
 ### When Verifying AI Cross-Review Results
 
 - [ ] Reviewer claims "user input can be malicious" → Check the actual data source (internal manifest? user config? external API?)

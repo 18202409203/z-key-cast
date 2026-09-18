@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Chrome token and panel patterns"}
+{"file": ".trellis/tasks/09-18-main-ui-polish/research/selected-ring-corner-artifact.md", "reason": "Verify R4/AC5 against the measured pixel profile (light + dark, post-fix)"}
+{"file": ".trellis/tasks/09-18-main-ui-polish/research/selected-ring-repro.html", "reason": "Parametrised 2x device-pixel harness: ref/old/new/unselected/half-offset/disabled per appearance"}

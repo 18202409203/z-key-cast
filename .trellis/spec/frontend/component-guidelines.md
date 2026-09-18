@@ -46,7 +46,7 @@ Route files compose these; they do not redefine cast/settings wire types. Do not
 - `Tabs`: `role="tablist"`, tab ids `tab-{id}`, `aria-controls` → `panel-{id}`, roving `tabindex`, Arrow/Home/End keyboard nav
 - Panels: `role="tabpanel"`, `aria-labelledby="tab-{id}"`, inactive → `hidden` + `inert`
 - `SegmentedControl`: `role="radiogroup"` with `aria-labelledby` when a field label exists
-- `ChoiceCardGroup`: same radiogroup pattern for **morphotype / layout** settings (static dead SVG + visible label under each card). Prefer this over `SegmentedControl` or `<select>` when the choice is spatial/visual (e.g. HUD preset, key/mouse layout). Do not wire live HUD theme colors into the schematics.
+- `ChoiceCardGroup`: radiogroup for visual choices (HUD preset, key/mouse layout, window appearance). **Default `layout="fill"`**: 4:3 framed preview (`max-width: 96px`), label below outside, selection via **outline** (not border). Appearance schematics are full-bleed fixed swatches; HUD/layout icons keep inner padding. `layout="compact"` is legacy inset cards. Do not wire live HUD theme colors into schematics.
 
 ---
 

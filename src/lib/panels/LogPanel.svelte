@@ -173,6 +173,7 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    padding-inline: var(--panel-pad-x);
     overflow: hidden;
   }
 

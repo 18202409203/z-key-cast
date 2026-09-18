@@ -575,6 +575,7 @@
     display: flex;
     flex-direction: column;
     gap: 24px;
+    padding-inline: var(--panel-pad-x);
     overflow-x: hidden;
     overflow-y: auto;
     scrollbar-width: none;

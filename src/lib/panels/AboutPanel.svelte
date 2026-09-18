@@ -59,6 +59,7 @@
     flex-direction: column;
     justify-content: center;
     gap: 10px;
+    padding-inline: var(--panel-pad-x);
     overflow: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;

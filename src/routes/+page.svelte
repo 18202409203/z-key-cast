@@ -218,6 +218,11 @@
     inherits: true;
     initial-value: #48484a;
   }
+  @property --app-danger {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: #fca5a5;
+  }
 
   :global(:root),
   :global([data-appearance="dark"]) {
@@ -233,8 +238,11 @@
     --app-control-bg: #3a3a3c;
     --app-control-bg-hover: #48484a;
     --app-control-border: #48484a;
+    --app-danger: #fca5a5;
     --radius-sm: 8px;
     --radius-md: 10px;
+    --radius-lg: 12px;
+    --panel-pad-x: 16px;
   }
 
   /* Light: white page → soft inset → floated controls (mirrors dark deep→shallow). */
@@ -251,26 +259,32 @@
     --app-control-bg: #ffffff;
     --app-control-bg-hover: #e8e8ed;
     --app-control-border: #d1d1d6;
+    --app-danger: #c41e3a;
     --radius-sm: 8px;
     --radius-md: 10px;
+    --radius-lg: 12px;
+    --panel-pad-x: 16px;
   }
 
   :global(html) {
-    transition:
-      --app-bg 240ms ease,
-      --app-fg 240ms ease,
-      --app-muted 240ms ease,
-      --app-faint 240ms ease,
-      --app-accent 240ms ease,
-      --app-accent-soft 240ms ease,
-      --app-inset 240ms ease,
-      --app-hairline 240ms ease,
-      --app-hairline-strong 240ms ease,
-      --app-control-bg 240ms ease,
-      --app-control-bg-hover 240ms ease,
-      --app-control-border 240ms ease,
-      background-color 240ms ease,
-      color 240ms ease;
+    transition-property:
+      --app-bg,
+      --app-fg,
+      --app-muted,
+      --app-faint,
+      --app-accent,
+      --app-accent-soft,
+      --app-inset,
+      --app-hairline,
+      --app-hairline-strong,
+      --app-control-bg,
+      --app-control-bg-hover,
+      --app-control-border,
+      --app-danger,
+      background-color,
+      color;
+    transition-duration: 240ms;
+    transition-timing-function: ease;
   }
 
   @media (prefers-reduced-motion: reduce) {

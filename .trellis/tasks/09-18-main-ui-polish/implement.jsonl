@@ -1,0 +1,4 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Panel padding, FormSection, chrome tokens"}
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "Hook status messaging scope"}
+{"file": ".trellis/tasks/09-18-main-ui-polish/research/selected-ring-corner-artifact.md", "reason": "Corner ring AA root cause + 2x pixel evidence for R4"}

@@ -375,7 +375,7 @@
   inert={!active}
 >
   {#if hookOk === false}
-    <p class="muted error">{captureFailedMessage}</p>
+    <p class="hook-status error">{captureFailedMessage}</p>
   {/if}
 
   <FormSection
@@ -571,6 +571,7 @@
     display: flex;
     flex-direction: column;
     gap: 24px;
+    padding-inline: var(--panel-pad-x);
     overflow-x: hidden;
     overflow-y: auto;
     scrollbar-width: none;
@@ -682,14 +683,19 @@
     background: var(--app-control-bg-hover);
   }
 
+  .hook-status {
+    margin: 0;
+    font-size: 14px;
+  }
+
+  .hook-status.error {
+    color: var(--app-danger);
+  }
+
   .muted {
     margin: 0;
     color: var(--app-muted);
     font-size: 14px;
-  }
-
-  .muted.error {
-    color: #fca5a5;
   }
 
   input:disabled,

@@ -60,7 +60,7 @@
   .form-group {
     display: grid;
     min-width: 0;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background: var(--app-inset);
     overflow: hidden;
   }
