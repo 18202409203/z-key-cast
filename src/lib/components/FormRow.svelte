@@ -184,7 +184,6 @@
   .form-row-control :global(input[type="checkbox"]) {
     width: 16px;
     height: 16px;
-    accent-color: var(--app-accent);
     margin: 0;
   }
 

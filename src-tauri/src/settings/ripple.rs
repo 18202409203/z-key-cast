@@ -31,6 +31,7 @@ fn ensure_ripple_window(app: &AppHandle) {
         let _ = win.set_position(PhysicalPosition::new(pos.x, pos.y));
         let _ = win.set_size(PhysicalSize::new(size.width, size.height));
         let _ = win.set_ignore_cursor_events(true);
+        let _ = win.set_focusable(false);
         let _ = win.show();
         return;
     }
@@ -47,6 +48,7 @@ fn ensure_ripple_window(app: &AppHandle) {
     .skip_taskbar(true)
     .shadow(false)
     .focused(false)
+    .focusable(false)
     .visible(true)
     .position(logical_x, logical_y)
     .inner_size(logical_w, logical_h)
@@ -54,6 +56,7 @@ fn ensure_ripple_window(app: &AppHandle) {
     {
         Ok(win) => {
             let _ = win.set_ignore_cursor_events(true);
+            let _ = win.set_focusable(false);
         }
         Err(err) => {
             eprintln!("[z-key-cast] ripple window create failed: {err}");

@@ -2,6 +2,7 @@
 
 mod appearance;
 mod capture;
+mod focus;
 mod hud;
 mod locale;
 mod ripple;
@@ -21,6 +22,7 @@ pub use hud::{
 pub use appearance::{get_ui_appearance_settings, set_ui_appearance_settings};
 pub use locale::{get_ui_locale_settings, set_ui_locale_settings};
 pub use ripple::sync_ripple_window;
+pub use focus::{harden_hud_layers, on_hud_layer_focused};
 pub use store::{load, mouse_click_ripple_enabled};
 #[allow(unused_imports)] // public API surface for TS-aligned types / helpers
 pub use types::{

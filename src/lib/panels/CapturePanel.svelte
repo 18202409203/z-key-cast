@@ -58,7 +58,6 @@
   let ignoredMouseActions = $state<IgnoredMouseAction[]>([]);
   let ignoreCapturing = $state(false);
   let captureReady = $state(false);
-  let captureSaving = $state(false);
   let hookOk = $state<boolean | null>(null);
   let hudStyle = $state<HudStyleSettings>({ ...DEFAULT_HUD_STYLE });
 
@@ -72,12 +71,12 @@
   const ignoreBoardLegendLayout = $derived(
     resolveKeyboardLegendLayout(hudStyle.keyboardLegendLayout),
   );
+  /** Do not disable controls during save — disabling a focused checkbox
+   * drops focus (macOS/WebKit), so the next click only refocuses the window. */
   const keyboardControlsDisabled = $derived(
-    !captureReady || captureSaving || !captureKeyboard,
+    !captureReady || !captureKeyboard,
   );
-  const mouseIgnoreDisabled = $derived(
-    !captureReady || captureSaving || !captureMouse,
-  );
+  const mouseIgnoreDisabled = $derived(!captureReady || !captureMouse);
   const ignoreBoardDisabled = $derived(
     keyboardControlsDisabled || ignoreCapturing,
   );
@@ -114,6 +113,8 @@
         : t("settings.captureFailedOther", locale),
   );
 
+  let captureSaveSeq = 0;
+
   async function persistCapture(
     next: CaptureSettings,
     previous: CaptureSettings,
@@ -124,9 +125,10 @@
     hasNumpad = next.hasNumpad;
     ignoredKeyIds = [...next.ignoredKeyIds];
     ignoredMouseActions = [...next.ignoredMouseActions];
-    captureSaving = true;
+    const seq = ++captureSaveSeq;
     try {
       const saved = await setCaptureSettings(next);
+      if (seq !== captureSaveSeq) return;
       captureKeyboard = saved.captureKeyboard;
       captureMouse = saved.captureMouse;
       mouseClickRipple = saved.mouseClickRipple;
@@ -134,6 +136,7 @@
       ignoredKeyIds = [...saved.ignoredKeyIds];
       ignoredMouseActions = [...saved.ignoredMouseActions];
     } catch (err) {
+      if (seq !== captureSaveSeq) return;
       captureKeyboard = previous.captureKeyboard;
       captureMouse = previous.captureMouse;
       mouseClickRipple = previous.mouseClickRipple;
@@ -141,8 +144,6 @@
       ignoredKeyIds = [...previous.ignoredKeyIds];
       ignoredMouseActions = [...previous.ignoredMouseActions];
       appendLog(`settings save failed: ${String(err)}`);
-    } finally {
-      captureSaving = false;
     }
   }
 
@@ -387,7 +388,7 @@
         id="capture-mouse"
         type="checkbox"
         checked={captureMouse}
-        disabled={!captureReady || captureSaving}
+        disabled={!captureReady}
         onchange={onCaptureMouseChange}
       />
     </FormRow>
@@ -429,7 +430,7 @@
         id="mouse-click-ripple"
         type="checkbox"
         checked={mouseClickRipple}
-        disabled={!captureReady || captureSaving}
+        disabled={!captureReady}
         onchange={onMouseClickRippleChange}
       />
     </FormRow>
@@ -447,7 +448,7 @@
         id="capture-keyboard"
         type="checkbox"
         checked={captureKeyboard}
-        disabled={!captureReady || captureSaving}
+        disabled={!captureReady}
         onchange={onCaptureKeyboardChange}
       />
     </FormRow>
@@ -517,7 +518,7 @@
             <button
               type="button"
               class="clear"
-              disabled={!captureReady || captureSaving}
+              disabled={!captureReady}
               onclick={() => void onCancelIgnoreKey()}
             >
               {t("settings.cancel", locale)}
@@ -622,7 +623,7 @@
   .category-toggle input {
     width: 14px;
     height: 14px;
-    accent-color: var(--app-accent);
+    background-size: 10px 10px;
   }
 
   .ignore-actions {

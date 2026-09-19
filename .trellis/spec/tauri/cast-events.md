@@ -228,7 +228,8 @@ void listen(EVENT_CHANNEL, (event) => {
 - **Channel**: `cast://hud-position` → `HudPositionSettings` after successful `set_hud_position_settings` / `end_hud_place_mode` so overlay content-anchor hot-updates (mirror `cast://hud-style`); `cast://hud-place-mode` → `{ active: boolean }` for overlay drag chrome + `startDragging`
 - **Content anchor**: corner mode → that corner; custom → fixed `"br"`; Text/Lite timeline enter/exit is always right-enter (strip horizontal pack follows content corner only)
 - **Margins** (corner): ~24× / 48y CSS-px × monitor scale (same as prior hardcoded BR)
-- **Exit safety**: hiding Settings / app quit while placing calls `abandon_hud_place_mode` (restore click-through, clear flag, snap back to persisted position — no custom persist without Done)
+- **Exit safety**: hiding Settings / app quit while placing calls `abandon_hud_place_mode` (restore click-through + `focusable:false`, clear flag, snap back to persisted position — no custom persist without Done)
+- **Focus**: overlay/ripple stay `focusable: false` except during place-mode; if they become focused while Main is visible, bounce focus back to Main (`settings/focus.rs`)
 
 ### Main window + system tray
 

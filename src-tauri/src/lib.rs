@@ -34,8 +34,12 @@ pub fn run() {
                 settings::apply_hud_position(app.handle());
             }
 
+            // Overlay/ripple must not steal key-window focus from Settings (macOS).
+            settings::harden_hud_layers(app.handle());
+
             // Ripple is lazy: only create when the persisted toggle is already on.
             settings::sync_ripple_window(app.handle());
+            settings::harden_hud_layers(app.handle());
 
             tray::build_tray(app.handle())?;
 
@@ -69,6 +73,14 @@ pub fn run() {
                 ..
             } if label == "main" => {
                 settings::abandon_hud_place_mode(app);
+            }
+            // HUD layers must not keep key focus while Settings is open.
+            RunEvent::WindowEvent {
+                label,
+                event: WindowEvent::Focused(true),
+                ..
+            } if label == "overlay" || label == "ripple" => {
+                settings::on_hud_layer_focused(app, &label);
             }
             // macOS Dock click / reopen — overlay may count as visible; always show Main.
             RunEvent::Reopen { .. } => {

@@ -320,6 +320,49 @@
     color: var(--app-fg);
   }
 
+  /* Custom checkboxes — native WebKit accent-color flashes system blue/black on click. */
+  .shell :global(input[type="checkbox"]) {
+    appearance: none;
+    -webkit-appearance: none;
+    box-sizing: border-box;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    flex-shrink: 0;
+    border: 1.5px solid var(--app-control-border);
+    border-radius: 4px;
+    background-color: var(--app-control-bg);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 12px 12px;
+    transition: none;
+    cursor: pointer;
+  }
+
+  .shell :global(input[type="checkbox"]:checked),
+  .shell :global(input[type="checkbox"]:indeterminate) {
+    border-color: var(--app-accent);
+    background-color: var(--app-accent);
+  }
+
+  .shell :global(input[type="checkbox"]:checked) {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E");
+  }
+
+  .shell :global(input[type="checkbox"]:indeterminate) {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' d='M4 8h8'/%3E%3C/svg%3E");
+  }
+
+  .shell :global(input[type="checkbox"]:focus-visible) {
+    outline: 2px solid var(--app-accent);
+    outline-offset: 2px;
+  }
+
+  .shell :global(input[type="checkbox"]:disabled) {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
   .top {
     flex: none;
   }

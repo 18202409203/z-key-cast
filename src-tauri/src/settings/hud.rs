@@ -152,6 +152,8 @@ pub fn start_hud_place_mode(app: AppHandle) -> Result<(), String> {
     overlay
         .set_ignore_cursor_events(false)
         .map_err(|e| e.to_string())?;
+    // Place-mode needs a focusable overlay so drag / Done chrome can receive input.
+    super::focus::set_overlay_focusable(&overlay, true);
     HUD_PLACE_MODE.store(true, Ordering::SeqCst);
     emit_hud_place_mode(&app, true);
     Ok(())
@@ -164,6 +166,7 @@ pub fn abandon_hud_place_mode(app: &AppHandle) {
     let was_placing = HUD_PLACE_MODE.swap(false, Ordering::SeqCst);
     if let Some(overlay) = app.get_webview_window("overlay") {
         let _ = overlay.set_ignore_cursor_events(true);
+        super::focus::set_overlay_focusable(&overlay, false);
     }
     if !was_placing {
         return;
@@ -209,6 +212,7 @@ pub fn end_hud_place_mode(app: AppHandle) -> Result<HudPositionSettings, String>
     emit_hud_place_mode(&app, false);
     emit_hud_position(&app, &custom);
     let _ = overlay.set_ignore_cursor_events(true);
+    super::focus::set_overlay_focusable(&overlay, false);
     Ok(custom)
 }
 
