@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend overlay/HudPanel conventions and checklist"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "HudPositionSettings / contentCornerFromPosition contract to extend"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "HudView vs panels ownership"}
+{"file": ".trellis/spec/tauri/index.md", "reason": "settings persist/emit checklist"}
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "hud-position channel + Custom payload shape"}
+{"file": ".trellis/spec/guides/index.md", "reason": "shared thinking guides"}

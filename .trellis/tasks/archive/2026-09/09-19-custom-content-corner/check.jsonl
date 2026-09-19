@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "custom contentCorner persistence vs corner mode"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "HudView place chrome vs content"}
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "end_hud_place_mode / position emit contract"}
+{"file": ".trellis/spec/guides/index.md", "reason": "shared guides"}
