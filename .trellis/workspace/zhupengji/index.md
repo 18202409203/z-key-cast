@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 18
+- **Total Sessions**: 19
 - **Last Active**: 2026-09-19
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~709 | Active |
+| `journal-1.md` | ~742 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 19 | 2026-09-19 | System tray + hide main on close | `e63b69c` | `main` |
 | 18 | 2026-09-19 | Windows click ripple | `9205d68`, `7a5e3a2` | `main` |
 | 17 | 2026-09-18 | Main UI polish | `66624c6` | `main` |
 | 16 | 2026-09-18 | Main window appearance | `c2ed29d` | `main` |

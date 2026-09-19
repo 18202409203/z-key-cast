@@ -707,3 +707,36 @@ Win WH_MOUSE_LL downs emit cast://mouse-ripple with primary-local CSS coords; ow
 ### Next Steps
 
 - None - task complete
+
+
+## Session 19: System tray + hide main on close
+
+**Date**: 2026-09-19
+**Task**: System tray + hide main on close
+**Branch**: `main`
+
+### Summary
+
+Fixed orphan-after-X: Main close hides Settings; tray/Dock restore; Quit exits. HUD stays always on. Spec updated for tray lifecycle.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e63b69c` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
