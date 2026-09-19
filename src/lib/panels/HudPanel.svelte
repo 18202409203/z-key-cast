@@ -508,25 +508,25 @@
           onchange={onBackgroundColorChange}
         />
       </FormRow>
-      <FormRow
-        label={t("settings.bgOpacity", locale, {
-          n: hudStyle.backgroundOpacity.toFixed(2),
-        })}
-        labelId="hud-bg-opacity-label"
-      >
-        <input
-          id="hud-bg-opacity"
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={hudStyle.backgroundOpacity}
-          disabled={!hudReady}
-          aria-labelledby="hud-bg-opacity-label"
-          onchange={onBackgroundOpacityChange}
-        />
-      </FormRow>
     {/if}
+    <FormRow
+      label={t("settings.bgOpacity", locale, {
+        n: hudStyle.backgroundOpacity.toFixed(2),
+      })}
+      labelId="hud-bg-opacity-label"
+    >
+      <input
+        id="hud-bg-opacity"
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        value={hudStyle.backgroundOpacity}
+        disabled={!hudReady}
+        aria-labelledby="hud-bg-opacity-label"
+        onchange={onBackgroundOpacityChange}
+      />
+    </FormRow>
   </FormSection>
 
   <FormSection title={t("settings.position", locale)}>

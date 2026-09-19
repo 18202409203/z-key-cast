@@ -71,7 +71,7 @@ export const DEFAULT_HUD_STYLE: HudStyleSettings = {
   fontSizePx: 15,
   textColor: "#f8fafc",
   backgroundColor: "#0f172a",
-  /** Match dark color preset (semi-transparent; slider only in Custom). */
+  /** Shared across color presets; only Custom edits text/bg colors. */
   backgroundOpacity: 0.52,
   dwellMs: 1000,
   timelineMax: 5,
@@ -85,7 +85,7 @@ export const DEFAULT_HUD_POSITION: HudPositionSettings = {
   corner: "br",
 };
 
-/** Quick color themes for text, key-card, and full-keyboard modes. */
+/** Quick color themes for text / background (opacity is independent). */
 export type HudColorPresetId = "dark" | "light";
 
 export type HudColorPreset = {
@@ -93,27 +93,21 @@ export type HudColorPreset = {
   label: string;
   textColor: string;
   backgroundColor: string;
-  backgroundOpacity: number;
 };
 
-/**
- * Built-in presets bake in a fixed semi-transparent alpha (approx. the old
- * glass look: preset opacity × ~58% key fill). Only Custom exposes the slider.
- */
+/** Built-in palettes — text + background only. Opacity is a shared HUD setting. */
 export const HUD_COLOR_PRESETS: HudColorPreset[] = [
   {
     id: "dark",
     label: "Black (white on black)",
     textColor: "#f8fafc",
     backgroundColor: "#0f172a",
-    backgroundOpacity: 0.52,
   },
   {
     id: "light",
     label: "White (black on white)",
     textColor: "#18181b",
     backgroundColor: "#f4f4f5",
-    backgroundOpacity: 0.55,
   },
 ];
 
@@ -121,17 +115,14 @@ function normHex(color: string): string {
   return color.trim().toLowerCase();
 }
 
+/** Match by text/bg only — opacity does not force Custom. */
 export function matchHudColorPreset(
-  style: Pick<
-    HudStyleSettings,
-    "textColor" | "backgroundColor" | "backgroundOpacity"
-  >,
+  style: Pick<HudStyleSettings, "textColor" | "backgroundColor">,
 ): HudColorPresetId | "custom" {
   for (const preset of HUD_COLOR_PRESETS) {
     if (
       normHex(style.textColor) === normHex(preset.textColor) &&
-      normHex(style.backgroundColor) === normHex(preset.backgroundColor) &&
-      Math.abs(style.backgroundOpacity - preset.backgroundOpacity) < 0.02
+      normHex(style.backgroundColor) === normHex(preset.backgroundColor)
     ) {
       return preset.id;
     }
@@ -139,17 +130,14 @@ export function matchHudColorPreset(
   return "custom";
 }
 
+/** Colors only — callers keep the current `backgroundOpacity`. */
 export function colorsFromHudPreset(
   id: HudColorPresetId,
-): Pick<
-  HudStyleSettings,
-  "textColor" | "backgroundColor" | "backgroundOpacity"
-> {
+): Pick<HudStyleSettings, "textColor" | "backgroundColor"> {
   const preset = HUD_COLOR_PRESETS.find((p) => p.id === id) ?? HUD_COLOR_PRESETS[0]!;
   return {
     textColor: preset.textColor,
     backgroundColor: preset.backgroundColor,
-    backgroundOpacity: preset.backgroundOpacity,
   };
 }
 
