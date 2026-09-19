@@ -7,6 +7,15 @@
 - **仓库：** https://gitee.com/zhupengji/z-key-cast
 - **发布：** https://gitee.com/zhupengji/z-key-cast/releases
 
+<p align="center">
+  <img src="./docs/screenshots/black.png" alt="浅色背景 Full HUD" width="420" />
+  &nbsp;
+  <img src="./docs/screenshots/white.png" alt="深色背景 Full HUD" width="420" />
+</p>
+<p align="center">
+  <img src="./docs/screenshots/lite.png" alt="Lite 预设操作时间线" width="520" />
+</p>
+
 ## 功能
 
 - **角落 HUD** — Text · Lite · Full 三档预设；可改四角位置，支持拖拽放置

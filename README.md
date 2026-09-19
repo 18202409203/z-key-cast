@@ -7,6 +7,15 @@ Corner HUD that shows keyboard and mouse actions during screen recording.
 - **Repository:** https://gitee.com/zhupengji/z-key-cast
 - **Releases:** https://gitee.com/zhupengji/z-key-cast/releases
 
+<p align="center">
+  <img src="./docs/screenshots/black.png" alt="Full HUD on light background" width="420" />
+  &nbsp;
+  <img src="./docs/screenshots/white.png" alt="Full HUD on dark background" width="420" />
+</p>
+<p align="center">
+  <img src="./docs/screenshots/lite.png" alt="Lite preset timeline chips" width="520" />
+</p>
+
 ## Features
 
 - **Corner HUD** — Text · Lite · Full presets; corner placement with drag-to-place
