@@ -37,7 +37,7 @@
 
   let localeReady = $state(false);
   let localeSaving = $state(false);
-  let appearanceSaving = $state(false);
+  let appearanceSaveSeq = 0;
 
   const appearanceItems = $derived([
     {
@@ -61,15 +61,15 @@
     if (!isUiAppearance(value)) return;
     const previous = appearance;
     onAppearanceChange(value);
-    appearanceSaving = true;
+    const seq = ++appearanceSaveSeq;
     try {
       const saved = await setUiAppearanceSettings(value);
+      if (seq !== appearanceSaveSeq) return;
       onAppearanceChange(saved);
     } catch (err) {
+      if (seq !== appearanceSaveSeq) return;
       onAppearanceChange(previous);
       appendLog(`appearance save failed: ${String(err)}`);
-    } finally {
-      appearanceSaving = false;
     }
   }
 
@@ -146,7 +146,6 @@
         name="ui-appearance"
         value={appearance}
         items={appearanceItems}
-        disabled={appearanceSaving}
         labelledBy="setting-appearance-heading"
         onChange={(value) => void onAppearanceSelect(value)}
       />

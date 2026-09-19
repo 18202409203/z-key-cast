@@ -41,7 +41,7 @@
 
   let hudStyle = $state<HudStyleSettings>({ ...DEFAULT_HUD_STYLE });
   let hudReady = $state(false);
-  let hudSaving = $state(false);
+  let hudSaveSeq = 0;
   let forceCustomAppearance = $state(false);
   let hudPosition = $state<HudPositionSettings>({ ...DEFAULT_HUD_POSITION });
   let positionReady = $state(false);
@@ -126,14 +126,15 @@
   ) {
     const cleaned = normalizeHudStyleSettings(next);
     hudStyle = cleaned;
-    hudSaving = true;
+    const seq = ++hudSaveSeq;
     try {
-      hudStyle = normalizeHudStyleSettings(await setHudStyleSettings(cleaned));
+      const saved = normalizeHudStyleSettings(await setHudStyleSettings(cleaned));
+      if (seq !== hudSaveSeq) return;
+      hudStyle = saved;
     } catch (err) {
+      if (seq !== hudSaveSeq) return;
       hudStyle = previous;
       appendLog(`hud style save failed: ${String(err)}`);
-    } finally {
-      hudSaving = false;
     }
   }
 
@@ -352,7 +353,7 @@
         name="hud-preset"
         value={hudStyle.hudPreset ?? "text"}
         items={presetItems}
-        disabled={!hudReady || hudSaving}
+        disabled={!hudReady}
         labelledBy="hud-preset-label"
         columns={3}
         onChange={onHudPresetChange}
@@ -368,7 +369,7 @@
           name="hud-km-layout"
           value={hudStyle.keyMouseLayout ?? "key-left-mouse-right"}
           items={keyMouseLayoutItems}
-          disabled={!hudReady || hudSaving}
+          disabled={!hudReady}
           labelledBy="hud-km-layout-label"
           columns={4}
           onChange={onKeyMouseLayoutChange}
@@ -383,7 +384,7 @@
         <select
           id="hud-legend-layout"
           value={hudStyle.keyboardLegendLayout ?? "auto"}
-          disabled={!hudReady || hudSaving}
+          disabled={!hudReady}
           aria-labelledby="hud-legend-layout-label"
           onchange={onKeyboardLegendLayoutChange}
         >
@@ -411,7 +412,7 @@
           max="48"
           step="1"
           value={hudStyle.fontSizePx}
-          disabled={!hudReady || hudSaving}
+          disabled={!hudReady}
           aria-labelledby="hud-font-size-label"
           onchange={onFontSizeChange}
         />
@@ -431,7 +432,7 @@
           max="5000"
           step="50"
           value={hudStyle.dwellMs}
-          disabled={!hudReady || hudSaving}
+          disabled={!hudReady}
           aria-labelledby="hud-dwell-ms-label"
           aria-describedby="hud-dwell-ms-hint"
           title={t("settings.dwellMsHint", locale)}
@@ -455,7 +456,7 @@
           max="10"
           step="1"
           value={hudStyle.timelineMax ?? 5}
-          disabled={!hudReady || hudSaving}
+          disabled={!hudReady}
           aria-labelledby="hud-timeline-max-label"
           aria-describedby="hud-timeline-max-hint"
           title={t("settings.timelineMaxHint", locale)}
@@ -470,7 +471,7 @@
       <select
         id="hud-color-preset"
         value={colorPresetSelect}
-        disabled={!hudReady || hudSaving}
+        disabled={!hudReady}
         aria-labelledby="hud-color-preset-label"
         onchange={onColorPresetChange}
       >
@@ -492,7 +493,7 @@
           id="hud-text-color"
           type="color"
           value={hudStyle.textColor}
-          disabled={!hudReady || hudSaving}
+          disabled={!hudReady}
           aria-labelledby="hud-text-color-label"
           onchange={onTextColorChange}
         />
@@ -502,7 +503,7 @@
           id="hud-bg-color"
           type="color"
           value={hudStyle.backgroundColor}
-          disabled={!hudReady || hudSaving}
+          disabled={!hudReady}
           aria-labelledby="hud-bg-color-label"
           onchange={onBackgroundColorChange}
         />
@@ -520,7 +521,7 @@
           max="1"
           step="0.01"
           value={hudStyle.backgroundOpacity}
-          disabled={!hudReady || hudSaving}
+          disabled={!hudReady}
           aria-labelledby="hud-bg-opacity-label"
           onchange={onBackgroundOpacityChange}
         />
