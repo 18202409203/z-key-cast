@@ -160,3 +160,10 @@
   - stop preset card flash on theme/color change
   - stop checkbox flash and overlay focus steal
 
+
+## 1.5.3 (2026-09-19)
+
+### Features
+
+  - add custom content-corner picker
+
