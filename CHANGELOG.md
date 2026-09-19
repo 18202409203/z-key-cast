@@ -137,3 +137,14 @@
   - style(ui): drop shell brand; tighten padding
   - style(ui): crossfade dark/light appearance tokens
 
+
+## 1.5.1 (2026-09-19)
+
+### Features
+
+  - hide settings on close, restore via tray
+
+### Other
+
+  - docs: add HUD screenshots to README
+
