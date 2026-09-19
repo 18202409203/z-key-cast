@@ -15,7 +15,7 @@
 
 - 全局捕获：按键 / 鼠标（Rust 侧合并为 chip；始终带 `phase`；Text/Lite 延迟提交裸修饰）
 - 角落 HUD：Text · Lite · Full 三档预设；Text/Lite 空闲 dwell 淡出；Full 常驻板 + 真实按住高亮
-- 托盘：开关 HUD、打开设置、退出
+- 托盘：打开设置、退出（HUD 常开；X 隐藏设置窗，不退出进程）
 
 ## 架构
 
@@ -80,7 +80,7 @@ type HudChip =
 
 - 三平台全局键鼠（Linux Wayland 可标实验性）
 - 角落 HUD + 基础样式
-- 托盘开关 / 退出
+- 托盘打开设置 / 退出（HUD 不经托盘开关）
 - macOS Accessibility 引导；Win/Linux 失败时有明确提示
 - macOS / Windows 主屏点击涟漪（独立开关 + 独立层）
 - 纵向滚轮方向反馈（合并后 `scroll` chip；受 `captureMouse` 总闸；可用 `ignoredMouseActions` 含 `"scroll"` 关闭）

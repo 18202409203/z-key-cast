@@ -45,3 +45,4 @@ Durable settings live under `src-tauri/src/settings/` (`mod` facade + `types` / 
 - [ ] `cast://capture-settings` hot-updates Overlay Full `showNumpad` without restart; `hasNumpad` does not gate `allows_chip` / ignore
 - [ ] `cast://hud-place-mode` drives overlay drag affordance; non-place mode stays click-through
 - [ ] `cast://ui-appearance` updates main `data-appearance` without restart; does not restyle overlay HUD colors
+- [ ] Main X hides (not destroy); tray/Dock restore Main; tray Quit exits process; tray never toggles HUD; locale change refreshes tray labels

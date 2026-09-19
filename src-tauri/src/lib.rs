@@ -1,5 +1,6 @@
 mod input;
 mod settings;
+mod tray;
 
 use tauri::{Manager, RunEvent, WindowEvent};
 
@@ -36,6 +37,8 @@ pub fn run() {
             // Ripple is lazy: only create when the persisted toggle is already on.
             settings::sync_ripple_window(app.handle());
 
+            tray::build_tray(app.handle())?;
+
             // Give webviews a moment to subscribe before the first hook-status emit.
             let handle = app.handle().clone();
             std::thread::spawn(move || {
@@ -47,13 +50,29 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app, event| match event {
-            // Closing Settings while placing must not leave the overlay stealing clicks.
+            // X on Settings: hide Main (keep webview); abandon place-mode. HUD stays up.
             RunEvent::WindowEvent {
                 label,
-                event: WindowEvent::CloseRequested { .. } | WindowEvent::Destroyed,
+                event: WindowEvent::CloseRequested { api, .. },
+                ..
+            } if label == "main" => {
+                api.prevent_close();
+                if let Some(main) = app.get_webview_window("main") {
+                    let _ = main.hide();
+                }
+                settings::abandon_hud_place_mode(app);
+            }
+            // Quit / unexpected destroy: still clear place-mode click-through.
+            RunEvent::WindowEvent {
+                label,
+                event: WindowEvent::Destroyed,
                 ..
             } if label == "main" => {
                 settings::abandon_hud_place_mode(app);
+            }
+            // macOS Dock click / reopen — overlay may count as visible; always show Main.
+            RunEvent::Reopen { .. } => {
+                tray::show_main(app);
             }
             RunEvent::ExitRequested { .. } | RunEvent::Exit => {
                 settings::abandon_hud_place_mode(app);

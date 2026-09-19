@@ -32,5 +32,6 @@ pub fn set_ui_locale_settings(app: AppHandle, locale: UiLocale) -> Result<UiLoca
     };
     persist_app_settings(&app, next)?;
     emit_ui_locale(&app, locale);
+    crate::tray::refresh_menu_labels(locale);
     Ok(locale)
 }

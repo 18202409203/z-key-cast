@@ -228,15 +228,25 @@ void listen(EVENT_CHANNEL, (event) => {
 - **Channel**: `cast://hud-position` → `HudPositionSettings` after successful `set_hud_position_settings` / `end_hud_place_mode` so overlay content-anchor hot-updates (mirror `cast://hud-style`); `cast://hud-place-mode` → `{ active: boolean }` for overlay drag chrome + `startDragging`
 - **Content anchor**: corner mode → that corner; custom → fixed `"br"`; Text/Lite timeline enter/exit is always right-enter (strip horizontal pack follows content corner only)
 - **Margins** (corner): ~24× / 48y CSS-px × monitor scale (same as prior hardcoded BR)
-- **Exit safety**: closing Settings / app quit while placing calls `abandon_hud_place_mode` (restore click-through, clear flag, snap back to persisted position — no custom persist without Done)
+- **Exit safety**: hiding Settings / app quit while placing calls `abandon_hud_place_mode` (restore click-through, clear flag, snap back to persisted position — no custom persist without Done)
+
+### Main window + system tray
+
+- **Cargo**: `tauri` feature `tray-icon` required (`src-tauri/Cargo.toml`); tray lives in `src-tauri/src/tray.rs`
+- **HUD**: always on while the process runs — tray must **not** show/hide overlay or pause capture
+- **Close (X) on `main`**: `CloseRequested` → `prevent_close` → `hide` → `abandon_hud_place_mode` (keep webview; do not destroy)
+- **Show Main**: `unminimize` + `show` + `set_focus` — tray left-click, menu `open-settings`, and macOS `RunEvent::Reopen` (always show Main; ignore `has_visible_windows` because overlay counts as visible)
+- **Quit**: tray menu `quit` → `abandon_hud_place_mode` then `app.exit(0)` (full process exit; no orphan overlay/ripple)
+- **Menu locale**: labels follow `uiLocale` (en: Open Settings / Quit; zh: 打开设置 / 退出); `set_ui_locale_settings` must call `tray::refresh_menu_labels` after persist
+- **Session**: Main hidden/shown is not persisted; cold start still shows Main
 
 ### UI locale settings
 
 - **Persist**: optional `uiLocale` in `settings.json` as `"en"` | `"zh"` (omit until first resolve)
-- **Commands**: `get_ui_locale_settings` → `Option<"en"|"zh">`; `set_ui_locale_settings` → persist + emit
+- **Commands**: `get_ui_locale_settings` → `Option<"en"|"zh">`; `set_ui_locale_settings` → persist + emit + refresh tray menu labels
 - **Channel**: `cast://ui-locale` → `{ locale: "en" | "zh" }` so overlay hot-updates status/place chrome
 - **Boot**: if unset, frontend guesses from `navigator.language` (`zh*` → `zh`, else `en`) and persists once; user choice then sticks
-- **Scope**: main Appearance/Log/About + overlay status/place strings via `$lib/i18n` `t()`; do **not** translate `HudChip.id` or `summarizeHudChip` log lines; Capture failure copy is user-facing and platform-specific (`settings.captureFailedMac` / `captureFailedWin` / `captureFailedOther`); success/waiting hook status stays in the Log tab only (`summarizeHookStatus`)
+- **Scope**: main Appearance/Log/About + overlay status/place strings via `$lib/i18n` `t()`; tray menu strings via Rust `tray.rs` (not `$lib/i18n`); do **not** translate `HudChip.id` or `summarizeHudChip` log lines; Capture failure copy is user-facing and platform-specific (`settings.captureFailedMac` / `captureFailedWin` / `captureFailedOther`); success/waiting hook status stays in the Log tab only (`summarizeHookStatus`)
 
 ### UI appearance settings (main window chrome)
 
