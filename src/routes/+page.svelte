@@ -157,7 +157,7 @@
 </main>
 
 <style>
-  /* Color tokens — typed for inheritance; switch is instant (no token transitions). */
+  /* Interpolable tokens so dark↔light crossfades (WKWebView / Chromium). */
   @property --app-bg {
     syntax: "<color>";
     inherits: true;
@@ -264,6 +264,33 @@
     --radius-md: 10px;
     --radius-lg: 12px;
     --panel-pad-x: 16px;
+  }
+
+  :global(html) {
+    transition-property:
+      --app-bg,
+      --app-fg,
+      --app-muted,
+      --app-faint,
+      --app-accent,
+      --app-accent-soft,
+      --app-inset,
+      --app-hairline,
+      --app-hairline-strong,
+      --app-control-bg,
+      --app-control-bg-hover,
+      --app-control-border,
+      --app-danger,
+      background-color,
+      color;
+    transition-duration: 240ms;
+    transition-timing-function: ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(html) {
+      transition: none;
+    }
   }
 
   :global(html, body) {
