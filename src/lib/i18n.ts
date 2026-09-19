@@ -213,7 +213,7 @@ const zh: Record<MessageKey, string> = {
   "settings.mouseClickRipple": "点击涟漪",
   "settings.mouseClickRippleHint":
     "在主显示器点击位置显示短暂圆环。",
-  "settings.hasNumpad": "有小键盘",
+  "settings.hasNumpad": "小键盘",
   "settings.hasNumpadHint":
     "选择您的键盘是否带有小键盘。",
   "settings.ignoreKeys": "忽略按键",
