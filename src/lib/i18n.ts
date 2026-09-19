@@ -13,7 +13,7 @@ const en = {
   "nav.aria": "Main sections",
 
   "about.blurb":
-    "Corner HUD for keyboard and mouse actions while screen recording.",
+    "Show keyboard and mouse actions on the screen.",
   "about.version": "Version {version}",
 
   "settings.language": "Language",
@@ -141,7 +141,7 @@ const zh: Record<MessageKey, string> = {
   "nav.about": "关于",
   "nav.aria": "主要分区",
 
-  "about.blurb": "录屏时在角落显示键盘与鼠标操作。",
+  "about.blurb": "在屏幕上显示键盘与鼠标。",
   "about.version": "版本 {version}",
 
   "settings.language": "语言",
