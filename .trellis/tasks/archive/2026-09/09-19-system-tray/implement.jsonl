@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/tauri/index.md", "reason": "Tauri/Rust module boundaries and settings facade conventions for tray shell work"}
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "Do not break emit/listen or settings invoke contracts while adding tray lifecycle"}
+{"file": "design/index.md", "reason": "Product tray wording to align after implementation"}
+{"file": ".trellis/tasks/09-19-system-tray/design.md", "reason": "Tray hide/show architecture and contracts"}
+{"file": ".trellis/tasks/09-19-system-tray/prd.md", "reason": "Acceptance criteria AC1–AC7"}

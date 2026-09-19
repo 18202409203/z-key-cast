@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/tauri/index.md", "reason": "Quality checklist for Tauri layer changes"}
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "Verify settings/locale channels still intact after tray wiring"}
+{"file": ".trellis/tasks/09-19-system-tray/prd.md", "reason": "Verify AC1–AC7 against implementation"}
+{"file": ".trellis/tasks/09-19-system-tray/design.md", "reason": "Verify hide/Reopen/quit contracts and no HUD toggle"}
