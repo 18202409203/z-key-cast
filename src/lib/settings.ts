@@ -71,7 +71,8 @@ export const DEFAULT_HUD_STYLE: HudStyleSettings = {
   fontSizePx: 15,
   textColor: "#f8fafc",
   backgroundColor: "#0f172a",
-  backgroundOpacity: 0.82,
+  /** Match dark color preset (semi-transparent; slider only in Custom). */
+  backgroundOpacity: 0.52,
   dwellMs: 1000,
   timelineMax: 5,
   hudPreset: "text",
@@ -95,20 +96,24 @@ export type HudColorPreset = {
   backgroundOpacity: number;
 };
 
+/**
+ * Built-in presets bake in a fixed semi-transparent alpha (approx. the old
+ * glass look: preset opacity × ~58% key fill). Only Custom exposes the slider.
+ */
 export const HUD_COLOR_PRESETS: HudColorPreset[] = [
   {
     id: "dark",
     label: "Black (white on black)",
     textColor: "#f8fafc",
     backgroundColor: "#0f172a",
-    backgroundOpacity: 0.9,
+    backgroundOpacity: 0.52,
   },
   {
     id: "light",
     label: "White (black on white)",
     textColor: "#18181b",
     backgroundColor: "#f4f4f5",
-    backgroundOpacity: 0.96,
+    backgroundOpacity: 0.55,
   },
 ];
 

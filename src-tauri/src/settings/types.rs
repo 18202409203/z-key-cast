@@ -138,7 +138,7 @@ impl Default for HudStyleSettings {
             font_size_px: 15,
             text_color: "#f8fafc".into(),
             background_color: "#0f172a".into(),
-            background_opacity: 0.82,
+            background_opacity: 0.52,
             dwell_ms: 1000,
             timeline_max: default_timeline_max(),
             hud_preset: HudPreset::Text,
