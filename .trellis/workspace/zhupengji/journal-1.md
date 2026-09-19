@@ -740,3 +740,36 @@ Fixed orphan-after-X: Main close hides Settings; tray/Dock restore; Quit exits. 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 20: Custom HUD content-corner picker
+
+**Date**: 2026-09-19
+**Task**: Custom HUD content-corner picker
+**Branch**: `main`
+
+### Summary
+
+Shipped scheme C: custom positions persist contentCorner (legacy omit → br); inherit corner when entering custom; FormRow picker; no auto place on custom; place-mode locks Main except Done + content-corner; removed in-HUD place banner. Archived 09-19-custom-content-corner.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c6080f5` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
