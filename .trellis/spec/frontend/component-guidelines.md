@@ -38,6 +38,7 @@ Route files compose these; they do not redefine cast/settings wire types. Do not
 - Shell owns `data-appearance` (`dark` \| `light` resolved) and `--app-*` tokens; panels/components consume tokens — do not hard-code slate/sky hex for main chrome
 - Main chrome depth ladder: page `--app-bg` → group `--app-inset` → control `--app-control-bg` (dark: deep→elevated; light: whitest page → soft `#f2f2f7` inset → white controls). HUD overlay colors stay on HUD Theme settings, not `--app-*`
 - Capture ignore-board `KeyboardMap` in the main window uses window tokens (`--app-fg` / `--app-control-bg`), not HUD `textColor` / `backgroundCss`
+- Overlay Full `KeyboardMap` / `MouseSchematic`: fills use `--kb-bg` / `--m-bg` (already includes `backgroundOpacity`). Do **not** `color-mix(..., transparent)` on those fills — that ignores the opacity slider and always shows the desktop through. Hierarchy = mix fg into bg only.
 
 ---
 

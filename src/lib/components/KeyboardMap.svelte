@@ -191,7 +191,8 @@
     box-sizing: border-box;
     padding: 10px;
     border-radius: 14px;
-    background: color-mix(in srgb, var(--kb-bg) 42%, transparent);
+    /* Use --kb-bg as-is so HUD backgroundOpacity is the only alpha. */
+    background: var(--kb-bg);
   }
 
   .main {
@@ -228,9 +229,10 @@
     height: calc(var(--kb-unit) * 1.55);
     padding: 0 2px;
     border-radius: 6px;
-    border: 1px solid color-mix(in srgb, var(--kb-fg) 16%, transparent);
-    background: color-mix(in srgb, var(--kb-bg) 58%, transparent);
-    color: color-mix(in srgb, var(--kb-fg) 55%, transparent);
+    border: 1px solid color-mix(in srgb, var(--kb-fg) 16%, var(--kb-bg));
+    /* Hierarchy via fg/bg mix — never mix --kb-bg with transparent (desktop bleed). */
+    background: color-mix(in srgb, var(--kb-fg) 10%, var(--kb-bg));
+    color: color-mix(in srgb, var(--kb-fg) 62%, var(--kb-bg));
     font-weight: 600;
     letter-spacing: 0.02em;
     line-height: 1;
@@ -278,17 +280,17 @@
   }
 
   .key.active {
-    background: var(--kb-bg);
+    background: color-mix(in srgb, var(--kb-fg) 22%, var(--kb-bg));
     color: var(--kb-fg);
-    border-color: color-mix(in srgb, var(--kb-fg) 35%, transparent);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--kb-fg) 28%, transparent);
+    border-color: color-mix(in srgb, var(--kb-fg) 35%, var(--kb-bg));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--kb-fg) 28%, var(--kb-bg));
   }
 
   .key.ignored {
     opacity: 0.4;
-    border-color: color-mix(in srgb, var(--kb-fg) 8%, transparent);
-    background: color-mix(in srgb, var(--kb-bg) 32%, transparent);
-    color: color-mix(in srgb, var(--kb-fg) 30%, transparent);
+    border-color: color-mix(in srgb, var(--kb-fg) 8%, var(--kb-bg));
+    background: color-mix(in srgb, var(--kb-fg) 6%, var(--kb-bg));
+    color: color-mix(in srgb, var(--kb-fg) 40%, var(--kb-bg));
     box-shadow: none;
   }
 </style>

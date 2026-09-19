@@ -196,9 +196,9 @@
     overflow: visible;
   }
 
-  /* Resting fill matches KeyboardMap .key. */
+  /* Resting fill matches KeyboardMap .key; alpha comes only from --m-bg. */
   .shell {
-    fill: color-mix(in srgb, var(--m-bg) 58%, transparent);
+    fill: color-mix(in srgb, var(--m-fg) 10%, var(--m-bg));
     stroke: none;
   }
 
@@ -217,7 +217,7 @@
 
   /* Soft locate-only tint; letter carries the meaning. */
   .press.side-tint {
-    fill: color-mix(in srgb, var(--m-fg) 20%, transparent);
+    fill: color-mix(in srgb, var(--m-fg) 20%, var(--m-bg));
   }
 
   .side-mark {
@@ -227,7 +227,7 @@
     font-weight: 700;
     letter-spacing: 0;
     paint-order: stroke fill;
-    stroke: color-mix(in srgb, var(--m-bg) 70%, transparent);
+    stroke: color-mix(in srgb, var(--m-bg) 70%, var(--m-fg));
     stroke-width: 2.5px;
     stroke-linejoin: round;
     pointer-events: none;
@@ -235,7 +235,7 @@
 
   .outline {
     fill: none;
-    stroke: color-mix(in srgb, var(--m-fg) 16%, transparent);
+    stroke: color-mix(in srgb, var(--m-fg) 16%, var(--m-bg));
     stroke-width: 1;
     stroke-linejoin: round;
     stroke-linecap: round;
@@ -243,36 +243,36 @@
   }
 
   .mouse-wrap.lit .outline {
-    stroke: color-mix(in srgb, var(--m-fg) 35%, transparent);
+    stroke: color-mix(in srgb, var(--m-fg) 35%, var(--m-bg));
   }
 
   .seam {
-    stroke: color-mix(in srgb, var(--m-fg) 16%, transparent);
+    stroke: color-mix(in srgb, var(--m-fg) 16%, var(--m-bg));
     stroke-width: 1;
     stroke-linecap: round;
   }
 
   .well {
-    fill: color-mix(in srgb, var(--m-bg) 42%, transparent);
+    fill: color-mix(in srgb, var(--m-fg) 18%, var(--m-bg));
     stroke: none;
   }
 
   .wheel {
-    fill: color-mix(in srgb, var(--m-bg) 58%, transparent);
-    stroke: color-mix(in srgb, var(--m-fg) 16%, transparent);
+    fill: color-mix(in srgb, var(--m-fg) 10%, var(--m-bg));
+    stroke: color-mix(in srgb, var(--m-fg) 16%, var(--m-bg));
     stroke-width: 1;
   }
 
   .wheel.active {
     fill: var(--m-fg);
-    stroke: color-mix(in srgb, var(--m-fg) 35%, transparent);
+    stroke: color-mix(in srgb, var(--m-fg) 35%, var(--m-bg));
     filter: drop-shadow(0 0 3px color-mix(in srgb, var(--m-fg) 55%, transparent));
   }
 
   /* Timeline scroll frames: tint wheel so the arrow reads on Theme/HUD colors. */
   .wheel.scroll-frame {
     fill: color-mix(in srgb, var(--m-fg) 22%, var(--m-bg));
-    stroke: color-mix(in srgb, var(--m-fg) 45%, transparent);
+    stroke: color-mix(in srgb, var(--m-fg) 45%, var(--m-bg));
   }
 
   .scroll-arrow {
@@ -282,7 +282,7 @@
   }
 
   .ticks {
-    stroke: color-mix(in srgb, var(--m-fg) 55%, transparent);
+    stroke: color-mix(in srgb, var(--m-fg) 55%, var(--m-bg));
     stroke-width: 1;
     stroke-linecap: round;
     transform-box: fill-box;
@@ -291,7 +291,7 @@
   }
 
   .ticks.on {
-    stroke: color-mix(in srgb, var(--m-bg) 78%, transparent);
+    stroke: color-mix(in srgb, var(--m-bg) 78%, var(--m-fg));
   }
 
   .ticks.pulse-up {
