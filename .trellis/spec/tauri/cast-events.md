@@ -222,11 +222,11 @@ void listen(EVENT_CHANNEL, (event) => {
 ### HUD position settings
 
 - **Persist**: `hudPosition` in `settings.json` as
-  `{ mode: "corner", corner: "br"|"bl"|"tr"|"tl" }` **or** `{ mode: "custom", x, y }` (physical pixels)
+  `{ mode: "corner", corner: "br"|"bl"|"tr"|"tl" }` **or** `{ mode: "custom", x, y, contentCorner: "br"|"bl"|"tr"|"tl" }` (physical pixels; omit `contentCorner` → `br`)
 - **Default**: `{ mode: "corner", corner: "br" }` when missing
-- **Commands**: `get_hud_position_settings` / `set_hud_position_settings` (apply immediately); `start_hud_place_mode` / `end_hud_place_mode` (toggle overlay `ignore_cursor_events`; Done persists `custom` from `outer_position`)
-- **Channel**: `cast://hud-position` → `HudPositionSettings` after successful `set_hud_position_settings` / `end_hud_place_mode` so overlay content-anchor hot-updates (mirror `cast://hud-style`); `cast://hud-place-mode` → `{ active: boolean }` for overlay drag chrome + `startDragging`
-- **Content anchor**: corner mode → that corner; custom → fixed `"br"`; Text/Lite timeline enter/exit is always right-enter (strip horizontal pack follows content corner only)
+- **Commands**: `get_hud_position_settings` / `set_hud_position_settings` (apply immediately); `enter_hud_custom_mode(contentCorner)` (snapshot `outer_position` → custom, no place); `set_hud_custom_content_corner` (patch corner only, no window apply — safe during drag); `start_hud_place_mode` / `end_hud_place_mode(contentCorner?: HudCorner)` (toggle overlay `ignore_cursor_events`; Done persists `custom` from `outer_position` + content corner — explicit arg wins, else keep existing Custom corner, else `br`). Selecting custom in Settings does **not** auto-start place — user clicks Move HUD. While place-mode active, Main tabs + other HUD controls are locked; only Done + content-corner stay interactive.
+- **Channel**: `cast://hud-position` → `HudPositionSettings` after successful `set_hud_position_settings` / `end_hud_place_mode` so overlay content-anchor hot-updates (mirror `cast://hud-style`); `cast://hud-place-mode` → `{ active: boolean }` for overlay drag chrome + `startDragging` (no in-HUD place affordance banner — dashed `.placing` border + Settings Done only)
+- **Content anchor**: corner mode → that corner; custom → stored `contentCorner` (legacy omit → `br`); Text/Lite timeline enter/exit is always right-enter (strip horizontal pack follows content corner only)
 - **Margins** (corner): ~24× / 48y CSS-px × monitor scale (same as prior hardcoded BR)
 - **Exit safety**: hiding Settings / app quit while placing calls `abandon_hud_place_mode` (restore click-through + `focusable:false`, clear flag, snap back to persisted position — no custom persist without Done)
 - **Focus**: overlay/ripple stay `focusable: false` except during place-mode; if they become focused while Main is visible, bounce focus back to Main (`settings/focus.rs`)

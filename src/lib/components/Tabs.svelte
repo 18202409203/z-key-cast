@@ -5,16 +5,19 @@
     items: TabItem[];
     value: string;
     ariaLabel: string;
+    disabled?: boolean;
     onChange: (id: string) => void;
   };
 
-  let { items, value, ariaLabel, onChange }: Props = $props();
+  let { items, value, ariaLabel, disabled = false, onChange }: Props = $props();
 
   function selectTab(id: string) {
+    if (disabled) return;
     onChange(id);
   }
 
   function onTabListKeydown(event: KeyboardEvent) {
+    if (disabled) return;
     const current = items.findIndex((tab) => tab.id === value);
     if (current < 0) return;
 
@@ -41,7 +44,13 @@
   }
 </script>
 
-<div class="tabs" role="tablist" aria-label={ariaLabel}>
+<div
+  class="tabs"
+  class:disabled
+  role="tablist"
+  aria-label={ariaLabel}
+  aria-disabled={disabled || undefined}
+>
   {#each items as tab (tab.id)}
     <button
       type="button"
@@ -51,7 +60,8 @@
       aria-controls={`panel-${tab.id}`}
       id={`tab-${tab.id}`}
       role="tab"
-      tabindex={value === tab.id ? 0 : -1}
+      tabindex={disabled ? -1 : value === tab.id ? 0 : -1}
+      disabled={disabled}
       onclick={() => selectTab(tab.id)}
       onkeydown={onTabListKeydown}
     >
@@ -91,12 +101,17 @@
       border-color 120ms ease;
   }
 
-  .tab:hover {
+  .tab:hover:not(:disabled) {
     color: var(--app-fg);
   }
 
   .tab.active {
     color: var(--app-fg);
     border-bottom-color: var(--app-accent);
+  }
+
+  .tab:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
 </style>

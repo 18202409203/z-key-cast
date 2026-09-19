@@ -21,6 +21,8 @@
     "allow-set-hud-style-settings",
     "allow-get-hud-position-settings",
     "allow-set-hud-position-settings",
+    "allow-enter-hud-custom-mode",
+    "allow-set-hud-custom-content-corner",
     "allow-start-hud-place-mode",
     "allow-end-hud-place-mode",
     "allow-get-ui-locale-settings",

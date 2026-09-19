@@ -34,6 +34,7 @@ const en = {
   "settings.corner.tr": "Top right",
   "settings.corner.tl": "Top left",
   "settings.corner.custom": "Custom",
+  "settings.contentCorner": "Content edge",
   "settings.hudPosition": "HUD position",
   "settings.moveHud": "Move HUD",
   "settings.done": "Done",
@@ -122,7 +123,6 @@ const en = {
   "log.empty": "No events yet.",
 
   "overlay.captureUnavailable": "Can't capture keyboard & mouse — check system permissions",
-  "overlay.placeAffordance": "Drag to move · Done in HUD",
   "overlay.placeAria": "HUD place mode — drag to move",
   "overlay.hudAria": "Key cast HUD",
 
@@ -162,6 +162,7 @@ const zh: Record<MessageKey, string> = {
   "settings.corner.tr": "右上",
   "settings.corner.tl": "左上",
   "settings.corner.custom": "自定义",
+  "settings.contentCorner": "内容贴边",
   "settings.hudPosition": "面板位置",
   "settings.moveHud": "移动面板",
   "settings.done": "完成",
@@ -247,7 +248,6 @@ const zh: Record<MessageKey, string> = {
   "log.empty": "暂无事件。",
 
   "overlay.captureUnavailable": "无法捕获键盘和鼠标 — 请检查系统权限",
-  "overlay.placeAffordance": "拖动以移动 · 在显示中完成",
   "overlay.placeAria": "面板定位模式 — 拖动以移动",
   "overlay.hudAria": "按键投射面板",
 

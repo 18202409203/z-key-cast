@@ -9,8 +9,10 @@
   import LogPanel from "$lib/panels/LogPanel.svelte";
   import { guessLocaleFromSystem, t, type UiLocale } from "$lib/i18n";
   import {
+    HUD_PLACE_MODE_CHANNEL,
     UI_APPEARANCE_CHANNEL,
     getUiAppearanceSettings,
+    isHudPlaceModePayload,
     isUiAppearancePayload,
     resolveAppearance,
     type ResolvedAppearance,
@@ -27,6 +29,7 @@
   let resolvedAppearance = $state<ResolvedAppearance>("dark");
   let activeTab = $state<MainTab>("hud");
   let logLines = $state<string[]>([]);
+  let placeModeLock = $state(false);
 
   const TABS = $derived<{ id: MainTab; label: string }[]>([
     { id: "hud", label: t("nav.hud", locale) },
@@ -97,6 +100,21 @@
       } catch {
         // Channel optional outside Tauri.
       }
+
+      try {
+        const unlistenPlace = await listen(HUD_PLACE_MODE_CHANNEL, (event) => {
+          if (!isHudPlaceModePayload(event.payload)) return;
+          placeModeLock = event.payload.active;
+          if (event.payload.active) activeTab = "hud";
+        });
+        if (cancelled) {
+          unlistenPlace();
+          return;
+        }
+        unsubs.push(unlistenPlace);
+      } catch {
+        // Channel optional outside Tauri.
+      }
     })();
 
     if (media) {
@@ -122,7 +140,11 @@
       items={TABS}
       value={activeTab}
       ariaLabel={t("nav.aria", locale)}
-      onChange={(id) => (activeTab = id as MainTab)}
+      disabled={placeModeLock}
+      onChange={(id) => {
+        if (placeModeLock) return;
+        activeTab = id as MainTab;
+      }}
     />
   </header>
 

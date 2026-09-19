@@ -25,10 +25,10 @@
     getUiLocaleSettings,
     isCaptureSettings,
     isHudPlaceModePayload,
-    isHudPositionSettings,
     isHudStyleSettings,
     isUiLocalePayload,
     normalizeCaptureSettings,
+    normalizeHudPositionSettings,
     setUiLocaleSettings,
     type HudCorner,
   } from "$lib/settings";
@@ -122,8 +122,9 @@
       unsubs.push(unlistenStyle);
 
       const unlistenPosition = await listen(HUD_POSITION_CHANNEL, (event) => {
-        if (!isHudPositionSettings(event.payload)) return;
-        contentCorner = contentCornerFromPosition(event.payload);
+        const position = normalizeHudPositionSettings(event.payload);
+        if (!position) return;
+        contentCorner = contentCornerFromPosition(position);
       });
       if (cancelled) {
         unlistenPosition();

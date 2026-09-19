@@ -92,7 +92,13 @@ impl Default for HudCorner {
 #[serde(tag = "mode", rename_all = "camelCase")]
 pub enum HudPositionSettings {
     Corner { corner: HudCorner },
-    Custom { x: i32, y: i32 },
+    Custom {
+        x: i32,
+        y: i32,
+        /// Content anchor inside the overlay. Omitted legacy JSON → `Br`.
+        #[serde(default, rename = "contentCorner")]
+        content_corner: HudCorner,
+    },
 }
 
 impl Default for HudPositionSettings {
@@ -832,9 +838,30 @@ mod tests {
     }
 
     #[test]
-    fn hud_position_deserializes_custom() {
+    fn hud_position_deserializes_custom_defaults_content_corner_br() {
         let raw = r#"{"mode":"custom","x":120,"y":340}"#;
         let parsed: HudPositionSettings = serde_json::from_str(raw).unwrap();
-        assert_eq!(parsed, HudPositionSettings::Custom { x: 120, y: 340 });
+        assert_eq!(
+            parsed,
+            HudPositionSettings::Custom {
+                x: 120,
+                y: 340,
+                content_corner: HudCorner::Br
+            }
+        );
+    }
+
+    #[test]
+    fn hud_position_deserializes_custom_with_content_corner() {
+        let raw = r#"{"mode":"custom","x":10,"y":20,"contentCorner":"tl"}"#;
+        let parsed: HudPositionSettings = serde_json::from_str(raw).unwrap();
+        assert_eq!(
+            parsed,
+            HudPositionSettings::Custom {
+                x: 10,
+                y: 20,
+                content_corner: HudCorner::Tl
+            }
+        );
     }
 }

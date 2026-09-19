@@ -44,6 +44,16 @@ description = "Allows updating HUD overlay position settings"
 commands.allow = ["set_hud_position_settings"]
 
 [[permission]]
+identifier = "allow-enter-hud-custom-mode"
+description = "Allows switching HUD position to custom by snapshotting overlay position"
+commands.allow = ["enter_hud_custom_mode"]
+
+[[permission]]
+identifier = "allow-set-hud-custom-content-corner"
+description = "Allows updating custom HUD content-corner without moving the overlay window"
+commands.allow = ["set_hud_custom_content_corner"]
+
+[[permission]]
 identifier = "allow-start-hud-place-mode"
 description = "Allows entering HUD drag-to-place mode"
 commands.allow = ["start_hud_place_mode"]

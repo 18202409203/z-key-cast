@@ -8,22 +8,27 @@
     DEFAULT_HUD_POSITION,
     DEFAULT_HUD_STYLE,
     HUD_COLOR_PRESETS,
+    HUD_PLACE_MODE_CHANNEL,
     HUD_STYLE_CHANNEL,
     colorsFromHudPreset,
     cornerSelectValue,
     endHudPlaceMode,
+    enterHudCustomMode,
     getHudPositionSettings,
     getHudStyleSettings,
     isHudCorner,
-    isHudPositionSettings,
+    isHudPlaceModePayload,
     isHudStyleSettings,
     isKeyMouseLayout,
     matchHudColorPreset,
+    normalizeHudPositionSettings,
     normalizeHudStyleSettings,
+    setHudCustomContentCorner,
     setHudPositionSettings,
     setHudStyleSettings,
     startHudPlaceMode,
     type HudColorPresetId,
+    type HudCorner,
     type HudPositionSettings,
     type HudPreset,
     type HudStyleSettings,
@@ -47,6 +52,8 @@
   let positionReady = $state(false);
   let positionSaving = $state(false);
   let placeModeActive = $state(false);
+  /** Draft content anchor while placing from corner (Done writes it). */
+  let draftContentCorner = $state<HudCorner>("br");
 
   const showLegendLayout = $derived(
     hudStyle.hudPreset === "lite" || hudStyle.hudPreset === "full",
@@ -62,14 +69,21 @@
       : matchHudColorPreset(hudStyle),
   );
   const showCustomColors = $derived(colorPresetSelect === "custom");
-  const showPlaceControls = $derived(
-    placeModeActive || hudPosition.mode === "custom",
-  );
+  const showPlaceControls = $derived(hudPosition.mode === "custom");
   const cornerSelectDisplay = $derived(
-    placeModeActive || hudPosition.mode === "custom"
+    hudPosition.mode === "custom"
       ? "custom"
       : cornerSelectValue(hudPosition),
   );
+  const contentCornerSelect = $derived(
+    placeModeActive
+      ? draftContentCorner
+      : hudPosition.mode === "custom"
+        ? hudPosition.contentCorner
+        : draftContentCorner,
+  );
+  /** Place-drag: lock presentation + corner; only Done + content corner stay live. */
+  const placeUiLocked = $derived(placeModeActive);
 
   const presetHint = $derived(
     hudStyle.hudPreset === "lite"
@@ -212,9 +226,12 @@
     positionSaving = true;
     try {
       const saved = await setHudPositionSettings(next);
-      hudPosition = isHudPositionSettings(saved)
-        ? saved
-        : { ...DEFAULT_HUD_POSITION };
+      hudPosition = normalizeHudPositionSettings(saved) ?? {
+        ...DEFAULT_HUD_POSITION,
+      };
+      if (hudPosition.mode === "custom") {
+        draftContentCorner = hudPosition.contentCorner;
+      }
     } catch (err) {
       hudPosition = previous;
       appendLog(`hud position save failed: ${String(err)}`);
@@ -223,22 +240,78 @@
     }
   }
 
+  function seedDraftContentCorner(position: HudPositionSettings) {
+    draftContentCorner =
+      position.mode === "custom" ? position.contentCorner : position.corner;
+  }
+
+  function onContentCornerChange(event: Event) {
+    const value = (event.currentTarget as HTMLSelectElement).value;
+    if (!isHudCorner(value)) return;
+    draftContentCorner = value;
+    if (hudPosition.mode !== "custom") return;
+    const previous = hudPosition;
+    positionSaving = true;
+    void (async () => {
+      try {
+        const saved = await setHudCustomContentCorner(value);
+        hudPosition = saved;
+        if (saved.mode === "custom") {
+          draftContentCorner = saved.contentCorner;
+        }
+      } catch (err) {
+        hudPosition = previous;
+        if (previous.mode === "custom") {
+          draftContentCorner = previous.contentCorner;
+        }
+        appendLog(`content corner save failed: ${String(err)}`);
+      } finally {
+        positionSaving = false;
+      }
+    })();
+  }
+
   function onCornerChange(event: Event) {
     const value = (event.currentTarget as HTMLSelectElement).value;
     if (value === "custom") {
-      if (!placeModeActive) void onTogglePlaceMode();
+      if (hudPosition.mode === "custom") return;
+      seedDraftContentCorner(hudPosition);
+      const previous = hudPosition;
+      const corner =
+        previous.mode === "corner" ? previous.corner : draftContentCorner;
+      draftContentCorner = corner;
+      void (async () => {
+        positionSaving = true;
+        try {
+          const saved = await enterHudCustomMode(corner);
+          hudPosition = saved;
+          if (saved.mode === "custom") {
+            draftContentCorner = saved.contentCorner;
+          }
+        } catch (err) {
+          hudPosition = previous;
+          appendLog(`enter custom failed: ${String(err)}`);
+        } finally {
+          positionSaving = false;
+        }
+      })();
       return;
     }
     if (!isHudCorner(value)) return;
     const previous =
       hudPosition.mode === "custom"
-        ? { mode: "custom" as const, x: hudPosition.x, y: hudPosition.y }
+        ? {
+            mode: "custom" as const,
+            x: hudPosition.x,
+            y: hudPosition.y,
+            contentCorner: hudPosition.contentCorner,
+          }
         : { mode: "corner" as const, corner: hudPosition.corner };
     void (async () => {
       if (placeModeActive) {
         positionSaving = true;
         try {
-          await endHudPlaceMode();
+          await endHudPlaceMode(draftContentCorner);
           placeModeActive = false;
         } catch (err) {
           appendLog(`end place mode failed: ${String(err)}`);
@@ -254,10 +327,13 @@
     if (placeModeActive) {
       positionSaving = true;
       try {
-        const saved = await endHudPlaceMode();
-        hudPosition = isHudPositionSettings(saved)
-          ? saved
-          : { ...DEFAULT_HUD_POSITION };
+        const saved = await endHudPlaceMode(draftContentCorner);
+        hudPosition = normalizeHudPositionSettings(saved) ?? {
+          ...DEFAULT_HUD_POSITION,
+        };
+        if (hudPosition.mode === "custom") {
+          draftContentCorner = hudPosition.contentCorner;
+        }
         placeModeActive = false;
       } catch (err) {
         appendLog(`end place mode failed: ${String(err)}`);
@@ -267,6 +343,7 @@
       return;
     }
 
+    seedDraftContentCorner(hudPosition);
     positionSaving = true;
     try {
       await startHudPlaceMode();
@@ -297,9 +374,12 @@
       try {
         const position = await getHudPositionSettings();
         if (!cancelled) {
-          hudPosition = isHudPositionSettings(position)
-            ? position
-            : { ...DEFAULT_HUD_POSITION };
+          hudPosition = normalizeHudPositionSettings(position) ?? {
+            ...DEFAULT_HUD_POSITION,
+          };
+          if (hudPosition.mode === "custom") {
+            draftContentCorner = hudPosition.contentCorner;
+          }
         }
       } catch (err) {
         if (!cancelled) {
@@ -321,6 +401,20 @@
         unsubs.push(unlistenStyle);
       } catch {
         // Channel optional for panel sync.
+      }
+
+      try {
+        const unlistenPlace = await listen(HUD_PLACE_MODE_CHANNEL, (event) => {
+          if (!isHudPlaceModePayload(event.payload)) return;
+          placeModeActive = event.payload.active;
+        });
+        if (cancelled) {
+          unlistenPlace();
+          return;
+        }
+        unsubs.push(unlistenPlace);
+      } catch {
+        // Channel optional outside Tauri.
       }
     })();
 
@@ -353,7 +447,7 @@
         name="hud-preset"
         value={hudStyle.hudPreset ?? "text"}
         items={presetItems}
-        disabled={!hudReady}
+        disabled={!hudReady || placeUiLocked}
         labelledBy="hud-preset-label"
         columns={3}
         onChange={onHudPresetChange}
@@ -369,7 +463,7 @@
           name="hud-km-layout"
           value={hudStyle.keyMouseLayout ?? "key-left-mouse-right"}
           items={keyMouseLayoutItems}
-          disabled={!hudReady}
+          disabled={!hudReady || placeUiLocked}
           labelledBy="hud-km-layout-label"
           columns={4}
           onChange={onKeyMouseLayoutChange}
@@ -384,7 +478,7 @@
         <select
           id="hud-legend-layout"
           value={hudStyle.keyboardLegendLayout ?? "auto"}
-          disabled={!hudReady}
+          disabled={!hudReady || placeUiLocked}
           aria-labelledby="hud-legend-layout-label"
           onchange={onKeyboardLegendLayoutChange}
         >
@@ -412,7 +506,7 @@
           max="48"
           step="1"
           value={hudStyle.fontSizePx}
-          disabled={!hudReady}
+          disabled={!hudReady || placeUiLocked}
           aria-labelledby="hud-font-size-label"
           onchange={onFontSizeChange}
         />
@@ -432,7 +526,7 @@
           max="5000"
           step="50"
           value={hudStyle.dwellMs}
-          disabled={!hudReady}
+          disabled={!hudReady || placeUiLocked}
           aria-labelledby="hud-dwell-ms-label"
           aria-describedby="hud-dwell-ms-hint"
           title={t("settings.dwellMsHint", locale)}
@@ -456,7 +550,7 @@
           max="10"
           step="1"
           value={hudStyle.timelineMax ?? 5}
-          disabled={!hudReady}
+          disabled={!hudReady || placeUiLocked}
           aria-labelledby="hud-timeline-max-label"
           aria-describedby="hud-timeline-max-hint"
           title={t("settings.timelineMaxHint", locale)}
@@ -471,7 +565,7 @@
       <select
         id="hud-color-preset"
         value={colorPresetSelect}
-        disabled={!hudReady}
+        disabled={!hudReady || placeUiLocked}
         aria-labelledby="hud-color-preset-label"
         onchange={onColorPresetChange}
       >
@@ -493,7 +587,7 @@
           id="hud-text-color"
           type="color"
           value={hudStyle.textColor}
-          disabled={!hudReady}
+          disabled={!hudReady || placeUiLocked}
           aria-labelledby="hud-text-color-label"
           onchange={onTextColorChange}
         />
@@ -503,7 +597,7 @@
           id="hud-bg-color"
           type="color"
           value={hudStyle.backgroundColor}
-          disabled={!hudReady}
+          disabled={!hudReady || placeUiLocked}
           aria-labelledby="hud-bg-color-label"
           onchange={onBackgroundColorChange}
         />
@@ -522,7 +616,7 @@
         max="1"
         step="0.01"
         value={hudStyle.backgroundOpacity}
-        disabled={!hudReady}
+        disabled={!hudReady || placeUiLocked}
         aria-labelledby="hud-bg-opacity-label"
         onchange={onBackgroundOpacityChange}
       />
@@ -534,7 +628,7 @@
       <select
         id="setting-corner"
         value={cornerSelectDisplay}
-        disabled={!positionReady || positionSaving}
+        disabled={!positionReady || positionSaving || placeUiLocked}
         aria-labelledby="setting-corner-label"
         onchange={onCornerChange}
       >
@@ -546,6 +640,23 @@
       </select>
     </FormRow>
     {#if showPlaceControls}
+      <FormRow
+        label={t("settings.contentCorner", locale)}
+        labelId="setting-content-corner-label"
+      >
+        <select
+          id="setting-content-corner"
+          value={contentCornerSelect}
+          disabled={!positionReady || positionSaving}
+          aria-labelledby="setting-content-corner-label"
+          onchange={onContentCornerChange}
+        >
+          <option value="br">{t("settings.corner.br", locale)}</option>
+          <option value="bl">{t("settings.corner.bl", locale)}</option>
+          <option value="tr">{t("settings.corner.tr", locale)}</option>
+          <option value="tl">{t("settings.corner.tl", locale)}</option>
+        </select>
+      </FormRow>
       <FormRow
         label={t("settings.hudPosition", locale)}
         labelId="setting-place-label"

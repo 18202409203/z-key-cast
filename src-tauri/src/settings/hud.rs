@@ -52,7 +52,7 @@ pub fn apply_hud_position(app: &AppHandle) {
         .unwrap_or_default();
 
     match position {
-        HudPositionSettings::Custom { x, y } => {
+        HudPositionSettings::Custom { x, y, .. } => {
             let _ = overlay.set_position(PhysicalPosition::new(x, y));
         }
         HudPositionSettings::Corner { corner } => {
@@ -144,6 +144,74 @@ pub fn set_hud_position_settings(
     Ok(settings)
 }
 
+/// Snapshot overlay outer position into `Custom` without entering place mode.
+#[tauri::command]
+pub fn enter_hud_custom_mode(
+    app: AppHandle,
+    content_corner: HudCorner,
+) -> Result<HudPositionSettings, String> {
+    let Some(overlay) = app.get_webview_window("overlay") else {
+        return Err("overlay window not found".into());
+    };
+    let outer = overlay.outer_position().map_err(|e| e.to_string())?;
+    let custom = HudPositionSettings::Custom {
+        x: outer.x,
+        y: outer.y,
+        content_corner,
+    };
+    let previous = AppSettings::from_runtime();
+    let next = AppSettings {
+        capture_keyboard: previous.capture_keyboard,
+        capture_mouse: previous.capture_mouse,
+        mouse_click_ripple: previous.mouse_click_ripple,
+        has_numpad: previous.has_numpad,
+        ignored_key_ids: previous.ignored_key_ids.clone(),
+        ignored_mouse_actions: previous.ignored_mouse_actions.clone(),
+        hud: previous.hud.clone(),
+        hud_position: custom.clone(),
+        ui_locale: previous.ui_locale,
+        ui_appearance: previous.ui_appearance,
+    };
+    persist_app_settings(&app, next)?;
+    apply_hud_position(&app);
+    emit_hud_position(&app, &custom);
+    Ok(custom)
+}
+
+/// Patch custom content corner only — no window reposition (safe during place-drag).
+#[tauri::command]
+pub fn set_hud_custom_content_corner(
+    app: AppHandle,
+    content_corner: HudCorner,
+) -> Result<HudPositionSettings, String> {
+    let previous = AppSettings::from_runtime();
+    let custom = match &previous.hud_position {
+        HudPositionSettings::Custom { x, y, .. } => HudPositionSettings::Custom {
+            x: *x,
+            y: *y,
+            content_corner,
+        },
+        HudPositionSettings::Corner { .. } => {
+            return Err("content corner requires custom position mode".into());
+        }
+    };
+    let next = AppSettings {
+        capture_keyboard: previous.capture_keyboard,
+        capture_mouse: previous.capture_mouse,
+        mouse_click_ripple: previous.mouse_click_ripple,
+        has_numpad: previous.has_numpad,
+        ignored_key_ids: previous.ignored_key_ids.clone(),
+        ignored_mouse_actions: previous.ignored_mouse_actions.clone(),
+        hud: previous.hud.clone(),
+        hud_position: custom.clone(),
+        ui_locale: previous.ui_locale,
+        ui_appearance: previous.ui_appearance,
+    };
+    persist_app_settings(&app, next)?;
+    emit_hud_position(&app, &custom);
+    Ok(custom)
+}
+
 #[tauri::command]
 pub fn start_hud_place_mode(app: AppHandle) -> Result<(), String> {
     let Some(overlay) = app.get_webview_window("overlay") else {
@@ -175,19 +243,37 @@ pub fn abandon_hud_place_mode(app: &AppHandle) {
     apply_hud_position(app);
 }
 
+/// Resolve content corner for Done: explicit arg wins; else keep existing Custom; else `Br`.
+pub(crate) fn resolve_end_place_content_corner(
+    content_corner: Option<HudCorner>,
+    previous: &HudPositionSettings,
+) -> HudCorner {
+    if let Some(corner) = content_corner {
+        return corner;
+    }
+    match previous {
+        HudPositionSettings::Custom { content_corner, .. } => *content_corner,
+        HudPositionSettings::Corner { .. } => HudCorner::Br,
+    }
+}
+
 #[tauri::command]
-pub fn end_hud_place_mode(app: AppHandle) -> Result<HudPositionSettings, String> {
+pub fn end_hud_place_mode(
+    app: AppHandle,
+    content_corner: Option<HudCorner>,
+) -> Result<HudPositionSettings, String> {
     let Some(overlay) = app.get_webview_window("overlay") else {
         return Err("overlay window not found".into());
     };
 
+    let previous = AppSettings::from_runtime();
     let outer = overlay.outer_position().map_err(|e| e.to_string())?;
     let custom = HudPositionSettings::Custom {
         x: outer.x,
         y: outer.y,
+        content_corner: resolve_end_place_content_corner(content_corner, &previous.hud_position),
     };
 
-    let previous = AppSettings::from_runtime();
     let next = AppSettings {
         capture_keyboard: previous.capture_keyboard,
         capture_mouse: previous.capture_mouse,
@@ -237,6 +323,43 @@ mod tests {
         assert_eq!(
             corner_position(HudCorner::Tl, 1920, 1080, 200, 100, 24, 48),
             (24, 48)
+        );
+    }
+
+    #[test]
+    fn end_place_content_corner_explicit_wins() {
+        let previous = HudPositionSettings::Custom {
+            x: 1,
+            y: 2,
+            content_corner: HudCorner::Bl,
+        };
+        assert_eq!(
+            resolve_end_place_content_corner(Some(HudCorner::Tl), &previous),
+            HudCorner::Tl
+        );
+    }
+
+    #[test]
+    fn end_place_content_corner_preserves_existing_custom() {
+        let previous = HudPositionSettings::Custom {
+            x: 1,
+            y: 2,
+            content_corner: HudCorner::Tr,
+        };
+        assert_eq!(
+            resolve_end_place_content_corner(None, &previous),
+            HudCorner::Tr
+        );
+    }
+
+    #[test]
+    fn end_place_content_corner_defaults_br_from_corner_mode() {
+        let previous = HudPositionSettings::Corner {
+            corner: HudCorner::Tl,
+        };
+        assert_eq!(
+            resolve_end_place_content_corner(None, &previous),
+            HudCorner::Br
         );
     }
 }

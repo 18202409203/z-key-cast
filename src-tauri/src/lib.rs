@@ -18,6 +18,8 @@ pub fn run() {
             settings::set_hud_style_settings,
             settings::get_hud_position_settings,
             settings::set_hud_position_settings,
+            settings::enter_hud_custom_mode,
+            settings::set_hud_custom_content_corner,
             settings::start_hud_place_mode,
             settings::end_hud_place_mode,
             settings::get_ui_locale_settings,

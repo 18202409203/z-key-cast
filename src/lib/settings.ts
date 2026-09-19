@@ -45,7 +45,7 @@ export type HudCorner = "br" | "bl" | "tr" | "tl";
 
 export type HudPositionSettings =
   | { mode: "corner"; corner: HudCorner }
-  | { mode: "custom"; x: number; y: number };
+  | { mode: "custom"; x: number; y: number; contentCorner: HudCorner };
 
 export type HudPlaceModePayload = {
   active: boolean;
@@ -386,9 +386,31 @@ export function isHudPositionSettings(
   const s = value as Record<string, unknown>;
   if (s.mode === "corner") return isHudCorner(s.corner);
   if (s.mode === "custom") {
-    return typeof s.x === "number" && typeof s.y === "number";
+    if (typeof s.x !== "number" || typeof s.y !== "number") return false;
+    // contentCorner optional for legacy wire/JSON; normalize fills `br`.
+    if (s.contentCorner !== undefined && !isHudCorner(s.contentCorner)) {
+      return false;
+    }
+    return true;
   }
   return false;
+}
+
+/** Fill omitted `custom.contentCorner` → `br` (legacy JSON / wire). */
+export function normalizeHudPositionSettings(
+  value: unknown,
+): HudPositionSettings | null {
+  if (!isHudPositionSettings(value)) return null;
+  if (value.mode === "corner") {
+    return { mode: "corner", corner: value.corner };
+  }
+  const raw = value as { x: number; y: number; contentCorner?: unknown };
+  return {
+    mode: "custom",
+    x: raw.x,
+    y: raw.y,
+    contentCorner: isHudCorner(raw.contentCorner) ? raw.contentCorner : "br",
+  };
 }
 
 export function isHudPlaceModePayload(
@@ -402,31 +424,59 @@ export function cornerSelectValue(position: HudPositionSettings): string {
   return position.mode === "custom" ? "custom" : position.corner;
 }
 
-/** Overlay content anchor: corner mode uses that corner; custom stays br. */
+/** Overlay content anchor: corner mode uses that corner; custom uses stored contentCorner. */
 export function contentCornerFromPosition(
   position: HudPositionSettings,
 ): HudCorner {
-  return position.mode === "corner" ? position.corner : "br";
+  if (position.mode === "corner") return position.corner;
+  return isHudCorner(position.contentCorner) ? position.contentCorner : "br";
 }
 
 export async function getHudPositionSettings(): Promise<HudPositionSettings> {
   const raw = await invoke<HudPositionSettings>("get_hud_position_settings");
-  return isHudPositionSettings(raw) ? raw : { ...DEFAULT_HUD_POSITION };
+  return normalizeHudPositionSettings(raw) ?? { ...DEFAULT_HUD_POSITION };
 }
 
 export async function setHudPositionSettings(
   settings: HudPositionSettings,
 ): Promise<HudPositionSettings> {
-  return invoke<HudPositionSettings>("set_hud_position_settings", { settings });
+  const saved = await invoke<HudPositionSettings>("set_hud_position_settings", {
+    settings,
+  });
+  return normalizeHudPositionSettings(saved) ?? { ...DEFAULT_HUD_POSITION };
+}
+
+/** Snapshot overlay position into custom mode (does not start place/drag). */
+export async function enterHudCustomMode(
+  contentCorner: HudCorner,
+): Promise<HudPositionSettings> {
+  const raw = await invoke<HudPositionSettings>("enter_hud_custom_mode", {
+    contentCorner,
+  });
+  return normalizeHudPositionSettings(raw) ?? { ...DEFAULT_HUD_POSITION };
+}
+
+/** Patch custom contentCorner without moving the overlay window. */
+export async function setHudCustomContentCorner(
+  contentCorner: HudCorner,
+): Promise<HudPositionSettings> {
+  const raw = await invoke<HudPositionSettings>("set_hud_custom_content_corner", {
+    contentCorner,
+  });
+  return normalizeHudPositionSettings(raw) ?? { ...DEFAULT_HUD_POSITION };
 }
 
 export async function startHudPlaceMode(): Promise<void> {
   await invoke("start_hud_place_mode");
 }
 
-export async function endHudPlaceMode(): Promise<HudPositionSettings> {
-  const raw = await invoke<HudPositionSettings>("end_hud_place_mode");
-  return isHudPositionSettings(raw) ? raw : { ...DEFAULT_HUD_POSITION };
+export async function endHudPlaceMode(
+  contentCorner?: HudCorner,
+): Promise<HudPositionSettings> {
+  const raw = await invoke<HudPositionSettings>("end_hud_place_mode", {
+    contentCorner: contentCorner ?? null,
+  });
+  return normalizeHudPositionSettings(raw) ?? { ...DEFAULT_HUD_POSITION };
 }
 
 export type UiLocalePayload = {

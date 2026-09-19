@@ -39,7 +39,7 @@
     style: HudStyleSettings;
     locale: UiLocale;
     placeMode: boolean;
-    /** Inner content anchor; custom position maps to br upstream. */
+    /** Inner content anchor from `contentCornerFromPosition` (custom uses stored corner). */
     contentCorner?: HudCorner;
     timeline: TimelineItem[];
     statusActive: boolean;
@@ -154,12 +154,6 @@
   aria-live="polite"
   onpointerdown={onPlacePointerDown}
 >
-  {#if placeMode}
-    <div class="place-affordance" transition:fade={{ duration: 150 }}>
-      {t("overlay.placeAffordance", locale)}
-    </div>
-  {/if}
-
   {#if statusText}
     <div
       class="chip"
@@ -410,20 +404,6 @@
 
   .hud.placing:active {
     cursor: grabbing;
-  }
-
-  .place-affordance {
-    align-self: stretch;
-    padding: 8px 12px;
-    border-radius: 10px;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    color: #e2e8f0;
-    background: rgba(15, 23, 42, 0.82);
-    border: 1px solid rgba(56, 189, 248, 0.45);
-    text-align: center;
-    user-select: none;
   }
 
   .km-group {

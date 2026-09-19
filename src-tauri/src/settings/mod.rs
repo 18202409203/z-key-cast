@@ -16,8 +16,9 @@ pub use capture::{
     take_ignore_capture,
 };
 pub use hud::{
-    abandon_hud_place_mode, apply_hud_position, end_hud_place_mode, get_hud_position_settings,
-    get_hud_style_settings, set_hud_position_settings, set_hud_style_settings, start_hud_place_mode,
+    abandon_hud_place_mode, apply_hud_position, end_hud_place_mode, enter_hud_custom_mode,
+    get_hud_position_settings, get_hud_style_settings, set_hud_custom_content_corner,
+    set_hud_position_settings, set_hud_style_settings, start_hud_place_mode,
 };
 pub use appearance::{get_ui_appearance_settings, set_ui_appearance_settings};
 pub use locale::{get_ui_locale_settings, set_ui_locale_settings};
@@ -42,11 +43,14 @@ pub use capture::{
 };
 #[doc(hidden)]
 pub use hud::{
-    __cmd__end_hud_place_mode, __cmd__get_hud_position_settings, __cmd__get_hud_style_settings,
+    __cmd__end_hud_place_mode, __cmd__enter_hud_custom_mode, __cmd__get_hud_position_settings,
+    __cmd__get_hud_style_settings, __cmd__set_hud_custom_content_corner,
     __cmd__set_hud_position_settings, __cmd__set_hud_style_settings, __cmd__start_hud_place_mode,
-    __tauri_command_name_end_hud_place_mode, __tauri_command_name_get_hud_position_settings,
-    __tauri_command_name_get_hud_style_settings, __tauri_command_name_set_hud_position_settings,
-    __tauri_command_name_set_hud_style_settings, __tauri_command_name_start_hud_place_mode,
+    __tauri_command_name_end_hud_place_mode, __tauri_command_name_enter_hud_custom_mode,
+    __tauri_command_name_get_hud_position_settings, __tauri_command_name_get_hud_style_settings,
+    __tauri_command_name_set_hud_custom_content_corner,
+    __tauri_command_name_set_hud_position_settings, __tauri_command_name_set_hud_style_settings,
+    __tauri_command_name_start_hud_place_mode,
 };
 #[doc(hidden)]
 pub use locale::{
