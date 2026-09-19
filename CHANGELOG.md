@@ -148,3 +148,15 @@
 
   - docs: add HUD screenshots to README
 
+
+## 1.5.2 (2026-09-19)
+
+### Bug Fixes
+
+  - share background opacity across color presets
+  - bake semi-transparent alpha into color presets
+  - honor background opacity on Full keyboard/mouse
+  - restore main theme color crossfade
+  - stop preset card flash on theme/color change
+  - stop checkbox flash and overlay focus steal
+
