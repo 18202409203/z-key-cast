@@ -1,6 +1,6 @@
 {
   "name": "z-key-cast",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Corner HUD for keyboard and mouse actions while screen recording",
   "type": "module",
   "scripts": {

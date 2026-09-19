@@ -118,3 +118,22 @@
   - docs(task): mark text-key-queue archived in design/03 map
   - docs(task): mark scroll-wheel-hud archived in design/03 map
 
+
+## 1.5.0 (2026-09-19)
+
+### Features
+
+  - emit click ripple on Windows primary screen
+  - main window appearance and Appearance tab
+
+### Bug Fixes
+
+  - shorten ripple and ignore-mouse hints
+
+### Other
+
+  - style(ui): modernize HUD/KM choice schematics
+  - style(ui): polish chrome inset, tabs, choice cards
+  - style(ui): drop shell brand; tighten padding
+  - style(ui): crossfade dark/light appearance tokens
+
