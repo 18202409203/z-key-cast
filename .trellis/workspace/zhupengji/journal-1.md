@@ -773,3 +773,41 @@ Shipped scheme C: custom positions persist contentCorner (legacy omit → br); i
 ### Next Steps
 
 - None - task complete
+
+
+## Session 21: LAN website + internal updater
+
+**Date**: 2026-09-20
+**Task**: 官网本地流程与更新检查联调
+**Branch**: `main`
+
+### Summary
+
+Added `website/` (SvelteKit) with deploy root `website/publish/`, LAN serve/publish scripts, test keypair, and `tauri:build:internal` updater path. Public `tauri build` stays updater-free. About checks then confirms before install. Spec: guides/site-updater.md. Archived 09-20-site-local-update-flow.
+
+### Main Changes
+
+- website package + pnpm workspace; site scripts/keys under website/
+- site:publish-test / site:publish-artifacts + release-kit postrelease hook
+- About update confirm UX (en/zh)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `795fc5a` | feat(site): add LAN website and internal updater |
+| `a16dad8` | chore(task): archive 09-20-site-local-update-flow |
+
+### Testing
+
+- [OK] pnpm check / website:check; cargo check ± internal-updater
+- [ ] macOS C-loop fully signed off on device (user was exercising)
+
+### Status
+
+[OK] **Completed** (manual C-loop follow-up optional)
+
+### Next Steps
+
+- Optional: finish macOS C-loop once with confirm UI
+- Later: website visual design task; public HTTPS updater with prod keys
