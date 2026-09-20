@@ -25,7 +25,20 @@ export default defineConfig({
     push: false,
   },
   build: {
+    // Keep false: Gitee Release uploads stay manual. Run `pnpm tauri build` (or
+    // `--build`) before release when you also want site:publish-artifacts to copy bundles.
     command: 'pnpm tauri build',
     run: false,
+  },
+  hooks: {
+    // Same core command as `pnpm site:publish-artifacts`. Skips when dry-run.
+    // Does not upload to Gitee. Requires prior build artifacts if you want a real publish.
+    postrelease: [
+      {
+        name: 'site:publish-artifacts',
+        run: 'pnpm site:publish-artifacts',
+        onError: 'warn',
+      },
+    ],
   },
 })

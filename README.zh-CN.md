@@ -48,6 +48,10 @@ pnpm tauri dev
 pnpm tauri build
 ```
 
+### 局域网站点与更新（内测）
+
+见 [`website/README.zh-CN.md`](./website/README.zh-CN.md)（[English](./website/README.md)）：`website/publish/` 本地静态根、`site:publish-test`、macOS updater C 级闭环。公开/`pnpm tauri build` 包**不**启用更新；Gitee Release 仍为手动上传。
+
 ## 文档
 
 - 产品与架构 → [`design/index.md`](./design/index.md)

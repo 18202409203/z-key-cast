@@ -11,6 +11,14 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "tauri": "tauri",
+    "tauri:build:internal": "node scripts/tauri-build-internal.mjs",
+    "website:dev": "pnpm --filter z-key-cast-website dev",
+    "website:build": "pnpm --filter z-key-cast-website build",
+    "website:check": "pnpm --filter z-key-cast-website check",
+    "site:sync-web": "node website/scripts/site-sync-web.mjs",
+    "site:serve": "node website/scripts/site-serve.mjs",
+    "site:publish-artifacts": "node website/scripts/site-publish.mjs",
+    "site:publish-test": "node website/scripts/site-publish.mjs --test",
     "release": "release-kit",
     "release:patch": "release-kit patch",
     "release:minor": "release-kit minor",
@@ -20,7 +28,9 @@
   "license": "MIT",
   "dependencies": {
     "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-opener": "^2"
+    "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/plugin-process": "^2.3.1",
+    "@tauri-apps/plugin-updater": "^2.12.0"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.10",

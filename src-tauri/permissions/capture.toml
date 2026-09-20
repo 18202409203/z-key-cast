@@ -82,3 +82,8 @@ commands.allow = ["get_ui_appearance_settings"]
 identifier = "allow-set-ui-appearance-settings"
 description = "Allows updating persisted main-window appearance"
 commands.allow = ["set_ui_appearance_settings"]
+
+[[permission]]
+identifier = "allow-is-updater-enabled"
+description = "Allows reading whether the internal updater feature is compiled in"
+commands.allow = ["is_updater_enabled"]

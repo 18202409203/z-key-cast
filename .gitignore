@@ -21,3 +21,22 @@ src-tauri/gen/schemas
 .trellis/.developer
 .trellis/.runtime
 .codebuddy
+
+# Website package
+/website/node_modules
+/website/build
+/website/.svelte-kit
+/website/.env
+/website/.site-test-version
+
+# Sole deploy / document root (LAN publish)
+/website/publish/**
+!/website/publish/.gitkeep
+
+# Local updater merge configs
+src-tauri/tauri.local.conf.json
+src-tauri/tauri.generated.internal.conf.json
+
+# Updater signing private keys under website/keys (public .pub may be committed)
+/website/keys/*.key
+/website/keys/*.key.password

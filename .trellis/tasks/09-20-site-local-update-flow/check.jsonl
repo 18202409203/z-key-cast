@@ -1,0 +1,5 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/guides/release.md", "reason": "verify release-kit hook integration does not break changelog ownership"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "website and About UI quality bar"}
+{"file": ".trellis/spec/tauri/index.md", "reason": "updater/plugin changes stay within tauri guidelines"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "site static root vs app updater vs Gitee release cross-layer check"}

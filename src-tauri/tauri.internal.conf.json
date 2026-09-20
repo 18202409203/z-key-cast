@@ -1,0 +1,26 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "createUpdaterArtifacts": true
+  },
+  "app": {
+    "security": {
+      "capabilities": [
+        "default",
+        {
+          "identifier": "internal-updater",
+          "description": "Updater + process permissions for internal LAN builds only",
+          "windows": ["main"],
+          "permissions": ["updater:default", "process:default"]
+        }
+      ]
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEU0QTdCRjFFMjlBRUE3NzAKUldSd3A2NHBIcituNUJCVjBxb2xZbUJRVHYxckJjbGxhRTR1TW5aeE5IVVB1Y3F5eU1DckFieHoK",
+      "dangerousInsecureTransportProtocol": true,
+      "endpoints": ["http://127.0.0.1:4173/updates/latest.json"]
+    }
+  }
+}

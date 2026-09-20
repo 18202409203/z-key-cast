@@ -4,11 +4,25 @@ mod tray;
 
 use tauri::{Manager, RunEvent, WindowEvent};
 
+#[tauri::command]
+fn is_updater_enabled() -> bool {
+    cfg!(feature = "internal-updater")
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    #[cfg(feature = "internal-updater")]
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init());
+
+    #[cfg(not(feature = "internal-updater"))]
+    let builder = tauri::Builder::default().plugin(tauri_plugin_opener::init());
+
+    builder
         .invoke_handler(tauri::generate_handler![
+            is_updater_enabled,
             input::get_hook_status,
             settings::get_capture_settings,
             settings::set_capture_settings,
