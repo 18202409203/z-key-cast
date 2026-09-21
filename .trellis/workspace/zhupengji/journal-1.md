@@ -811,3 +811,36 @@ Added `website/` (SvelteKit) with deploy root `website/publish/`, LAN serve/publ
 
 - Optional: finish macOS C-loop once with confirm UI
 - Later: website visual design task; public HTTPS updater with prod keys
+
+
+## Session 21: 官网所见即所得 HUD 共享包
+
+**Date**: 2026-09-21
+**Task**: 官网所见即所得 HUD 共享包
+**Branch**: `main`
+
+### Summary
+
+抽出 z-key-cast-hud-view；App overlay 接线；官网 Full live demo（DOM→HudChip）；更新 frontend directory specs
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2ba341a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 20
-- **Last Active**: 2026-09-19
+- **Total Sessions**: 21
+- **Last Active**: 2026-09-21
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~775 | Active |
+| `journal-1.md` | ~846 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 21 | 2026-09-21 | 官网所见即所得 HUD 共享包 | `2ba341a` | `main` |
 | 20 | 2026-09-19 | Custom HUD content-corner picker | `c6080f5` | `main` |
 | 19 | 2026-09-19 | System tray + hide main on close | `e63b69c` | `main` |
 | 18 | 2026-09-19 | Windows click ripple | `9205d68`, `7a5e3a2` | `main` |
