@@ -844,3 +844,39 @@ Added `website/` (SvelteKit) with deploy root `website/publish/`, LAN serve/publ
 ### Next Steps
 
 - None - task complete
+
+
+## Session 22: Website marketing visual redesign
+
+**Date**: 2026-09-21
+**Task**: Website marketing visual redesign
+**Branch**: `main`
+
+### Summary
+
+Demo-first desk hero: power-session capture, dual HudSlots, orthogonal cables, Lite timeline fullscreen.
+
+### Main Changes
+
+Shipped marketing page for z-key-cast: monitor (Lite + notepad) + Full KeyboardMap/MouseSchematic, document-level on/off capture, one-shot intro typewriter, measured orthogonal cables with input-triggered packets toward the monitor. HudView timelineOut pinned absolute to .timeline. Spec notes in frontend component-guidelines + site-updater. Task archived as 09-21-website-marketing-visual.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `30d38e1` | (see git log) |
+| `603bce9` | (see git log) |
+| `579e759` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

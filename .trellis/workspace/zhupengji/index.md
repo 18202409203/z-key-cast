@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 21
+- **Total Sessions**: 22
 - **Last Active**: 2026-09-21
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~846 | Active |
+| `journal-1.md` | ~882 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 22 | 2026-09-21 | Website marketing visual redesign | `30d38e1`, `603bce9`, `579e759` | `main` |
 | 21 | 2026-09-21 | 官网所见即所得 HUD 共享包 | `2ba341a` | `main` |
 | 20 | 2026-09-19 | Custom HUD content-corner picker | `c6080f5` | `main` |
 | 19 | 2026-09-19 | System tray + hide main on close | `e63b69c` | `main` |
