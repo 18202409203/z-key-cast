@@ -74,4 +74,19 @@ Apply when changing:
 
 ---
 
+## Marketing page (`website/` hero)
+
+Demo-first desk (monitor Lite + Full schematics). Capture is an explicit **power session**, not hover-target:
+
+| State | Behavior |
+|---|---|
+| On | Document-level key / mouse / wheel → `HudChip`; typing parks on notepad; first outside click only powers off (swallowed) |
+| Off | Normal page UI; click stage (or key while idle) powers on |
+
+Do not gate mouse chips on “pointer over screen only”. Dual `createHudSlots` (lite + full) fan-out; cable packet animations are one-shot per input toward the monitor.
+
+Visual reference: `design/website/proto.png` (likeness, not pixel copy).
+
+---
+
 **Related**: [Release Conventions](./release.md) (changelog ownership; do not hand-edit CHANGELOG for site work).

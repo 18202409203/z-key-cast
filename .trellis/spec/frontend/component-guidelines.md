@@ -58,3 +58,5 @@ Overlay route (`routes/overlay/+page.svelte`) keeps Tauri `listen` / place drag 
 - Putting overlay HUD / slots under `$lib/panels/` (panels are main-window tabs only)
 - Redefining `HudChip` / channel strings in panels instead of `$lib/cast.ts` / `$lib/settings.ts`
 - Saving locale / appearance from both shell and Appearance (double-persist) — Appearance owns persist; shell mirrors via callback / channel
+- **`timelineOut` with `position: fixed` + viewport coords** — breaks when any ancestor keeps a CSS `transform` (e.g. marketing page entrance). Pin outro with `position: absolute` against a `position: relative` `.timeline` using rect deltas vs the timeline box
+- **Website Lite + desk Full** — one `createHudSlots` cannot drive both: non-`full` presets clear `activeKeyIds`. Fan-out the same `HudChip` stream into lite + full slot instances
