@@ -1,6 +1,11 @@
 /**
  * DOM keyboard / mouse / wheel → HudChip (same wire contract as the App hook).
- * Full demo ignores chip.mods for held-set; we still snapshot held modifiers for parity.
+ *
+ * Capture is gated by an explicit power session (on/off), not by hover target:
+ * - Power on (click stage / host call / key while idle): document-level capture.
+ * - Power off (click outside stage): release held keys/buttons; page mouse/keys
+ *   behave normally again. The outside click that shuts down is swallowed so it
+ *   does not also activate Download links — the next click is a normal one.
  */
 
 import {
@@ -20,7 +25,6 @@ const CODE_ALIASES: Record<string, string> = {
 function keyIdFromCode(code: string): string | null {
   if (!code || code === "Unidentified") return null;
   const id = CODE_ALIASES[code] ?? code;
-  // Layout spacer — no highlight target.
   if (id.startsWith("_")) return null;
   return id;
 }
@@ -32,24 +36,50 @@ function mouseButton(button: number): MouseButton | null {
   return null;
 }
 
+function isEditableElement(el: EventTarget | null): el is HTMLElement {
+  if (!(el instanceof HTMLElement)) return false;
+  if (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) {
+    return !el.disabled && !el.readOnly;
+  }
+  return el.isContentEditable;
+}
+
+function isPageInteractive(el: EventTarget | null): boolean {
+  if (!(el instanceof Element)) return false;
+  return Boolean(
+    el.closest("a, button, input, textarea, select, [contenteditable=true]"),
+  );
+}
+
 export type DomInputAdapterOptions = {
   onChip: (chip: HudChip) => void;
-  /** Optional UI sync (click-to-focus hint). Also driven by focus/blur. */
-  onFocusChange?: (focused: boolean) => void;
+  /** Fires when the power session flips (screen on/off). */
+  onPowerChange?: (powered: boolean) => void;
+  /** Typing surface (notepad). Focus parks here while powered. */
+  getFocusTarget?: () => HTMLElement | null | undefined;
+  /** Scrollable notepad; wheel deltas apply here while powered. */
+  getScrollTarget?: () => HTMLElement | null | undefined;
+};
+
+export type DomInputAdapter = {
+  dispose: () => void;
+  powerOn: () => void;
+  powerOff: () => void;
+  readonly powered: boolean;
 };
 
 /**
- * Attach listeners on `root` (must be focusable, e.g. tabindex=0).
- * Captures only while `root` is focused; preventDefault on wheel to avoid page scroll.
- * Returns a disposer.
+ * Attach document-level listeners. `root` is the stage: clicks inside power on
+ * (or stay on); clicks outside while powered power off.
  */
 export function attachDomInputAdapter(
   root: HTMLElement,
   options: DomInputAdapterOptions,
-): () => void {
+): DomInputAdapter {
   const heldMods = new Set<string>();
   const heldKeys = new Set<string>();
   const heldButtons = new Set<MouseButton>();
+  let powered = false;
 
   function modsSnapshot(): KeyRef[] {
     return [...heldMods].map((id) => ({ id }));
@@ -59,8 +89,20 @@ export function attachDomInputAdapter(
     options.onChip(chip);
   }
 
-  function setFocused(focused: boolean) {
-    options.onFocusChange?.(focused);
+  function parkFocus() {
+    const preferred = options.getFocusTarget?.() ?? null;
+    const target = preferred ?? root;
+    if (document.activeElement !== target) {
+      target.focus({ preventScroll: true });
+    }
+    if (target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement) {
+      const len = target.value.length;
+      try {
+        target.setSelectionRange(len, len);
+      } catch {
+        // ignore
+      }
+    }
   }
 
   function releaseAll() {
@@ -85,12 +127,46 @@ export function attachDomInputAdapter(
     heldButtons.clear();
   }
 
+  function powerOn() {
+    if (powered) {
+      parkFocus();
+      return;
+    }
+    powered = true;
+    parkFocus();
+    options.onPowerChange?.(true);
+  }
+
+  function powerOff() {
+    if (!powered) return;
+    releaseAll();
+    powered = false;
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && root.contains(active)) {
+      active.blur();
+    }
+    options.onPowerChange?.(false);
+  }
+
   function onKeyDown(event: KeyboardEvent) {
-    if (document.activeElement !== root) return;
+    if (!powered) {
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+      if (isPageInteractive(event.target) && !root.contains(event.target as Node)) {
+        return;
+      }
+      powerOn();
+    }
+
+    if (!isEditableElement(document.activeElement)) {
+      parkFocus();
+    }
+
     const id = keyIdFromCode(event.code);
     if (!id) return;
-    // Avoid browser chrome eating demo keys when possible (Tab still moves focus).
-    if (event.code !== "Tab") event.preventDefault();
+    const editable = isEditableElement(document.activeElement);
+    if (!editable && event.code !== "Tab") event.preventDefault();
     if (event.repeat) return;
     if (isModifierKeyId(id)) heldMods.add(id);
     heldKeys.add(id);
@@ -103,10 +179,11 @@ export function attachDomInputAdapter(
   }
 
   function onKeyUp(event: KeyboardEvent) {
-    if (document.activeElement !== root) return;
+    if (!powered) return;
     const id = keyIdFromCode(event.code);
     if (!id) return;
-    if (event.code !== "Tab") event.preventDefault();
+    const editable = isEditableElement(document.activeElement);
+    if (!editable && event.code !== "Tab") event.preventDefault();
     if (isModifierKeyId(id)) heldMods.delete(id);
     heldKeys.delete(id);
     emit({
@@ -118,12 +195,24 @@ export function attachDomInputAdapter(
   }
 
   function onPointerDown(event: PointerEvent) {
-    // Do NOT preventDefault on pointerdown — it cancels focus in browsers.
-    // Focus + optional UI callback so the demo hint updates on first click.
-    if (document.activeElement !== root) {
-      root.focus({ preventScroll: true });
+    const target = event.target;
+    const inside =
+      target instanceof Node ? root.contains(target) : false;
+
+    if (powered && !inside) {
+      // First outside click only shuts down; next click is normal page UI.
+      powerOff();
+      event.preventDefault();
+      event.stopPropagation();
+      return;
     }
-    setFocused(true);
+
+    if (!powered) {
+      if (!inside) return;
+      powerOn();
+    } else {
+      parkFocus();
+    }
 
     const button = mouseButton(event.button);
     if (!button) return;
@@ -137,9 +226,10 @@ export function attachDomInputAdapter(
   }
 
   function onPointerUp(event: PointerEvent) {
+    if (!powered && heldButtons.size === 0) return;
     const button = mouseButton(event.button);
     if (!button) return;
-    if (!heldButtons.has(button) && document.activeElement !== root) return;
+    if (!heldButtons.has(button)) return;
     heldButtons.delete(button);
     emit({
       kind: "mouse",
@@ -150,6 +240,7 @@ export function attachDomInputAdapter(
   }
 
   function onPointerCancel() {
+    if (heldButtons.size === 0) return;
     for (const button of [...heldButtons]) {
       emit({
         kind: "mouse",
@@ -162,13 +253,19 @@ export function attachDomInputAdapter(
   }
 
   function onContextMenu(event: Event) {
-    if (document.activeElement !== root) return;
-    event.preventDefault();
+    if (!powered) return;
+    if (event.target instanceof Node && root.contains(event.target)) {
+      event.preventDefault();
+    }
   }
 
   function onWheel(event: WheelEvent) {
-    if (document.activeElement !== root) return;
+    if (!powered) return;
     event.preventDefault();
+    const scrollEl = options.getScrollTarget?.() ?? null;
+    if (scrollEl && event.deltaY !== 0) {
+      scrollEl.scrollTop += event.deltaY;
+    }
     if (event.deltaY === 0) return;
     emit({
       kind: "scroll",
@@ -177,36 +274,30 @@ export function attachDomInputAdapter(
     });
   }
 
-  function onFocus() {
-    setFocused(true);
-  }
+  // Capture phase so outside-click power-off wins before link activation.
+  window.addEventListener("keydown", onKeyDown, true);
+  window.addEventListener("keyup", onKeyUp, true);
+  window.addEventListener("pointerdown", onPointerDown, true);
+  window.addEventListener("pointerup", onPointerUp, true);
+  window.addEventListener("pointercancel", onPointerCancel, true);
+  window.addEventListener("contextmenu", onContextMenu, true);
+  window.addEventListener("wheel", onWheel, { capture: true, passive: false });
 
-  function onBlur() {
-    releaseAll();
-    setFocused(false);
-  }
-
-  root.addEventListener("keydown", onKeyDown);
-  root.addEventListener("keyup", onKeyUp);
-  root.addEventListener("pointerdown", onPointerDown);
-  // pointerup / cancel on window so release works if pointer leaves root
-  window.addEventListener("pointerup", onPointerUp);
-  window.addEventListener("pointercancel", onPointerCancel);
-  root.addEventListener("contextmenu", onContextMenu);
-  root.addEventListener("wheel", onWheel, { passive: false });
-  root.addEventListener("focus", onFocus);
-  root.addEventListener("blur", onBlur);
-
-  return () => {
-    releaseAll();
-    root.removeEventListener("keydown", onKeyDown);
-    root.removeEventListener("keyup", onKeyUp);
-    root.removeEventListener("pointerdown", onPointerDown);
-    window.removeEventListener("pointerup", onPointerUp);
-    window.removeEventListener("pointercancel", onPointerCancel);
-    root.removeEventListener("contextmenu", onContextMenu);
-    root.removeEventListener("wheel", onWheel);
-    root.removeEventListener("focus", onFocus);
-    root.removeEventListener("blur", onBlur);
+  return {
+    get powered() {
+      return powered;
+    },
+    powerOn,
+    powerOff,
+    dispose() {
+      powerOff();
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("keyup", onKeyUp, true);
+      window.removeEventListener("pointerdown", onPointerDown, true);
+      window.removeEventListener("pointerup", onPointerUp, true);
+      window.removeEventListener("pointercancel", onPointerCancel, true);
+      window.removeEventListener("contextmenu", onContextMenu, true);
+      window.removeEventListener("wheel", onWheel, true);
+    },
   };
 }

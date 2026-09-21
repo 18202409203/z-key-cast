@@ -92,12 +92,23 @@
     };
   }
 
-  /** Exit leftward; pin to viewport so flex reflow cannot drag the outro. */
+  /**
+   * Exit leftward; pin inside the timeline so flex reflow cannot drag the outro.
+   * Use absolute + offset vs the timeline box (not position:fixed + viewport coords):
+   * ancestors with transform/filter (e.g. marketing page entrance) retarget fixed
+   * and make viewport left/top land in the wrong place.
+   */
   function timelineOut(
     node: Element,
     { duration = TIMELINE_OUT_MS }: { duration?: number } = {},
   ) {
-    const rect = (node as HTMLElement).getBoundingClientRect();
+    const el = node as HTMLElement;
+    const parent = el.offsetParent as HTMLElement | null;
+    const rect = el.getBoundingClientRect();
+    const parentRect = parent?.getBoundingClientRect();
+    const left = parentRect ? rect.left - parentRect.left : rect.left;
+    const top = parentRect ? rect.top - parentRect.top : rect.top;
+    const position = parent ? "absolute" : "fixed";
     return {
       duration,
       easing: cubicOut,
@@ -106,9 +117,9 @@
         const x = (1 - t) * -22;
         const s = 0.88 + t * 0.12;
         return [
-          "position: fixed",
-          `left: ${rect.left}px`,
-          `top: ${rect.top}px`,
+          `position: ${position}`,
+          `left: ${left}px`,
+          `top: ${top}px`,
           `width: ${rect.width}px`,
           `height: ${rect.height}px`,
           "margin: 0",
@@ -461,6 +472,7 @@
   }
 
   .timeline {
+    position: relative;
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
