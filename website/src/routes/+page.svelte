@@ -16,6 +16,7 @@
     INTRO_INVITE,
     runIntroTypewriter,
   } from "$lib/intro-typewriter";
+  import { getTextareaCaretPoint } from "$lib/notepad-caret";
 
   const productName = "z-key-cast";
   const tagline = "Show your keystrokes, without the noise.";
@@ -78,6 +79,9 @@
   /** Remount packet overlays — one-shot current toward the monitor. */
   let kbPulseNonce = $state(0);
   let msPulseNonce = $state(0);
+  let caretPos = $state<{ left: number; top: number; height: number } | null>(
+    null,
+  );
 
   /** Measured orthogonal cable geometry (rig-local px). */
   let cableGeo = $state<{
@@ -151,6 +155,15 @@
     };
   }
 
+  function updateNotepadCaret() {
+    const el = notepadEl;
+    if (!el || !stageFocused || document.activeElement !== el) {
+      caretPos = null;
+      return;
+    }
+    caretPos = getTextareaCaretPoint(el);
+  }
+
   function fanOut(chip: HudChip) {
     liteSlots.showChip(chip);
     fullSlots.showChip(chip);
@@ -196,6 +209,7 @@
         },
         onPowerChange: (powered) => {
           stageFocused = powered;
+          queueMicrotask(() => updateNotepadCaret());
         },
         getFocusTarget: () => notepadEl,
         getScrollTarget: () => notepadEl,
@@ -206,14 +220,23 @@
     queueMicrotask(() => {
       adapter?.powerOn();
       layoutCables();
+      updateNotepadCaret();
     });
 
     const ro =
       typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(() => layoutCables())
+        ? new ResizeObserver(() => {
+            layoutCables();
+            updateNotepadCaret();
+          })
         : null;
     if (rigEl) ro?.observe(rigEl);
     window.addEventListener("resize", layoutCables);
+
+    function onSelectionChange() {
+      if (document.activeElement === notepadEl) updateNotepadCaret();
+    }
+    document.addEventListener("selectionchange", onSelectionChange);
 
     introActive = true;
     void runIntroTypewriter({
@@ -299,9 +322,16 @@
       adapter?.dispose();
       ro?.disconnect();
       window.removeEventListener("resize", layoutCables);
+      document.removeEventListener("selectionchange", onSelectionChange);
       liteSlots.clearAllIdleTimers();
       fullSlots.clearAllIdleTimers();
     };
+  });
+
+  $effect(() => {
+    notepadText;
+    stageFocused;
+    queueMicrotask(() => updateNotepadCaret());
   });
 </script>
 
@@ -352,7 +382,20 @@
               autocomplete="off"
               aria-label="Demo notepad — type here"
               placeholder={introActive ? "" : INTRO_INVITE}
+              oninput={() => updateNotepadCaret()}
+              onclick={() => updateNotepadCaret()}
+              onkeyup={() => updateNotepadCaret()}
+              onscroll={() => updateNotepadCaret()}
             ></textarea>
+            {#if stageFocused && caretPos}
+              <div
+                class="notepad-caret"
+                style:left={`${caretPos.left}px`}
+                style:top={`${caretPos.top}px`}
+                style:height={`${caretPos.height}px`}
+                aria-hidden="true"
+              ></div>
+            {/if}
           </div>
         </div>
         <div class="stand" aria-hidden="true"></div>
@@ -661,9 +704,19 @@
 
   .stage.focused .notepad {
     color: var(--paper-ink);
-    /* Thick cyan caret — block where supported, color everywhere. */
-    caret-color: var(--accent);
-    caret-shape: block;
+    /* Native caret hidden — custom .notepad-caret is cross-browser width. */
+    caret-color: transparent;
+  }
+
+  .notepad-caret {
+    position: absolute;
+    z-index: 3;
+    width: 2.5px;
+    margin-left: -1px;
+    border-radius: 1px;
+    background: var(--paper-ink);
+    pointer-events: none;
+    animation: caret-blink 1.05s steps(1, end) infinite;
   }
 
   .stage.focused .screen::after {
@@ -1078,6 +1131,17 @@
       opacity: 1;
       /* `none` — leave no transform containing block (breaks HUD fixed/absolute outro). */
       transform: none;
+    }
+  }
+
+  @keyframes caret-blink {
+    0%,
+    45% {
+      opacity: 1;
+    }
+    50%,
+    100% {
+      opacity: 0;
     }
   }
 
