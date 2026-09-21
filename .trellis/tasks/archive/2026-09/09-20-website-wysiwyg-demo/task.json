@@ -1,0 +1,29 @@
+{
+  "id": "website-wysiwyg-demo",
+  "name": "website-wysiwyg-demo",
+  "title": "官网所见即所得键盘预览",
+  "description": "",
+  "status": "completed",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "zhupengji",
+  "assignee": "zhupengji",
+  "createdAt": "2026-09-20",
+  "completedAt": "2026-09-21",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "09-21-shared-hud-view-package",
+    "09-21-website-live-hud-demo"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}
