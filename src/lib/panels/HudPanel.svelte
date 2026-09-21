@@ -8,8 +8,11 @@
     DEFAULT_HUD_POSITION,
     DEFAULT_HUD_STYLE,
     HUD_COLOR_PRESETS,
+    HUD_FONT_SIZE_PX_MAX,
+    HUD_FONT_SIZE_PX_MIN,
     HUD_PLACE_MODE_CHANNEL,
     HUD_STYLE_CHANNEL,
+    clampHudFontSizePx,
     colorsFromHudPreset,
     cornerSelectValue,
     endHudPlaceMode,
@@ -160,7 +163,7 @@
   function onFontSizeChange(event: Event) {
     const value = Number((event.currentTarget as HTMLInputElement).value);
     if (!Number.isFinite(value)) return;
-    patchHud({ fontSizePx: Math.max(12, Math.min(48, value)) });
+    patchHud({ fontSizePx: clampHudFontSizePx(value) });
   }
 
   function onDwellMsChange(event: Event) {
@@ -502,8 +505,8 @@
         <input
           id="hud-font-size"
           type="range"
-          min="12"
-          max="48"
+          min={HUD_FONT_SIZE_PX_MIN}
+          max={HUD_FONT_SIZE_PX_MAX}
           step="1"
           value={hudStyle.fontSizePx}
           disabled={!hudReady || placeUiLocked}

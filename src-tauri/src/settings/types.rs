@@ -218,7 +218,7 @@ impl<'de> Deserialize<'de> for HudStyleSettings {
 
 impl HudStyleSettings {
     pub(crate) fn clamp(mut self) -> Self {
-        self.font_size_px = self.font_size_px.clamp(10, 48);
+        self.font_size_px = self.font_size_px.clamp(12, 64);
         self.dwell_ms = self.dwell_ms.clamp(200, 5_000);
         self.timeline_max = self.timeline_max.clamp(1, 10);
         self.background_opacity = self.background_opacity.clamp(0.0, 1.0);
@@ -457,7 +457,7 @@ mod tests {
             key_mouse_layout: KeyMouseLayout::KeyLeftMouseRight,
         }
         .clamp();
-        assert_eq!(clamped.font_size_px, 10);
+        assert_eq!(clamped.font_size_px, 12);
         assert_eq!(clamped.dwell_ms, 200);
         assert_eq!(clamped.timeline_max, 1);
         assert_eq!(clamped.background_opacity, 1.0);

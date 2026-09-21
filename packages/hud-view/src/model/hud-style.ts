@@ -28,6 +28,10 @@ export type HudStyleSettings = {
   keyMouseLayout?: KeyMouseLayout;
 };
 
+/** HUD chip / text font size slider + persist clamp (px). Keep aligned with Rust `HudStyleSettings::clamp`. */
+export const HUD_FONT_SIZE_PX_MIN = 12;
+export const HUD_FONT_SIZE_PX_MAX = 64;
+
 export const DEFAULT_HUD_STYLE: HudStyleSettings = {
   fontSizePx: 15,
   textColor: "#f8fafc",
@@ -40,6 +44,14 @@ export const DEFAULT_HUD_STYLE: HudStyleSettings = {
   keyboardLegendLayout: "auto",
   keyMouseLayout: "key-left-mouse-right",
 };
+
+export function clampHudFontSizePx(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_HUD_STYLE.fontSizePx;
+  return Math.max(
+    HUD_FONT_SIZE_PX_MIN,
+    Math.min(HUD_FONT_SIZE_PX_MAX, Math.round(value)),
+  );
+}
 
 /** Quick color themes for text / background (opacity is independent). */
 export type HudColorPresetId = "dark" | "light";
@@ -165,7 +177,7 @@ export function normalizeHudStyleSettings(value: HudStyleSettings): HudStyleSett
 } {
   const raw = value as HudStyleSettings & Record<string, unknown>;
   return {
-    fontSizePx: value.fontSizePx,
+    fontSizePx: clampHudFontSizePx(value.fontSizePx),
     textColor: value.textColor,
     backgroundColor: value.backgroundColor,
     backgroundOpacity: value.backgroundOpacity,

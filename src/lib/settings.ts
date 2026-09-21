@@ -12,6 +12,9 @@ import {
 export {
   DEFAULT_HUD_STYLE,
   HUD_COLOR_PRESETS,
+  HUD_FONT_SIZE_PX_MAX,
+  HUD_FONT_SIZE_PX_MIN,
+  clampHudFontSizePx,
   colorsFromHudPreset,
   hudBackgroundCss,
   isHudCorner,
