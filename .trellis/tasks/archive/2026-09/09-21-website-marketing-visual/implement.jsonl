@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend package checklist for website work"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Svelte component patterns when splitting hero pieces"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Where website lib components should live"}
+{"file": "design/index.md", "reason": "HudChip wire contract shared with DOM adapter"}
