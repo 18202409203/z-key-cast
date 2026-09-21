@@ -6,46 +6,58 @@
 
 ## Overview
 
-SvelteKit + Tauri webviews. Domain wire types and invokes live as `$lib/*.ts`. Reusable UI and HUD primitives live under `$lib/components/`. Main-window tab bodies live under `$lib/panels/`. Overlay HUD view + slot/timer runes live under `$lib/overlay/`. Routes stay thin shells that compose those pieces.
+SvelteKit + Tauri webviews. **HUD presentation** (Text / Lite / Full) lives in the workspace package `z-key-cast-hud-view` (`packages/hud-view`). App `$lib` keeps Tauri IPC, settings persistence, and main-window panels. The `website/` package is a separate SvelteKit app that consumes the same HUD package with DOM-sourced chips.
 
 ---
 
-## Directory Layout
+## Monorepo packages
+
+```
+.
+├── packages/hud-view/          # z-key-cast-hud-view (shared HUD view; no @tauri-apps)
+│   └── src/
+│       ├── components/         # HudView, KeyCard, KeyboardMap, MouseSchematic
+│       ├── model/              # HudChip, style, legends, layout, HUD i18n slice
+│       ├── state/              # createHudSlots
+│       └── index.ts            # public exports only
+├── website/                    # marketing/download shell + live Full demo
+└── src/                        # Tauri app webviews (settings + overlay host)
+```
+
+Import HUD from the package root — do **not** deep-import package internals:
+
+```ts
+import { HudView, createHudSlots, type HudChip } from "z-key-cast-hud-view";
+```
+
+Vite hosts must set `optimizeDeps.exclude` + `ssr.noExternal` for `z-key-cast-hud-view`.
+
+---
+
+## App directory layout (`src/`)
 
 ```
 src/
 ├── routes/
 │   ├── +page.svelte              # Main settings shell (brand, Tabs, panel host)
-│   ├── overlay/+page.svelte      # Overlay bootstrap + listen + compose HudView
+│   ├── overlay/+page.svelte      # Overlay bootstrap + Tauri listen + compose HudView
 │   └── ripple/+page.svelte       # Click-ripple overlay
 ├── lib/
-│   ├── components/               # Reusable UI + HUD primitives
-│   │   ├── Tabs.svelte
-│   │   ├── SegmentedControl.svelte
-│   │   ├── ChoiceCardGroup.svelte  # labeled schematic radiogroup cards
-│   │   ├── KeyCard.svelte
-│   │   ├── KeyboardMap.svelte
-│   │   └── MouseSchematic.svelte
-│   ├── panels/                   # Main-window tab bodies (page slices)
-│   │   ├── HudPanel.svelte
-│   │   ├── SettingsPanel.svelte
-│   │   ├── CapturePanel.svelte
-│   │   ├── LogPanel.svelte
-│   │   └── AboutPanel.svelte
-│   ├── overlay/                  # Overlay HUD presentation + slot/timer logic
-│   │   ├── HudView.svelte        # Presentational HUD (markup + view CSS)
-│   │   └── hud-slots.svelte.ts   # Timeline / held sets / idle timers / showChip API
-│   ├── cast.ts                   # Event channels, wire types, guards
-│   ├── settings.ts               # Capture / HUD style / position / locale API
-│   ├── i18n.ts
-│   ├── key-card.ts
-│   ├── key-legends.ts
+│   ├── components/               # Settings-window UI only (Tabs, Form*, ChoiceCard…)
+│   ├── panels/                   # Main-window tab bodies
+│   ├── cast.ts                   # Tauri channels + invoke; re-exports chip API from package
+│   ├── settings.ts               # Persist/IPC; re-exports HUD style API from package
+│   ├── i18n.ts                   # App/settings locale strings
+│   ├── key-card.ts               # thin re-export → package (prefer package import)
+│   ├── key-legends.ts            # thin re-export → package
 │   ├── key-ignore-presets.ts
-│   └── keyboard-layout.ts
+│   └── keyboard-layout.ts        # thin re-export → package
 └── app.html
 ```
 
-Do **not** put shared Svelte under top-level `src/components/` — use `$lib/components/`.
+Do **not** put shared Svelte under top-level `src/components/`.
+
+Do **not** put a second copy of HudView / KeyCard / KeyboardMap / MouseSchematic under `$lib` — those live only in `packages/hud-view`.
 
 Do **not** put overlay orchestration under `$lib/panels/` — panels are main-window tab bodies only.
 
@@ -55,12 +67,13 @@ Do **not** put overlay orchestration under `$lib/panels/` — panels are main-wi
 
 | Layer | Owns | Must not own |
 |-------|------|--------------|
-| `$lib/components/` | Presentational / reusable controls; HUD primitives used by overlay + Capture | Tauri listen/persist for main settings tabs; overlay slot/timer orchestration |
-| `$lib/panels/` | Tab markup, local `$state`, get/set via `$lib/settings`, panel-local listen | Global tab routing; inventing wire types; overlay HUD |
-| `$lib/overlay/` | `HudView` markup/CSS; `hud-slots` timeline / held sets / idle timers / `showChip` / style dwell | Tauri `listen` registration; main-window panels |
-| `routes/overlay/+page.svelte` | Locale/style/place bootstrap, Tauri `listen`/`get*`, place-mode drag, compose `HudView`; transparent `:global(html,body)` | Full HUD markup blob; slot/timer implementation |
-| `routes/+page.svelte` | `activeTab`, tab-label locale mirror, composing always-mounted panels, shared `logLines` / `appendLog` | Full panel form markup |
-| `$lib/*.ts` | Wire types, invokes, i18n, layouts | Svelte markup |
+| `z-key-cast-hud-view` | HudView, primitives, `createHudSlots`, HudChip types/formatters, HUD style types/defaults | `@tauri-apps/*`, DOM/native input adapters |
+| `$lib/components/` | Settings-window presentational controls | HUD keyboard/mouse primitives |
+| `$lib/panels/` | Tab markup, local `$state`, get/set via `$lib/settings`, panel-local listen | Global tab routing; inventing wire types; HUD view impl |
+| `routes/overlay/+page.svelte` | Locale/style/place bootstrap, Tauri `listen`/`get*`, place-mode drag, compose package `HudView` | Full HUD markup blob; slot/timer implementation |
+| `website/` | Landing page, DOM→HudChip adapter, downloads/`latest.json` | Duplicate HUD UI; Tauri IPC |
+| `$lib/cast.ts` / `settings.ts` | Channels, invoke, persistence; re-export pure HUD APIs | Re-implement chip/style logic |
+
 ### Panel mount contract
 
 All five panels stay **mounted**. Inactive panels use `hidden` + `inert` (not `{#if}` destroy) so log streaming and armed ignore-key capture survive tab switches. Window teardown still cancels ignore capture.
@@ -77,11 +90,10 @@ Shell holds `logLines` + `appendLog`. Panels that need to report save failures r
 
 ## Naming Conventions
 
-- Components / panels / overlay views: `PascalCase.svelte`
+- Components / panels: `PascalCase.svelte`
 - Domain modules: `kebab-case.ts`
-- Overlay rune modules: `kebab-case.svelte.ts` (e.g. `hud-slots.svelte.ts`)
-- Import HUD primitives as `$lib/components/KeyCard.svelte` (etc.), never flat `$lib/KeyCard.svelte`
-- Import overlay pieces as `$lib/overlay/HudView.svelte` / `$lib/overlay/hud-slots.svelte`
+- Slot rune modules: `kebab-case.svelte.ts` (e.g. `hud-slots.svelte.ts`)
+- Import HUD as `z-key-cast-hud-view`, never `$lib/overlay/*` (removed) or flat `$lib/KeyCard.svelte`
 
 ---
 
@@ -89,5 +101,6 @@ Shell holds `logLines` + `appendLog`. Panels that need to report save failures r
 
 - Thin shell: `src/routes/+page.svelte`
 - Panel-owned I/O: `src/lib/panels/CapturePanel.svelte`
-- Shared HUD primitive: `src/lib/components/KeyboardMap.svelte` (overlay + Capture)
-- Overlay composition: `src/routes/overlay/+page.svelte` → `$lib/overlay/HudView.svelte` + `hud-slots.svelte.ts`
+- Shared HUD: `import { KeyboardMap, HudView, createHudSlots } from "z-key-cast-hud-view"`
+- Overlay composition: `src/routes/overlay/+page.svelte` → package `HudView` + `createHudSlots`
+- Website demo: `website/src/lib/dom-input-adapter.ts` → chips → same package views

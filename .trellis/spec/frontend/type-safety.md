@@ -14,10 +14,12 @@ TypeScript (strict via SvelteKit) for the webviews. Shared wire types for Tauri 
 
 | Kind | Location |
 |------|----------|
-| Cast / hook wire types | `src/lib/cast.ts` (mirror Rust `src-tauri/src/input/event.rs`) |
-| Capture / HUD style invoke API | `src/lib/settings.ts` (mirror Rust `src-tauri/src/settings/`) |
+| HudChip / formatters / slot state | `z-key-cast-hud-view` (`packages/hud-view`); App may re-export via `$lib/cast.ts` |
+| Cast channels + Tauri invoke | `src/lib/cast.ts` (mirror Rust `src-tauri/src/input/event.rs`) |
+| Capture / HUD style invoke API | `src/lib/settings.ts` (mirror Rust `src-tauri/src/settings/`); HUD style types also from package |
 | Main-window panel UI state | `$lib/panels/*.svelte` (shell keeps `activeTab`, locale mirror, shared `logLines`) |
-| Overlay HUD slots / timers | `$lib/overlay/hud-slots.svelte.ts` (route owns listen + locale/place) |
+| Overlay host | `routes/overlay/+page.svelte` (listen + locale/place; slots from package) |
+| Website DOM→chip | `website/src/lib/dom-input-adapter.ts` |
 | Ripple UI state | Colocated in `routes/ripple/+page.svelte` |
 
 See also: [Tauri Cast Events](../tauri/cast-events.md).

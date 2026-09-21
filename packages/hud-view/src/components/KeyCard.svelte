@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { KeyCardVisual } from "$lib/key-card";
+  import type { KeyCardVisual } from "../model/key-card";
 
   type Props = {
     visual: KeyCardVisual;

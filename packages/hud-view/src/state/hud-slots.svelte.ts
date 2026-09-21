@@ -4,13 +4,13 @@ import {
   type HudChip,
   type KeyRef,
   type ScrollDirection,
-} from "$lib/cast";
+} from "../model/chip";
 import {
   DEFAULT_HUD_STYLE,
   normalizeHudStyleSettings,
   type HudPreset,
   type HudStyleSettings,
-} from "$lib/settings";
+} from "../model/hud-style";
 
 type MouseButton = Extract<HudChip, { kind: "mouse" }>["button"];
 

@@ -2,8 +2,7 @@
   import { listen } from "@tauri-apps/api/event";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { onMount } from "svelte";
-  import HudView from "$lib/overlay/HudView.svelte";
-  import { createHudSlots } from "$lib/overlay/hud-slots.svelte";
+  import { HudView, createHudSlots } from "z-key-cast-hud-view";
   import {
     EVENT_CHANNEL,
     HOOK_STATUS_CHANNEL,

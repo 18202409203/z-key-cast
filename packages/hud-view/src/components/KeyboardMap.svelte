@@ -5,12 +5,12 @@
     NUMPAD_LAYOUT_UNITS,
     NUMPAD_ROWS,
     type LayoutKey,
-  } from "$lib/keyboard-layout";
+  } from "../model/keyboard-layout";
   import {
     displayLabelForKeyId,
     legendForKeyId,
     type KeyboardLegendLayoutId,
-  } from "$lib/key-legends";
+  } from "../model/key-legends";
 
   const EMPTY_IDS: ReadonlySet<string> = new Set();
 

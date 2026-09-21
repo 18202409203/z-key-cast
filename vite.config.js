@@ -8,6 +8,14 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(() => ({
   plugins: [sveltekit()],
 
+  // Process workspace Svelte sources (HudView package) instead of prebundling.
+  optimizeDeps: {
+    exclude: ["z-key-cast-hud-view"],
+  },
+  ssr: {
+    noExternal: ["z-key-cast-hud-view"],
+  },
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent Vite from obscuring rust errors

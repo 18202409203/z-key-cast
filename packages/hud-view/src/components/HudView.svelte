@@ -2,15 +2,15 @@
   import { cubicOut } from "svelte/easing";
   import { fade } from "svelte/transition";
   import { flip } from "svelte/animate";
-  import KeyboardMap from "$lib/components/KeyboardMap.svelte";
+  import KeyboardMap from "./KeyboardMap.svelte";
   import {
     KEYBOARD_MAP_FONT_PX,
     KEYBOARD_MAP_WIDTH_PX,
-  } from "$lib/keyboard-layout";
-  import KeyCard from "$lib/components/KeyCard.svelte";
-  import MouseSchematic from "$lib/components/MouseSchematic.svelte";
-  import { toKeyCardVisual } from "$lib/key-card";
-  import { resolveKeyboardLegendLayout } from "$lib/key-legends";
+  } from "../model/keyboard-layout";
+  import KeyCard from "./KeyCard.svelte";
+  import MouseSchematic from "./MouseSchematic.svelte";
+  import { toKeyCardVisual } from "../model/key-card";
+  import { resolveKeyboardLegendLayout } from "../model/key-legends";
   import {
     formatHudLabel,
     formatHudModsLabel,
@@ -18,15 +18,15 @@
     hudCards,
     type HudChip,
     type ScrollDirection,
-  } from "$lib/cast";
+  } from "../model/chip";
   import {
     DEFAULT_HUD_STYLE,
     hudBackgroundCss,
     type HudCorner,
     type HudStyleSettings,
-  } from "$lib/settings";
-  import { t, type UiLocale } from "$lib/i18n";
-  import type { TimelineItem } from "$lib/overlay/hud-slots.svelte";
+  } from "../model/hud-style";
+  import { t, type UiLocale } from "../model/i18n";
+  import type { TimelineItem } from "../state/hud-slots.svelte";
 
   type MouseButton = Extract<HudChip, { kind: "mouse" }>["button"];
   type MouseFrame = MouseButton | "scroll-up" | "scroll-down";

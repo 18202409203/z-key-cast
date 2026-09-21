@@ -3,7 +3,7 @@
   import { onMount } from "svelte";
   import FormRow from "$lib/components/FormRow.svelte";
   import FormSection from "$lib/components/FormSection.svelte";
-  import KeyboardMap from "$lib/components/KeyboardMap.svelte";
+  import { KeyboardMap } from "z-key-cast-hud-view";
   import {
     HOOK_STATUS_CHANNEL,
     IGNORE_KEY_CAPTURED_CHANNEL,
