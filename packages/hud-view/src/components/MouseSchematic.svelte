@@ -1,3 +1,8 @@
+<script module lang="ts">
+  /** Page-local counter — avoids `crypto.randomUUID` (unavailable on non-secure HTTP). */
+  let mouseClipSeq = 0;
+</script>
+
 <script lang="ts">
   type MouseButton = "left" | "right" | "middle";
   type ScrollDirection = "up" | "down";
@@ -82,7 +87,7 @@
   );
 
   /** Stable per-instance id so multiple mice don't share one clipPath. */
-  const clipId = `ms-body-${crypto.randomUUID().slice(0, 8)}`;
+  const clipId = `ms-body-${++mouseClipSeq}`;
 
   const body =
     "M8 25C8 12.2 20.5 5.2 40 5.2C59.5 5.2 72 12.2 72 25C72 33.2 71.6 39.4 67.6 44.2C63.4 49.2 52.8 51.2 40 51.2C27.2 51.2 16.6 49.2 12.4 44.2C8.4 39.4 8 33.2 8 25Z";
