@@ -1,0 +1,3 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": "design/index.md", "reason": "HUD chip and preset semantics for extract"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend package checklist for Svelte HUD extract"}
