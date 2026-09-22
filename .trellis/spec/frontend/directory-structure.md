@@ -71,7 +71,7 @@ Do **not** put overlay orchestration under `$lib/panels/` — panels are main-wi
 | `$lib/components/` | Settings-window presentational controls | HUD keyboard/mouse primitives |
 | `$lib/panels/` | Tab markup, local `$state`, get/set via `$lib/settings`, panel-local listen | Global tab routing; inventing wire types; HUD view impl |
 | `routes/overlay/+page.svelte` | Locale/style/place bootstrap, Tauri `listen`/`get*`, place-mode drag, compose package `HudView` | Full HUD markup blob; slot/timer implementation |
-| `website/` | Landing page, DOM→HudChip adapter, downloads/`latest.json` | Duplicate HUD UI; Tauri IPC |
+| `website/` | Landing page (en + `/zh/`), `lib/i18n.ts` catalog, DOM→HudChip adapter, downloads/`latest.json` | Duplicate HUD UI; Tauri IPC; app `$lib/i18n.ts` |
 | `$lib/cast.ts` / `settings.ts` | Channels, invoke, persistence; re-export pure HUD APIs | Re-implement chip/style logic |
 
 ### Panel mount contract
@@ -104,3 +104,4 @@ Shell holds `logLines` + `appendLog`. Panels that need to report save failures r
 - Shared HUD: `import { KeyboardMap, HudView, createHudSlots } from "z-key-cast-hud-view"`
 - Overlay composition: `src/routes/overlay/+page.svelte` → package `HudView` + `createHudSlots`
 - Website demo: `website/src/lib/dom-input-adapter.ts` → chips → same package views
+- Website locales: `website/src/routes/+page.svelte` (en) + `website/src/routes/zh/+page.svelte` → `marketing-page.svelte` + `lib/i18n.ts`

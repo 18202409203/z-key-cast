@@ -87,6 +87,20 @@ Do not gate mouse chips on “pointer over screen only”. Dual `createHudSlots`
 
 Visual reference: `design/website/proto.png` (likeness, not pixel copy).
 
+### Marketing i18n (en / zh static HTML)
+
+| Surface | Contract |
+|---|---|
+| Copy | Hand-rolled `website/src/lib/i18n.ts` (`UiLocale` + `t()`); do **not** share app `src/lib/i18n.ts` |
+| Routes | `/` → en; `/zh/` → zh; shared `MarketingPage` + locale prop; language switch = footer links |
+| Build | SSR prerender (`ssr` + `prerender`); output `build/index.html` and `build/zh/index.html` with correct `lang` / copy in first HTML |
+| Adapter | No SPA `fallback: "index.html"` that can swallow `/zh/` |
+| Serve | `site:serve` must hit real `zh/index.html`; missing `/zh…` → **404**, never English root fallback |
+| Shared | `/downloads/` and `/updates/latest.json` are language-agnostic |
+| Out | No `Accept-Language` / `navigator.language` auto-redirect; theme toggle is a separate task |
+
+**Wrong**: client-only locale flip with empty prerender shell; serve falling back `/zh/` → root English `index.html`.
+
 ---
 
 **Related**: [Release Conventions](./release.md) (changelog ownership; do not hand-edit CHANGELOG for site work).
