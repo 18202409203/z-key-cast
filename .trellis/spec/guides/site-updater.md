@@ -85,6 +85,8 @@ Demo-first desk (monitor Lite + Full schematics). Capture is an explicit **power
 
 Do not gate mouse chips on “pointer over screen only”. Dual `createHudSlots` (lite + full) fan-out; cable packet animations are one-shot per input toward the monitor.
 
+Notepad shows the locale invite sentence as **static initial text** (no intro typewriter / simulated chip script).
+
 Visual reference: `design/website/proto.png` (likeness, not pixel copy).
 
 ### Marketing i18n (en / zh static HTML)

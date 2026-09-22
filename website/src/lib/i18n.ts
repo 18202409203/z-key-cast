@@ -20,7 +20,7 @@ const en = {
 
   "cta.download": "Download",
   "cta.latest": "Latest: {version}",
-  "cta.note": "Desktop keyboard & mouse visualization only.",
+  "cta.note": "Keyboard & mouse visualization.",
 
   "boundary.aria": "Capability boundary",
   "boundary.body":

@@ -12,7 +12,6 @@
     type HudChip,
   } from "z-key-cast-hud-view";
   import { attachDomInputAdapter } from "$lib/dom-input-adapter";
-  import { inviteFor, runIntroTypewriter } from "$lib/intro-typewriter";
   import { t, type UiLocale } from "$lib/i18n";
   import { getTextareaCaretPoint } from "$lib/notepad-caret";
 
@@ -22,7 +21,9 @@
   const productName = "z-key-cast";
   const changelogUrl =
     "https://gitee.com/zhupengji/z-key-cast/blob/main/CHANGELOG.md";
-  const inviteText = $derived(inviteFor(locale));
+  // Locale is fixed per route mount (`/` vs `/zh/`); capture invite once for notepad seed.
+  // svelte-ignore state_referenced_locally
+  const inviteText = t("intro.invite", locale);
 
   type DownloadLink = { label: string; href: string; note: string };
 
@@ -84,8 +85,7 @@
   let kbWrapEl: HTMLDivElement | undefined = $state();
   let mouseWrapEl: HTMLDivElement | undefined = $state();
   let stageFocused = $state(false);
-  let notepadText = $state("");
-  let introActive = $state(false);
+  let notepadText = $state(inviteText);
   /** Remount packet overlays — one-shot current toward the monitor. */
   let kbPulseNonce = $state(0);
   let msPulseNonce = $state(0);
@@ -196,22 +196,10 @@
   onMount(() => {
     let cancelled = false;
     let adapter: ReturnType<typeof attachDomInputAdapter> | undefined;
-    const introAbort = new AbortController();
-    let sawRealInput = false;
-
-    function cancelIntro() {
-      if (!introActive) return;
-      introAbort.abort();
-      introActive = false;
-    }
 
     if (stageRoot) {
       adapter = attachDomInputAdapter(stageRoot, {
         onChip: (chip) => {
-          if (introActive && !sawRealInput) {
-            sawRealInput = true;
-            cancelIntro();
-          }
           pulseCableFor(chip);
           fanOut(chip);
         },
@@ -224,7 +212,7 @@
       });
     }
 
-    // Boot powered on so intro + first input work immediately.
+    // Boot powered on so first input works immediately.
     queueMicrotask(() => {
       adapter?.powerOn();
       layoutCables();
@@ -245,28 +233,6 @@
       if (document.activeElement === notepadEl) updateNotepadCaret();
     }
     document.addEventListener("selectionchange", onSelectionChange);
-
-    introActive = true;
-    void runIntroTypewriter({
-      text: inviteText,
-      signal: introAbort.signal,
-      onChar: (next) => {
-        notepadText = next;
-      },
-      emit: (chip) => {
-        pulseCableFor(chip);
-        fanOut(chip);
-      },
-    })
-      .then(() => {
-        if (!cancelled) {
-          introActive = false;
-        }
-      })
-      .catch((err: unknown) => {
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        console.error(err);
-      });
 
     void (async () => {
       try {
@@ -328,7 +294,6 @@
 
     return () => {
       cancelled = true;
-      introAbort.abort();
       adapter?.dispose();
       ro?.disconnect();
       window.removeEventListener("resize", layoutCables);
@@ -391,7 +356,6 @@
               spellcheck="false"
               autocomplete="off"
               aria-label={t("notepad.aria", locale)}
-              placeholder={introActive ? "" : inviteText}
               oninput={() => updateNotepadCaret()}
               onclick={() => updateNotepadCaret()}
               onkeyup={() => updateNotepadCaret()}
