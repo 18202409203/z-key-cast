@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/guides/site-updater.md", "reason": "Verify marketing i18n / stage / publish contracts still hold"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Check no leftover transform containing block on HUD ancestors"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Website-only change; no accidental App/HUD contract drift"}
+{"file": ".trellis/tasks/09-22-website-hero-snap/prd.md", "reason": "Acceptance criteria checklist"}
+{"file": ".trellis/tasks/09-22-website-hero-snap/design.md", "reason": "Snap / height-budget / footer-out-of-snap design review"}

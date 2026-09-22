@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/guides/site-updater.md", "reason": "Marketing page contracts: i18n routes, stage power session, publish root"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "HUD transform containing-block rule; marketing entrance animation constraint"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend pre-dev checklist / package entry"}
+{"file": ".trellis/spec/guides/index.md", "reason": "Shared guides index including site-updater routing"}
+{"file": ".trellis/tasks/09-22-website-hero-snap/design.md", "reason": "Three-panel snap + stage height budget + macOS-only CTA"}
+{"file": ".trellis/tasks/09-22-website-hero-snap/prd.md", "reason": "Acceptance: panels, footer outside snap, proximity"}
