@@ -76,32 +76,37 @@ Apply when changing:
 
 ## Marketing page (`website/` hero)
 
+Three **scroll-snap** panels (`mandatory` + `scroll-snap-stop: always` on `html`): Brand → Stage → Download. Language footer lives **inside** Download (not after the last snap — mandatory would bounce content back). Brand/Stage show a bottom scroll hint; `prefers-reduced-motion` disables snap + hint motion.
+
 Demo-first desk (monitor Lite + Full schematics). Capture is an explicit **power session**, not hover-target:
 
 | State | Behavior |
 |---|---|
-| On | Document-level key / mouse / wheel → `HudChip`; typing parks on notepad; first outside click only powers off (swallowed) |
+| On | Document-level key / mouse / wheel → `HudChip`; typing parks on notepad; first outside click only powers off (swallowed). Wheel is captured — page cannot scroll while on. |
 | Off | Normal page UI; click stage (or key while idle) powers on |
+| Desk power | Top-right ⏻ on the desk toggles via `[data-stage-power]`; adapter must not emit mouse chips for that control |
+| Boot | Page loads **off**. First time Stage is ~≥45% in view → auto `powerOn` **once**; later visits use power button / desk / key |
 
 Do not gate mouse chips on “pointer over screen only”. Dual `createHudSlots` (lite + full) fan-out; cable packet animations are one-shot per input toward the monitor.
 
 Notepad shows the locale invite sentence as **static initial text** (no intro typewriter / simulated chip script).
 
-Visual reference: `design/website/proto.png` (likeness, not pixel copy).
+Visual references: `design/website/proto.png` (desk likeness); `design/website/scroll.jpeg` (three-panel scroll intent).
 
 ### Marketing i18n (en / zh static HTML)
 
 | Surface | Contract |
 |---|---|
 | Copy | Hand-rolled `website/src/lib/i18n.ts` (`UiLocale` + `t()`); do **not** share app `src/lib/i18n.ts` |
-| Routes | `/` → en; `/zh/` → zh; shared `MarketingPage` + locale prop; language switch = footer links |
+| Routes | `/` → en; `/zh/` → zh; shared `MarketingPage` + locale prop; language switch = footer links **in Download panel** |
 | Build | SSR prerender (`ssr` + `prerender`); output `build/index.html` and `build/zh/index.html` with correct `lang` / copy in first HTML |
 | Adapter | No SPA `fallback: "index.html"` that can swallow `/zh/` |
 | Serve | `site:serve` must hit real `zh/index.html`; missing `/zh…` → **404**, never English root fallback |
 | Shared | `/downloads/` and `/updates/latest.json` are language-agnostic |
-| Out | No `Accept-Language` / `navigator.language` auto-redirect; theme toggle is a separate task |
+| Download UI | macOS-only primary CTA for now; layout reserves a flex row for a future Windows sibling |
+| Out | No `Accept-Language` / `navigator.language` auto-redirect; theme toggle is a separate task; Brand feature cards deferred |
 
-**Wrong**: client-only locale flip with empty prerender shell; serve falling back `/zh/` → root English `index.html`.
+**Wrong**: boot `powerOn` while Brand is showing (steals wheel → looks like broken scroll); putting lang footer after the last snap panel under `mandatory`; client-only locale flip with empty prerender shell; serve falling back `/zh/` → root English `index.html`.
 
 ---
 
