@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend layer entry / package conventions"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Where website vs app $lib code should live"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Locale / message typing patterns if any"}
+{"file": ".trellis/tasks/09-21-website-i18n/design.md", "reason": "Task design: dual HTML, SSR, routing"}
+{"file": ".trellis/tasks/archive/2026-09/09-15-i18n/design.md", "reason": "Prior en/zh catalog shape in the desktop app"}
+{"file": ".trellis/tasks/archive/2026-09/09-21-website-marketing-visual/prd.md", "reason": "Marketing page copy and prior i18n out-of-scope"}
