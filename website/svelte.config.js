@@ -8,10 +8,21 @@ const config = {
     adapter: adapter({
       pages: "build",
       assets: "build",
-      fallback: "index.html",
+      // No SPA shell — marketing routes are fully prerendered (`/` + `/zh/`).
+      // Avoids missing `/zh/` falling back to the English index.
+      fallback: undefined,
       precompress: false,
       strict: true,
     }),
+    prerender: {
+      // `/downloads/` and `/updates/*` are publish-root artifacts, not Kit routes.
+      handleHttpError: ({ path, message }) => {
+        if (path.startsWith("/downloads") || path.startsWith("/updates")) {
+          return;
+        }
+        throw new Error(message);
+      },
+    },
   },
 };
 

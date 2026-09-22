@@ -142,8 +142,15 @@ const server = createServer((req, res) => {
   }
   if (!existsSync(filePath)) {
     const fallback = join(publishRoot, "index.html");
+    // Never SPA-fallback known locale prefixes to English index.html.
+    const isLocalePath =
+      reqPath === "/zh" ||
+      reqPath.startsWith("/zh/") ||
+      reqPath === "/en" ||
+      reqPath.startsWith("/en/");
     if (
       existsSync(fallback) &&
+      !isLocalePath &&
       !reqPath.startsWith("/downloads") &&
       !reqPath.startsWith("/updates")
     ) {

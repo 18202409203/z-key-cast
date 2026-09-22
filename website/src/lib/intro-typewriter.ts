@@ -4,8 +4,14 @@
  */
 
 import type { HudChip } from "z-key-cast-hud-view";
+import { t, type UiLocale } from "$lib/i18n";
 
+/** @deprecated Prefer inviteFor(locale); kept for call sites that pass text explicitly. */
 export const INTRO_INVITE = "Press any key to take control.";
+
+export function inviteFor(locale: UiLocale): string {
+  return t("intro.invite", locale);
+}
 
 const CHAR_TO_CODE: Record<string, string> = {
   a: "KeyA",
@@ -36,7 +42,9 @@ const CHAR_TO_CODE: Record<string, string> = {
   z: "KeyZ",
   " ": "Space",
   ".": "Period",
+  "。": "Period",
   ",": "Comma",
+  "，": "Comma",
   "'": "Quote",
   "-": "Minus",
 };
@@ -86,6 +94,7 @@ export type IntroTypewriterOptions = {
 
 /**
  * Types `text` once into the notepad via `onChar`, driving HUD chips.
+ * Unmapped chars (e.g. CJK) still emit a chip whose id is the character itself.
  * Throws AbortError when cancelled; callers should ignore that.
  */
 export async function runIntroTypewriter(
@@ -106,7 +115,7 @@ export async function runIntroTypewriter(
     }
 
     const lower = char.toLowerCase();
-    const code = CHAR_TO_CODE[lower];
+    const code = CHAR_TO_CODE[lower] ?? CHAR_TO_CODE[char];
     const needsShift = char !== lower && /[a-z]/i.test(char);
 
     if (code) {
@@ -146,6 +155,9 @@ export async function runIntroTypewriter(
       } else {
         await tapKey(code, emit, signal, holdMs);
       }
+    } else {
+      // CJK / other: notepad gets the glyph; Lite shows the same as chip caption.
+      await tapKey(char, emit, signal, holdMs);
     }
 
     if (signal.aborted) {
