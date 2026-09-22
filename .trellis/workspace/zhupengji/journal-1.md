@@ -913,3 +913,36 @@ Shipped stage room-light via blind cord (same-family HUD+notepad, desk exposure)
 ### Next Steps
 
 - None - task complete
+
+
+## Session 24: Refactor marketing page into modules
+
+**Date**: 2026-09-22
+**Task**: Refactor marketing page into modules
+**Branch**: `main`
+
+### Summary
+
+Split website marketing-page into marketing/ shell + components (StagePanel folder); direct route import; fixed stage full-bleed CSS and cable pulse; swapped tagline/download-lead; archived 09-22-marketing-page-split.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e8479f2` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

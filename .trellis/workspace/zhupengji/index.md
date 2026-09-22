@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 23
+- **Total Sessions**: 24
 - **Last Active**: 2026-09-22
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~915 | Active |
+| `journal-1.md` | ~948 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 24 | 2026-09-22 | Refactor marketing page into modules | `e8479f2` | `main` |
 | 23 | 2026-09-22 | Website stage blinds theme | `4b4ec9c` | `main` |
 | 22 | 2026-09-21 | Website marketing visual redesign | `30d38e1`, `603bce9`, `579e759` | `main` |
 | 21 | 2026-09-21 | 官网所见即所得 HUD 共享包 | `2ba341a` | `main` |
