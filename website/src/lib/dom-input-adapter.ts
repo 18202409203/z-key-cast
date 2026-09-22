@@ -2,10 +2,11 @@
  * DOM keyboard / mouse / wheel → HudChip (same wire contract as the App hook).
  *
  * Capture is gated by an explicit power session (on/off), not by hover target:
- * - Power on (click stage / host call / key while idle): document-level capture.
- * - Power off (click outside stage): release held keys/buttons; page mouse/keys
- *   behave normally again. The outside click that shuts down is swallowed so it
- *   does not also activate Download links — the next click is a normal one.
+ * - Power on/off: **only** the desk `[data-stage-power]` control (or `powerOn` /
+ *   `powerOff` host calls). Clicking the stage, clicking outside, or typing
+ *   while idle does **not** flip power.
+ * - While powered: document-level capture for keys / mouse / wheel → chips.
+ * - While off: page mouse/keys behave normally (adapter ignores them).
  */
 
 import {
@@ -44,16 +45,16 @@ function isEditableElement(el: EventTarget | null): el is HTMLElement {
   return el.isContentEditable;
 }
 
-function isPageInteractive(el: EventTarget | null): boolean {
-  if (!(el instanceof Element)) return false;
-  return Boolean(
-    el.closest("a, button, input, textarea, select, [contenteditable=true]"),
-  );
-}
-
 /** Desk power toggle — handled by the control's click, not as capture/chips. */
 function isStagePowerToggle(el: EventTarget | null): boolean {
   return el instanceof Element && Boolean(el.closest("[data-stage-power]"));
+}
+
+/** Page chrome that must keep working while the demo is powered (rail, cord, …). */
+function isPointerExempt(el: EventTarget | null): boolean {
+  return (
+    el instanceof Element && Boolean(el.closest("[data-stage-pointer-exempt]"))
+  );
 }
 
 export type DomInputAdapterOptions = {
@@ -64,6 +65,12 @@ export type DomInputAdapterOptions = {
   getFocusTarget?: () => HTMLElement | null | undefined;
   /** Scrollable notepad; wheel deltas apply here while powered. */
   getScrollTarget?: () => HTMLElement | null | undefined;
+  /**
+   * While powered, pointer hits inside this root become mouse chips.
+   * Defaults to the attach `root`. Use the full Stage panel to capture the
+   * whole second screen (exempt nodes still win via `data-stage-pointer-exempt`).
+   */
+  getPointerRoot?: () => HTMLElement | null | undefined;
 };
 
 export type DomInputAdapter = {
@@ -74,17 +81,19 @@ export type DomInputAdapter = {
 };
 
 /**
- * Attach document-level listeners. `root` is the stage: clicks inside power on
- * (or stay on); clicks outside while powered power off.
+ * Attach document-level listeners. Power flips only via `[data-stage-power]`
+ * (or explicit `powerOn` / `powerOff`); stage / outside clicks never arm or kill
+ * the session. While powered, mouse chips cover `getPointerRoot()` (default:
+ * attach root), except `[data-stage-pointer-exempt]` chrome.
  */
 export function attachDomInputAdapter(
   root: HTMLElement,
   options: DomInputAdapterOptions,
 ): DomInputAdapter {
-  const heldMods = new Set<string>();
-  const heldKeys = new Set<string>();
-  const heldButtons = new Set<MouseButton>();
   let powered = false;
+  const heldKeys = new Set<string>();
+  const heldMods = new Set<string>();
+  const heldButtons = new Set<MouseButton>();
 
   function modsSnapshot(): KeyRef[] {
     return [...heldMods].map((id) => ({ id }));
@@ -95,18 +104,9 @@ export function attachDomInputAdapter(
   }
 
   function parkFocus() {
-    const preferred = options.getFocusTarget?.() ?? null;
-    const target = preferred ?? root;
-    if (document.activeElement !== target) {
-      target.focus({ preventScroll: true });
-    }
-    if (target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement) {
-      const len = target.value.length;
-      try {
-        target.setSelectionRange(len, len);
-      } catch {
-        // ignore
-      }
+    const el = options.getFocusTarget?.() ?? null;
+    if (el && document.activeElement !== el) {
+      el.focus({ preventScroll: true });
     }
   }
 
@@ -124,12 +124,22 @@ export function attachDomInputAdapter(
     for (const button of [...heldButtons]) {
       emit({
         kind: "mouse",
-        mods: [],
+        mods: modsSnapshot(),
         button,
         phase: "up",
       });
     }
     heldButtons.clear();
+  }
+
+  function pointerRoot(): HTMLElement {
+    return options.getPointerRoot?.() ?? root;
+  }
+
+  function isInsidePointerSurface(target: EventTarget | null): boolean {
+    if (!(target instanceof Node)) return false;
+    if (isPointerExempt(target)) return false;
+    return pointerRoot().contains(target);
   }
 
   function powerOn() {
@@ -154,18 +164,11 @@ export function attachDomInputAdapter(
   }
 
   function onKeyDown(event: KeyboardEvent) {
-    // Let the power button receive Space/Enter → click; do not wake/capture as chips.
+    // Let the power button receive Space/Enter → click; do not capture as chips.
     if (isStagePowerToggle(event.target)) return;
 
-    if (!powered) {
-      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
-        return;
-      }
-      if (isPageInteractive(event.target) && !root.contains(event.target as Node)) {
-        return;
-      }
-      powerOn();
-    }
+    // Idle keys never wake the demo — only the power control does.
+    if (!powered) return;
 
     if (!isEditableElement(document.activeElement)) {
       parkFocus();
@@ -213,23 +216,11 @@ export function attachDomInputAdapter(
       return;
     }
 
-    const inside =
-      target instanceof Node ? root.contains(target) : false;
+    // Off: ignore. On + outside / exempt chrome: leave page UI alone.
+    if (!powered) return;
+    if (!isInsidePointerSurface(target)) return;
 
-    if (powered && !inside) {
-      // First outside click only shuts down; next click is normal page UI.
-      powerOff();
-      event.preventDefault();
-      event.stopPropagation();
-      return;
-    }
-
-    if (!powered) {
-      if (!inside) return;
-      powerOn();
-    } else {
-      parkFocus();
-    }
+    parkFocus();
 
     const button = mouseButton(event.button);
     if (!button) return;
@@ -271,7 +262,7 @@ export function attachDomInputAdapter(
 
   function onContextMenu(event: Event) {
     if (!powered) return;
-    if (event.target instanceof Node && root.contains(event.target)) {
+    if (isInsidePointerSurface(event.target)) {
       event.preventDefault();
     }
   }
@@ -291,7 +282,6 @@ export function attachDomInputAdapter(
     });
   }
 
-  // Capture phase so outside-click power-off wins before link activation.
   window.addEventListener("keydown", onKeyDown, true);
   window.addEventListener("keyup", onKeyUp, true);
   window.addEventListener("pointerdown", onPointerDown, true);

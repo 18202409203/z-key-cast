@@ -14,7 +14,7 @@
   } from "z-key-cast-hud-view";
   import { attachDomInputAdapter } from "$lib/dom-input-adapter";
   import type { DomInputAdapter } from "$lib/dom-input-adapter";
-  import { t, type UiLocale } from "$lib/i18n";
+  import { t, type MessageKey, type UiLocale } from "$lib/i18n";
   import { getTextareaCaretPoint } from "$lib/notepad-caret";
 
   type Props = { locale: UiLocale };
@@ -40,9 +40,20 @@
   const versionLabel = $derived(
     publishedVersion ?? t("version.none", locale),
   );
-  /** Stage-local HUD color only — no persistence / page-shell theme. */
-  const INITIAL_HUD_COLOR: HudColorPresetId = "dark";
-  let hudColor: HudColorPresetId = $state(INITIAL_HUD_COLOR);
+  /**
+   * Room light via blinds (stage-local only).
+   * Open blinds → bright room → light HUD + light paper.
+   * Closed blinds → dim room → dark HUD + dark paper.
+   */
+  const INITIAL_BLINDS_OPEN = true;
+  let blindsOpen = $state(INITIAL_BLINDS_OPEN);
+  const hudColor = $derived<HudColorPresetId>(
+    blindsOpen ? "light" : "dark",
+  );
+  const BLIND_SLAT_COUNT = 16;
+  const INITIAL_HUD_COLOR: HudColorPresetId = INITIAL_BLINDS_OPEN
+    ? "light"
+    : "dark";
   const liteSlots = createHudSlots();
   const fullSlots = createHudSlots();
 
@@ -70,8 +81,11 @@
 
   /** Brief window so theme paint crossfades without stretching keypress feedback. */
   const THEME_CROSSFADE_MS = 220;
+  const BLIND_ANIM_MS = 420;
   let themeCrossfade = $state(false);
+  let cordYank = $state(false);
   let themeCrossfadeTimer: ReturnType<typeof setTimeout> | null = null;
+  let cordYankTimer: ReturnType<typeof setTimeout> | null = null;
 
   function clearThemeCrossfadeTimer() {
     if (themeCrossfadeTimer !== null) {
@@ -80,29 +94,42 @@
     }
   }
 
-  async function setHudColor(id: HudColorPresetId) {
-    if (hudColor === id) return;
+  function clearCordYankTimer() {
+    if (cordYankTimer !== null) {
+      clearTimeout(cordYankTimer);
+      cordYankTimer = null;
+    }
+  }
+
+  async function setBlindsOpen(open: boolean) {
+    if (blindsOpen === open) return;
+    const nextColor: HudColorPresetId = open ? "light" : "dark";
     // Transition must be armed in the DOM before color props flip, or the paint snaps.
     themeCrossfade = true;
+    cordYank = true;
     await tick();
-    hudColor = id;
-    applyHudColor(id);
+    blindsOpen = open;
+    applyHudColor(nextColor);
     clearThemeCrossfadeTimer();
+    clearCordYankTimer();
     themeCrossfadeTimer = setTimeout(() => {
       themeCrossfade = false;
       themeCrossfadeTimer = null;
-    }, THEME_CROSSFADE_MS);
+    }, Math.max(THEME_CROSSFADE_MS, BLIND_ANIM_MS));
+    cordYankTimer = setTimeout(() => {
+      cordYank = false;
+      cordYankTimer = null;
+    }, 280);
   }
 
-  const hudThemeAria = $derived(
-    t("stage.theme.aria", locale, {
-      label: t("stage.theme", locale),
-      current: t(
-        hudColor === "dark" ? "stage.theme.dark" : "stage.theme.light",
-        locale,
-      ),
-      next: t(
-        hudColor === "dark" ? "stage.theme.light" : "stage.theme.dark",
+  function toggleBlinds() {
+    void setBlindsOpen(!blindsOpen);
+  }
+
+  const blindsAria = $derived(
+    t("stage.blinds.aria", locale, {
+      state: t(
+        blindsOpen ? "stage.blinds.open" : "stage.blinds.closed",
         locale,
       ),
     }),
@@ -321,9 +348,18 @@
     if (panels.length === 0) return;
     const clamped = Math.max(0, Math.min(panels.length - 1, index));
     const target = panels[clamped];
+    activePanel = clamped;
     // scrollTo + snap keeps alignment; smooth helps read as one deliberate step.
     window.scrollTo({ top: target.offsetTop, behavior: "smooth" });
   }
+
+  const PANEL_NAV: { id: string; label: MessageKey }[] = [
+    { id: "brand", label: "nav.brand" },
+    { id: "stage", label: "nav.stage" },
+    { id: "downloads", label: "nav.download" },
+  ];
+
+  let activePanel = $state(0);
 
   onMount(() => {
     let cancelled = false;
@@ -341,25 +377,29 @@
         },
         getFocusTarget: () => notepadEl,
         getScrollTarget: () => notepadEl,
+        // Whole second screen (panel), not just the desk/monitor stack.
+        getPointerRoot: () => panelStageEl,
       });
       inputAdapter = adapter;
     }
 
-    // Stay off on load so Brand scroll works. First time Stage is mostly
-    // visible → power on once; later visits rely on the power button / desk.
-    let stageAutoOnDone = false;
+    // Enter Stage → power on; leave Stage → power off. ⏻ still toggles while
+    // parked on the panel (leave/re-enter re-arms).
+    const STAGE_IN_RATIO = 0.45;
+    let stageInView = false;
     const io =
       typeof IntersectionObserver !== "undefined" && panelStageEl
         ? new IntersectionObserver(
             (entries) => {
-              if (stageAutoOnDone || cancelled) return;
+              if (cancelled) return;
               const entry = entries[0];
-              if (!entry?.isIntersecting || entry.intersectionRatio < 0.45) {
-                return;
-              }
-              stageAutoOnDone = true;
-              adapter?.powerOn();
-              io?.disconnect();
+              const next =
+                Boolean(entry?.isIntersecting) &&
+                (entry?.intersectionRatio ?? 0) >= STAGE_IN_RATIO;
+              if (next === stageInView) return;
+              stageInView = next;
+              if (next) adapter?.powerOn();
+              else adapter?.powerOff();
             },
             { threshold: [0, 0.45, 0.6, 1] },
           )
@@ -401,7 +441,14 @@
       fitStageHeight();
       layoutCables();
       updateNotepadCaret();
+      activePanel = nearestPanelIndex();
     });
+
+    function onScroll() {
+      if (cancelled) return;
+      activePanel = nearestPanelIndex();
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
 
     const ro =
       typeof ResizeObserver !== "undefined"
@@ -472,9 +519,11 @@
       io?.disconnect();
       ro?.disconnect();
       window.removeEventListener("wheel", onPageWheel, true);
+      window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onViewportResize);
       document.removeEventListener("selectionchange", onSelectionChange);
       clearThemeCrossfadeTimer();
+      clearCordYankTimer();
       liteSlots.clearAllIdleTimers();
       fullSlots.clearAllIdleTimers();
     };
@@ -488,27 +537,68 @@
 </script>
 
 <main class="page" bind:this={pageEl}>
-  <section class="panel panel-brand" aria-label={productName}>
+  <nav
+    class="page-rail"
+    data-stage-pointer-exempt
+    aria-label={t("nav.aria", locale)}
+  >
+    {#each PANEL_NAV as item, i}
+      <button
+        type="button"
+        class="page-rail-dot"
+        class:active={activePanel === i}
+        aria-label={t(item.label, locale)}
+        aria-current={activePanel === i ? "true" : undefined}
+        onclick={() => scrollToPanel(i)}
+      ></button>
+    {/each}
+  </nav>
+
+  <section
+    id="brand"
+    class="panel panel-brand"
+    aria-label={productName}
+  >
     <header class="brand">
       <h1>{productName}</h1>
       <p class="tagline">{t("brand.tagline", locale)}</p>
     </header>
-    <a
-      class="scroll-hint"
-      href="#stage"
-      aria-label={t("scroll.hint.aria", locale)}
-    >
-      <span class="scroll-hint-label">{t("scroll.hint", locale)}</span>
-      <span class="scroll-hint-chevron" aria-hidden="true"></span>
-    </a>
   </section>
 
   <section
     id="stage"
     class="panel panel-stage"
+    class:blinds-open={blindsOpen}
+    class:blinds-closed={!blindsOpen}
     bind:this={panelStageEl}
     aria-label={t("stage.aria", locale)}
   >
+    <!-- Full-bleed room light: sky always sunny; blinds gate how much enters. -->
+    <div class="stage-env" aria-hidden="true">
+      <div class="stage-sky">
+        <div class="stage-sun"></div>
+      </div>
+      <div class="stage-blinds">
+        {#each Array(BLIND_SLAT_COUNT) as _, i}
+          <div class="blind-slat" style:--i={i}></div>
+        {/each}
+      </div>
+      <div class="stage-room-shade"></div>
+    </div>
+
+    <button
+      type="button"
+      class="blind-cord"
+      class:yank={cordYank}
+      data-stage-pointer-exempt
+      aria-label={blindsAria}
+      aria-pressed={!blindsOpen}
+      onclick={toggleBlinds}
+    >
+      <span class="blind-cord-line" aria-hidden="true"></span>
+      <span class="blind-cord-knob" aria-hidden="true"></span>
+    </button>
+
     <!-- Capture surface: listeners on stage; typing focus always parks on notepad. -->
     <div
       class="stage"
@@ -580,32 +670,6 @@
           </div>
 
           <div class="desk">
-            <div class="desk-glow" aria-hidden="true"></div>
-            <!-- Theme left / power right — clear of the cable runway between bezel and keys. -->
-            <div
-              class="hud-theme"
-              role="group"
-              aria-label={hudThemeAria}
-            >
-              <button
-                type="button"
-                class="hud-theme-opt"
-                class:active={hudColor === "dark"}
-                aria-pressed={hudColor === "dark"}
-                onclick={() => setHudColor("dark")}
-              >
-                {t("stage.theme.dark", locale)}
-              </button>
-              <button
-                type="button"
-                class="hud-theme-opt"
-                class:active={hudColor === "light"}
-                aria-pressed={hudColor === "light"}
-                onclick={() => setHudColor("light")}
-              >
-                {t("stage.theme.light", locale)}
-              </button>
-            </div>
             <button
               type="button"
               class="power-btn"
@@ -731,14 +795,6 @@
         </p>
       </div>
     </div>
-    <a
-      class="scroll-hint"
-      href="#downloads"
-      aria-label={t("scroll.hint.aria", locale)}
-    >
-      <span class="scroll-hint-label">{t("scroll.hint", locale)}</span>
-      <span class="scroll-hint-chevron" aria-hidden="true"></span>
-    </a>
   </section>
 
   <section
@@ -871,56 +927,53 @@
     scroll-snap-stop: always;
   }
 
-  .scroll-hint {
-    position: absolute;
-    left: 50%;
-    bottom: 1.1rem;
-    transform: translateX(-50%);
-    display: inline-flex;
+  /* Left section rail — current step + click-to-jump (replaces bottom scroll arrows). */
+  .page-rail {
+    position: fixed;
+    left: max(0.65rem, env(safe-area-inset-left, 0px));
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+    display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.35rem;
-    padding: 0.35rem 0.6rem;
-    border: none;
-    background: transparent;
-    color: var(--fg-muted);
-    text-decoration: none;
-    font-size: 0.72rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    opacity: 0.72;
-    transition: opacity 0.2s ease, color 0.2s ease;
-    z-index: 3;
+    gap: 0.55rem;
+    padding: 0.45rem 0.35rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, #0a0a0a 55%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
-  .scroll-hint:hover {
-    opacity: 1;
-    color: var(--fg);
+  .page-rail-dot {
+    box-sizing: border-box;
+    width: 0.4rem;
+    height: 0.4rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--fg) 35%, transparent);
+    cursor: pointer;
+    transition:
+      height 0.25s ease,
+      background 0.2s ease,
+      box-shadow 0.2s ease;
   }
 
-  .scroll-hint-label {
-    line-height: 1;
+  .page-rail-dot:hover {
+    background: color-mix(in srgb, var(--fg) 65%, transparent);
   }
 
-  .scroll-hint-chevron {
-    width: 0.55rem;
-    height: 0.55rem;
-    border-right: 1.5px solid currentColor;
-    border-bottom: 1.5px solid currentColor;
-    transform: rotate(45deg);
-    animation: hint-bob 1.6s ease-in-out infinite;
+  .page-rail-dot:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    outline-offset: 3px;
   }
 
-  @keyframes hint-bob {
-    0%,
-    100% {
-      transform: rotate(45deg) translateY(0);
-      opacity: 0.55;
-    }
-    50% {
-      transform: rotate(45deg) translateY(4px);
-      opacity: 1;
-    }
+  .page-rail-dot.active {
+    height: 1.15rem;
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--accent-dim);
   }
 
   .panel-brand {
@@ -953,6 +1006,200 @@
     /* Height budget for CSS width clamp; JS scale is the fallback. */
     --stage-chrome: 5.5rem;
     --rig-budget: calc(100dvh - var(--stage-chrome) - 3.5rem);
+    /* Break out of .panel max-width so sky/blinds can wash the whole viewport. */
+    max-width: none;
+    width: 100%;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .panel-stage > .stage {
+    position: relative;
+    z-index: 2;
+    max-width: 56rem;
+    width: 100%;
+    margin-inline: auto;
+  }
+
+  /* --- Stage environment: sunny sky gated by blinds --- */
+  .stage-env {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .stage-sky {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(
+        ellipse 55% 45% at 72% 28%,
+        #fff6d6 0%,
+        transparent 55%
+      ),
+      linear-gradient(
+        165deg,
+        #7eb8e8 0%,
+        #a8d4f0 38%,
+        #c5e0ef 70%,
+        #dce8ee 100%
+      );
+    transition: filter 420ms ease, opacity 420ms ease;
+  }
+
+  .stage-sun {
+    position: absolute;
+    top: 12%;
+    right: 18%;
+    width: min(9rem, 22vw);
+    height: min(9rem, 22vw);
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 40%, #fff9e8 0%, #f5d76e 45%, #e8b84a 100%);
+    box-shadow:
+      0 0 40px rgba(255, 220, 120, 0.55),
+      0 0 80px rgba(255, 200, 80, 0.28);
+  }
+
+  .stage-blinds {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: stretch;
+    perspective: 900px;
+    z-index: 1;
+    transform-origin: top center;
+    transition:
+      transform 420ms cubic-bezier(0.33, 1, 0.68, 1),
+      opacity 380ms ease;
+  }
+
+  .blind-slat {
+    flex: 1 1 0;
+    min-height: 0;
+    margin: 0;
+    transform-origin: center top;
+    background: linear-gradient(
+      180deg,
+      #3a3a3e 0%,
+      #2a2a2e 40%,
+      #1c1c1f 100%
+    );
+    border-bottom: 1px solid rgba(0, 0, 0, 0.35);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  /* Open: blinds retract fully — clean sky, no residual slat lines. */
+  .panel-stage.blinds-open .stage-blinds {
+    opacity: 0;
+    transform: translateY(-12%) scaleY(0.04);
+    pointer-events: none;
+  }
+
+  .panel-stage.blinds-open .stage-sky {
+    filter: none;
+    opacity: 1;
+  }
+
+  .panel-stage.blinds-open .stage-room-shade {
+    opacity: 0;
+  }
+
+  /* Closed: slats seal — dark room. */
+  .panel-stage.blinds-closed .stage-blinds {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+
+  .panel-stage.blinds-closed .stage-sky {
+    filter: brightness(0.35) saturate(0.7);
+    opacity: 0.45;
+  }
+
+  .panel-stage.blinds-closed .stage-room-shade {
+    opacity: 1;
+  }
+
+  .stage-room-shade {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: radial-gradient(
+      ellipse 70% 60% at 50% 40%,
+      rgba(8, 8, 10, 0.35),
+      rgba(4, 4, 6, 0.82)
+    );
+    opacity: 0;
+    transition: opacity 420ms ease;
+  }
+
+  .blind-cord {
+    position: absolute;
+    top: 0;
+    right: max(0.75rem, calc(50% - 28rem));
+    z-index: 6;
+    width: 2.5rem;
+    height: 7.5rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .blind-cord-line {
+    width: 2px;
+    flex: 1 1 auto;
+    min-height: 3.5rem;
+    background: linear-gradient(180deg, #a1a1aa, #52525b);
+    border-radius: 1px;
+    transition: transform 280ms cubic-bezier(0.33, 1, 0.68, 1);
+  }
+
+  .blind-cord-knob {
+    width: 0.85rem;
+    height: 1.35rem;
+    margin-top: -1px;
+    border-radius: 0.2rem 0.2rem 0.55rem 0.55rem;
+    background: linear-gradient(180deg, #d4d4d8, #71717a);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.25) inset,
+      0 2px 6px rgba(0, 0, 0, 0.4);
+    transition: transform 280ms cubic-bezier(0.33, 1, 0.68, 1);
+  }
+
+  .blind-cord:hover .blind-cord-knob {
+    background: linear-gradient(180deg, #e4e4e7, #a1a1aa);
+  }
+
+  .blind-cord:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    outline-offset: 4px;
+  }
+
+  .blind-cord.yank .blind-cord-line,
+  .blind-cord.yank .blind-cord-knob {
+    transform: translateY(10px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stage-sky,
+    .stage-blinds,
+    .stage-room-shade,
+    .blind-cord-line,
+    .blind-cord-knob {
+      transition: none;
+    }
+
+    .blind-cord.yank .blind-cord-line,
+    .blind-cord.yank .blind-cord-knob {
+      transform: none;
+    }
   }
 
   .panel-download {
@@ -1028,26 +1275,24 @@
   }
 
   .stage:not(.focused) .desk {
-    opacity: 0.72;
-    border-color: #333;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+    opacity: 0.78;
   }
 
   .stage.focused .desk {
     opacity: 1;
-    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
-    box-shadow:
-      0 0 28px var(--accent-dim),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.03);
   }
 
   /* Screen powers off until the desk is armed; lights to paper when live. */
-  .stage[data-hud-color="dark"] {
+  /*
+   * Notepad follows the same light/dark family as the HUD (try same-theme pairing).
+   * open → light HUD + light paper · closed → dark HUD + dark paper.
+   */
+  .stage[data-hud-color="light"] {
     --paper: #ffffff;
     --paper-ink: #333333;
   }
 
-  .stage[data-hud-color="light"] {
+  .stage[data-hud-color="dark"] {
     --paper: #1e1e1e;
     --paper-ink: #d4d4d4;
   }
@@ -1373,59 +1618,65 @@
     /* Top runway: space between monitor base and peripherals (cables cross here). */
     padding: 2.85rem 0.85rem 1rem;
     border-radius: 1rem;
-    border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
-    background: color-mix(in srgb, var(--bg-elev) 92%, #000);
-    box-shadow:
-      0 0 24px var(--accent-dim),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.03);
-  }
-
-  .hud-theme {
-    position: absolute;
-    top: 0.55rem;
-    left: 0.55rem;
-    /* Above .cable (z-index 5) so the control stays visible and clickable. */
-    z-index: 6;
-    display: inline-flex;
-    align-items: stretch;
-    border-radius: 999px;
-    border: 1px solid #3f3f46;
-    background: linear-gradient(180deg, #222 0%, #121212 100%);
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.06) inset,
-      0 2px 8px rgba(0, 0, 0, 0.45);
-    overflow: hidden;
-  }
-
-  .hud-theme-opt {
-    margin: 0;
-    padding: 0.28rem 0.55rem;
-    border: 0;
-    background: transparent;
-    color: #71717a;
-    font: inherit;
-    font-size: 0.68rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    /* Fallback = night; blinds-open/closed own the room light. */
+    background: #12141a;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
     transition:
-      color 0.2s ease,
-      background 0.2s ease;
+      background 420ms ease,
+      border-color 420ms ease,
+      box-shadow 420ms ease,
+      opacity 0.25s ease;
   }
 
-  .hud-theme-opt:hover {
-    color: #a1a1aa;
+  /*
+   * Same cool desk material in both rooms — only exposure / bounce change.
+   * Day = lifted graphite under skylight (not a warm wood swap).
+   * Night = deeper graphite; screen bounce when powered.
+   */
+  .panel-stage.blinds-open .desk {
+    background: linear-gradient(165deg, #3a3e46 0%, #2a2e36 55%, #1e2228 100%);
+    border-color: rgba(180, 190, 205, 0.14);
+    box-shadow:
+      inset 0 1px 0 rgba(220, 228, 240, 0.1),
+      0 10px 24px rgba(20, 24, 32, 0.22);
   }
 
-  .hud-theme-opt:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
-    outline-offset: -2px;
+  /* Day + screen on: faint panel fill on the same graphite, not a hue shift. */
+  .panel-stage.blinds-open .stage.focused .desk {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--paper) 12%, #40454e) 0%,
+      #2c3038 50%,
+      #1e2228 100%
+    );
+    box-shadow:
+      inset 0 36px 56px -32px color-mix(in srgb, var(--paper) 16%, transparent),
+      inset 0 1px 0 rgba(220, 228, 240, 0.12),
+      0 10px 24px rgba(20, 24, 32, 0.22);
   }
 
-  .hud-theme-opt.active {
-    color: var(--fg);
-    background: color-mix(in srgb, var(--accent) 18%, transparent);
+  .panel-stage.blinds-closed .desk {
+    background: linear-gradient(180deg, #151820 0%, #0e1016 55%, #090a0e 100%);
+    border-color: rgba(120, 140, 160, 0.08);
+    box-shadow:
+      inset 0 1px 0 rgba(160, 180, 200, 0.03),
+      0 10px 28px rgba(0, 0, 0, 0.55);
+  }
+
+  /* Night + screen on: thin bounce only. */
+  .panel-stage.blinds-closed .stage.focused .desk {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--paper) 8%, #1a2030) 0%,
+      #10141c 45%,
+      #090a0e 100%
+    );
+    border-color: rgba(140, 160, 180, 0.1);
+    box-shadow:
+      inset 0 36px 56px -30px color-mix(in srgb, var(--paper) 12%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--paper) 6%, transparent),
+      0 10px 28px rgba(0, 0, 0, 0.55);
   }
 
   .power-btn {
@@ -1477,14 +1728,6 @@
 
   .power-icon {
     display: block;
-  }
-
-  .desk-glow {
-    position: absolute;
-    inset: -1px;
-    border-radius: inherit;
-    pointer-events: none;
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent);
   }
 
   .km-row {
@@ -1692,8 +1935,8 @@
       animation: none;
     }
 
-    .scroll-hint-chevron {
-      animation: none;
+    .page-rail-dot {
+      transition: none;
     }
   }
 </style>

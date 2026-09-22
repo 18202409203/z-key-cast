@@ -76,18 +76,18 @@ Apply when changing:
 
 ## Marketing page (`website/` hero)
 
-Three **scroll-snap** panels (`mandatory` + `scroll-snap-stop: always` on `html`): Brand → Stage → Download. Language footer lives **inside** Download (not after the last snap — mandatory would bounce content back). Brand/Stage show a bottom scroll hint; `prefers-reduced-motion` disables snap + hint motion. Wheel/trackpad is **throttled** (~700ms, one adjacent panel per tick) because macOS inertia can skip `scroll-snap-stop`; stage **powered** still owns wheel via the DOM adapter.
+Three **scroll-snap** panels (`mandatory` + `scroll-snap-stop: always` on `html`): Brand → Stage → Download. Language footer lives **inside** Download (not after the last snap — mandatory would bounce content back). A fixed **left page rail** (3 dots) shows the active panel and jump-clicks via `scrollToPanel`; `prefers-reduced-motion` disables snap. Wheel/trackpad is **throttled** (~700ms, one adjacent panel per tick) because macOS inertia can skip `scroll-snap-stop`; stage **powered** still owns wheel via the DOM adapter.
 
 Demo-first desk (monitor Lite + Full schematics). Capture is an explicit **power session**, not hover-target:
 
 | State | Behavior |
 |---|---|
-| On | Document-level key / mouse / wheel → `HudChip`; typing parks on notepad; first outside click only powers off (swallowed). Wheel is captured — page cannot scroll while on. |
-| Off | Normal page UI; click stage (or key while idle) powers on |
-| Desk power | Top-right ⏻ on the desk toggles via `[data-stage-power]`; adapter must not emit mouse chips for that control |
-| Boot | Page loads **off**. First time Stage is ~≥45% in view → auto `powerOn` **once**; later visits use power button / desk / key |
+| On | Document-level key / wheel → chips; **mouse** chips cover the whole Stage panel (`getPointerRoot`), except `[data-stage-pointer-exempt]` (page rail, blind cord). Typing parks on notepad. Wheel is captured — page cannot scroll while on (use ⏻ or leave Stage). |
+| Off | Normal page UI; stage clicks / outside clicks / idle keys do **not** power on |
+| Desk power | Top-right ⏻ is the **only** manual toggle (`[data-stage-power]`); adapter must not emit mouse chips for that control |
+| Boot | Page loads **off** on Brand. Stage ~≥45% in view → auto `powerOn`; Stage leaves view → auto `powerOff`. ⏻ still toggles while parked on Stage; leave/re-enter re-arms. |
 
-Do not gate mouse chips on “pointer over screen only”. Dual `createHudSlots` (lite + full) fan-out; cable packet animations are one-shot per input toward the monitor.
+Do not gate mouse chips on “pointer over screen only”. Dual `createHudSlots` (lite + full) fan-out; cable packet animations are one-shot per input toward the monitor. Blind cord toggles room light / HUD colors only — never power.
 
 Notepad shows the locale invite sentence as **static initial text** (no intro typewriter / simulated chip script).
 
@@ -104,9 +104,9 @@ Visual references: `design/website/proto.png` (desk likeness); `design/website/s
 | Serve | `site:serve` must hit real `zh/index.html`; missing `/zh…` → **404**, never English root fallback |
 | Shared | `/downloads/` and `/updates/latest.json` are language-agnostic |
 | Download UI | macOS-only primary CTA for now; layout reserves a flex row for a future Windows sibling |
-| Out | No `Accept-Language` / `navigator.language` auto-redirect; theme toggle is a separate task; Brand feature cards deferred |
+| Out | No `Accept-Language` / `navigator.language` auto-redirect; Brand feature cards deferred |
 
-**Wrong**: boot `powerOn` while Brand is showing (steals wheel → looks like broken scroll); putting lang footer after the last snap panel under `mandatory`; client-only locale flip with empty prerender shell; serve falling back `/zh/` → root English `index.html`.
+**Wrong**: boot `powerOn` while Brand is showing (steals wheel → looks like broken scroll); outside-click power-off that also kills blind-cord clicks; putting lang footer after the last snap panel under `mandatory`; client-only locale flip with empty prerender shell; serve falling back `/zh/` → root English `index.html`.
 
 ---
 

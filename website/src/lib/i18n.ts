@@ -7,8 +7,10 @@ export type MessageKey = keyof typeof en;
 const en = {
   "brand.tagline": "Show your keystrokes, without the noise.",
 
-  "scroll.hint": "Scroll",
-  "scroll.hint.aria": "Scroll to next section",
+  "nav.aria": "Page sections",
+  "nav.brand": "Brand",
+  "nav.stage": "Demo",
+  "nav.download": "Download",
 
   "lang.switch": "Language",
   "lang.en": "English",
@@ -18,13 +20,14 @@ const en = {
   "stage.on": "On",
   "stage.off": "Off",
   "stage.power": "Power",
-  "stage.theme": "HUD appearance",
-  "stage.theme.dark": "Dark",
-  "stage.theme.light": "Light",
-  "stage.theme.aria": "{label} — {current}. Switch to {next}.",
+  "stage.blinds": "Blinds",
+  "stage.blinds.open": "open (bright room)",
+  "stage.blinds.closed": "closed (desk lamp on)",
+  "stage.blinds.aria":
+    "Blind cord — currently {state}. Click to switch room light.",
   "stage.help.aria": "How to use the demo",
   "stage.help":
-    "Power button toggles the demo · click outside also turns it off. Capture stays on this page only.",
+    "Power button toggles the demo · pull the blind cord for room light.",
 
   "notepad.aria": "Demo notepad — type here",
   "intro.invite": "Press any key to take control.",
@@ -60,8 +63,10 @@ const en = {
 const zh: Record<MessageKey, string> = {
   "brand.tagline": "在屏幕上实时同步你的键鼠操作",
 
-  "scroll.hint": "向下滚动",
-  "scroll.hint.aria": "滚动到下一区",
+  "nav.aria": "页面分区",
+  "nav.brand": "品牌",
+  "nav.stage": "演示",
+  "nav.download": "下载",
 
   "lang.switch": "语言",
   "lang.en": "English",
@@ -71,12 +76,12 @@ const zh: Record<MessageKey, string> = {
   "stage.on": "开启",
   "stage.off": "关闭",
   "stage.power": "电源",
-  "stage.theme": "HUD 外观",
-  "stage.theme.dark": "深色",
-  "stage.theme.light": "浅色",
-  "stage.theme.aria": "{label} — {current}。切换为 {next}。",
+  "stage.blinds": "百叶窗",
+  "stage.blinds.open": "打开（亮环境）",
+  "stage.blinds.closed": "关闭（台灯亮）",
+  "stage.blinds.aria": "百叶窗拉绳 — 当前{state}。点击切换室内光线。",
   "stage.help.aria": "演示用法",
-  "stage.help": "电源键开关演示 · 外侧点击也可关闭。捕获仅限本页。",
+  "stage.help": "电源键开关演示 · 拉百叶窗绳切换室内光。",
 
   "notepad.aria": "演示记事本 — 在此输入",
   "intro.invite": "按任意键接管。",
