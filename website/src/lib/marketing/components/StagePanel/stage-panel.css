@@ -1,0 +1,789 @@
+/* `.panel.panel-stage` beats page-chrome `.panel { max-width: 56rem }` when
+   marketing-chrome.css loads after this file in the Vite CSS graph. */
+.panel.panel-stage {
+  /* Height budget for CSS width clamp; JS scale is the fallback. */
+  --stage-chrome: 5.5rem;
+  --rig-budget: calc(100dvh - var(--stage-chrome) - 3.5rem);
+  /* Break out of .panel max-width so sky/blinds can wash the whole viewport. */
+  max-width: none;
+  width: 100%;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.panel-stage > .stage {
+  position: relative;
+  z-index: 2;
+  max-width: 56rem;
+  width: 100%;
+  margin-inline: auto;
+}
+
+/* --- Stage environment: sunny sky gated by blinds --- */
+.stage-env {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.stage-sky {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 55% 45% at 72% 28%,
+      #fff6d6 0%,
+      transparent 55%
+    ),
+    linear-gradient(
+      165deg,
+      #7eb8e8 0%,
+      #a8d4f0 38%,
+      #c5e0ef 70%,
+      #dce8ee 100%
+    );
+  transition: filter 420ms ease, opacity 420ms ease;
+}
+
+.stage-sun {
+  position: absolute;
+  top: 12%;
+  right: 18%;
+  width: min(9rem, 22vw);
+  height: min(9rem, 22vw);
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #fff9e8 0%, #f5d76e 45%, #e8b84a 100%);
+  box-shadow:
+    0 0 40px rgba(255, 220, 120, 0.55),
+    0 0 80px rgba(255, 200, 80, 0.28);
+}
+
+.stage-blinds {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  perspective: 900px;
+  z-index: 1;
+  transform-origin: top center;
+  transition:
+    transform 420ms cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 380ms ease;
+}
+
+.blind-slat {
+  flex: 1 1 0;
+  min-height: 0;
+  margin: 0;
+  transform-origin: center top;
+  background: linear-gradient(
+    180deg,
+    #3a3a3e 0%,
+    #2a2a2e 40%,
+    #1c1c1f 100%
+  );
+  border-bottom: 1px solid rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Open: blinds retract fully — clean sky, no residual slat lines. */
+.panel-stage.blinds-open .stage-blinds {
+  opacity: 0;
+  transform: translateY(-12%) scaleY(0.04);
+  pointer-events: none;
+}
+
+.panel-stage.blinds-open .stage-sky {
+  filter: none;
+  opacity: 1;
+}
+
+.panel-stage.blinds-open .stage-room-shade {
+  opacity: 0;
+}
+
+/* Closed: slats seal — dark room. */
+.panel-stage.blinds-closed .stage-blinds {
+  opacity: 1;
+  transform: translateY(0) scaleY(1);
+}
+
+.panel-stage.blinds-closed .stage-sky {
+  filter: brightness(0.35) saturate(0.7);
+  opacity: 0.45;
+}
+
+.panel-stage.blinds-closed .stage-room-shade {
+  opacity: 1;
+}
+
+.stage-room-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: radial-gradient(
+    ellipse 70% 60% at 50% 40%,
+    rgba(8, 8, 10, 0.35),
+    rgba(4, 4, 6, 0.82)
+  );
+  opacity: 0;
+  transition: opacity 420ms ease;
+}
+
+.blind-cord {
+  position: absolute;
+  top: 0;
+  right: max(0.75rem, calc(50% - 28rem));
+  z-index: 6;
+  width: 2.5rem;
+  height: 7.5rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.blind-cord-line {
+  width: 2px;
+  flex: 1 1 auto;
+  min-height: 3.5rem;
+  background: linear-gradient(180deg, #a1a1aa, #52525b);
+  border-radius: 1px;
+  transition: transform 280ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.blind-cord-knob {
+  width: 0.85rem;
+  height: 1.35rem;
+  margin-top: -1px;
+  border-radius: 0.2rem 0.2rem 0.55rem 0.55rem;
+  background: linear-gradient(180deg, #d4d4d8, #71717a);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.25) inset,
+    0 2px 6px rgba(0, 0, 0, 0.4);
+  transition: transform 280ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.blind-cord:hover .blind-cord-knob {
+  background: linear-gradient(180deg, #e4e4e7, #a1a1aa);
+}
+
+.blind-cord:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 4px;
+}
+
+.blind-cord.yank .blind-cord-line,
+.blind-cord.yank .blind-cord-knob {
+  transform: translateY(10px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-sky,
+  .stage-blinds,
+  .stage-room-shade,
+  .blind-cord-line,
+  .blind-cord-knob {
+    transition: none;
+  }
+
+  .blind-cord.yank .blind-cord-line,
+  .blind-cord.yank .blind-cord-knob {
+    transform: none;
+  }
+}
+
+.stage {
+  outline: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  animation: rise 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+  cursor: text;
+}
+
+.stage:not(.focused) .bezel {
+  box-shadow:
+    0 0 0 1px #2a2a2a,
+    0 24px 48px rgba(0, 0, 0, 0.55);
+}
+
+.stage.focused .bezel {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 45%, #2a2a2a),
+    0 0 28px var(--accent-dim),
+    0 0 48px color-mix(in srgb, var(--accent) 14%, transparent),
+    0 24px 48px rgba(0, 0, 0, 0.55);
+}
+
+.stage:not(.focused) .desk {
+  opacity: 0.78;
+}
+
+.stage.focused .desk {
+  opacity: 1;
+}
+
+/* Screen powers off until the desk is armed; lights to paper when live. */
+/*
+ * Notepad follows the same light/dark family as the HUD (try same-theme pairing).
+ * open → light HUD + light paper · closed → dark HUD + dark paper.
+ */
+.stage[data-hud-color="light"] {
+  --paper: #ffffff;
+  --paper-ink: #333333;
+}
+
+.stage[data-hud-color="dark"] {
+  --paper: #1e1e1e;
+  --paper-ink: #d4d4d4;
+}
+
+.stage.focused .screen,
+.stage.focused .notepad,
+.stage.focused .notepad-caret {
+  transition:
+    background-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+/* Theme-only: do not leave permanent transitions on keys/mouse (press is 120ms in hud-view). */
+.stage.theme-crossfade .hud .chip,
+.stage.theme-crossfade .board .key,
+.stage.theme-crossfade .mouse .shell,
+.stage.theme-crossfade .mouse .press,
+.stage.theme-crossfade .mouse .side-mark {
+  transition:
+    color 180ms ease,
+    background 180ms ease,
+    background-color 180ms ease,
+    fill 180ms ease,
+    stroke 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage.focused .screen,
+  .stage.focused .notepad,
+  .stage.focused .notepad-caret,
+  .stage.theme-crossfade .hud .chip,
+  .stage.theme-crossfade .board .key,
+  .stage.theme-crossfade .mouse .shell,
+  .stage.theme-crossfade .mouse .press,
+  .stage.theme-crossfade .mouse .side-mark {
+    transition: none;
+  }
+}
+
+.stage:not(.focused) .screen {
+  background: #0a0a0a;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 0 40px rgba(0, 0, 0, 0.85);
+}
+
+.stage.focused .screen {
+  background: var(--paper);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.08),
+    0 0 28px var(--accent-dim),
+    0 0 40px color-mix(in srgb, var(--paper) 18%, transparent);
+}
+
+.stage:not(.focused) .notepad {
+  color: color-mix(in srgb, #e4e4e7 28%, transparent);
+  caret-color: transparent;
+}
+
+.stage.focused .notepad {
+  color: var(--paper-ink);
+  /* Native caret hidden — custom .notepad-caret is cross-browser width. */
+  caret-color: transparent;
+}
+
+.notepad-caret {
+  position: absolute;
+  z-index: 3;
+  width: 2.5px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--paper-ink);
+  pointer-events: none;
+  animation: caret-blink 1.05s steps(1, end) infinite;
+}
+
+.stage.focused .screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent);
+  border-radius: inherit;
+  opacity: 0.9;
+}
+
+.stage:not(.focused) .notepad::placeholder {
+  color: color-mix(in srgb, #a1a1aa 35%, transparent);
+}
+
+.stage:not(.focused) .hud-corner {
+  opacity: 0.22;
+  filter: saturate(0.35) brightness(0.55);
+}
+
+.stage.focused .hud-corner {
+  opacity: 1;
+  filter: none;
+}
+
+.stage-caption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 0.85rem;
+  max-width: 26rem;
+  text-align: center;
+}
+
+.stage-help {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--fg-muted);
+  letter-spacing: 0.01em;
+}
+
+.rig-scaler {
+  position: relative;
+  width: min(100%, 48rem, calc(var(--rig-budget) * 0.92));
+  display: flex;
+  justify-content: center;
+  /* When JS sets height for scaled rig, clip empty space. */
+}
+
+.rig {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  transform-origin: top center;
+  /* transform only when rigScale < 1 (inline); otherwise none — no HUD containing block. */
+}
+
+.monitor {
+  width: min(100%, 42rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.bezel {
+  width: 100%;
+  padding: 0.85rem 0.85rem 0.7rem;
+  border-radius: 0.85rem;
+  background: linear-gradient(180deg, #1a1a1a 0%, var(--bezel) 100%);
+  box-shadow:
+    0 0 0 1px #2a2a2a,
+    0 24px 48px rgba(0, 0, 0, 0.55);
+}
+
+.screen {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  width: 100%;
+  border-radius: 0.2rem;
+  overflow: hidden;
+  background: #0a0a0a;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  transition:
+    background 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+.hud-corner {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  transition:
+    opacity 0.35s ease,
+    filter 0.35s ease;
+}
+
+.hud-corner .hud {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  padding: 0.55rem 0.65rem;
+}
+
+/* Span the full monitor so timelineMax chips can pack across the screen. */
+.hud-corner .timeline {
+  width: 100%;
+  max-width: 100%;
+}
+
+.notepad {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 18% 12% 12%;
+  border: none;
+  resize: none;
+  outline: none;
+  background: transparent;
+  color: color-mix(in srgb, #e4e4e7 28%, transparent);
+  font-family: Syne, "IBM Plex Sans", sans-serif;
+  font-size: clamp(1.15rem, 2.8vw, 1.65rem);
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  text-align: center;
+  caret-color: transparent;
+  transition: color 0.35s ease;
+  overflow: auto;
+  scrollbar-width: none;
+}
+
+.notepad::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.notepad::placeholder {
+  color: color-mix(in srgb, #a1a1aa 35%, transparent);
+}
+
+.stand {
+  width: 18%;
+  height: 1.35rem;
+  margin-top: -1px;
+  background: linear-gradient(180deg, #222, #111);
+  clip-path: polygon(18% 0, 82% 0, 100% 100%, 0 100%);
+}
+
+.base {
+  width: 36%;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: #1a1a1a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.cable {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+  overflow: visible;
+}
+
+.cable-track {
+  stroke: #1f1f1f;
+  stroke-width: 2;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+}
+
+.cable-live {
+  stroke: #2a2a2a;
+  stroke-width: 1.75;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  fill: none;
+  opacity: 0;
+  transition:
+    opacity 0.25s ease,
+    stroke 0.25s ease,
+    filter 0.25s ease;
+}
+
+.cable-port,
+.cable-jack {
+  fill: #2a2a2a;
+  transition:
+    fill 0.25s ease,
+    filter 0.25s ease;
+}
+
+/* Powered: steady lit cable (no looping current). */
+.cable.powered .cable-live {
+  opacity: 1;
+  stroke: color-mix(in srgb, var(--accent) 55%, #1a1a1a);
+  filter: drop-shadow(0 0 3px var(--accent-dim));
+  animation: cable-ignite 0.5s ease-out both;
+}
+
+.cable.powered .cable-port,
+.cable.powered .cable-jack {
+  fill: var(--accent);
+  filter: drop-shadow(0 0 5px var(--accent));
+}
+
+/* One-shot packet: device jack → monitor port (path draw order). */
+.cable-packet {
+  stroke: #eaffff;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: miter;
+  fill: none;
+  stroke-dasharray: 16 100;
+  filter: drop-shadow(0 0 6px var(--accent));
+  /* `both` applies 0% before first paint — avoids a static dash sitting at the jack. */
+  animation: cable-packet 0.42s linear both;
+}
+
+@keyframes cable-packet {
+  from {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  to {
+    stroke-dashoffset: -100;
+    opacity: 0;
+  }
+}
+
+.stage:not(.focused) .cable-track {
+  stroke: #141414;
+}
+
+.desk {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  /* Top runway: space between monitor base and peripherals (cables cross here). */
+  padding: 2.85rem 0.85rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  /* Fallback = night; blinds-open/closed own the room light. */
+  background: #12141a;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+  transition:
+    background 420ms ease,
+    border-color 420ms ease,
+    box-shadow 420ms ease,
+    opacity 0.25s ease;
+}
+
+/*
+ * Same cool desk material in both rooms — only exposure / bounce change.
+ * Day = lifted graphite under skylight (not a warm wood swap).
+ * Night = deeper graphite; screen bounce when powered.
+ */
+.panel-stage.blinds-open .desk {
+  background: linear-gradient(165deg, #3a3e46 0%, #2a2e36 55%, #1e2228 100%);
+  border-color: rgba(180, 190, 205, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(220, 228, 240, 0.1),
+    0 10px 24px rgba(20, 24, 32, 0.22);
+}
+
+/* Day + screen on: faint panel fill on the same graphite, not a hue shift. */
+.panel-stage.blinds-open .stage.focused .desk {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--paper) 12%, #40454e) 0%,
+    #2c3038 50%,
+    #1e2228 100%
+  );
+  box-shadow:
+    inset 0 36px 56px -32px color-mix(in srgb, var(--paper) 16%, transparent),
+    inset 0 1px 0 rgba(220, 228, 240, 0.12),
+    0 10px 24px rgba(20, 24, 32, 0.22);
+}
+
+.panel-stage.blinds-closed .desk {
+  background: linear-gradient(180deg, #151820 0%, #0e1016 55%, #090a0e 100%);
+  border-color: rgba(120, 140, 160, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(160, 180, 200, 0.03),
+    0 10px 28px rgba(0, 0, 0, 0.55);
+}
+
+/* Night + screen on: thin bounce only. */
+.panel-stage.blinds-closed .stage.focused .desk {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--paper) 8%, #1a2030) 0%,
+    #10141c 45%,
+    #090a0e 100%
+  );
+  border-color: rgba(140, 160, 180, 0.1);
+  box-shadow:
+    inset 0 36px 56px -30px color-mix(in srgb, var(--paper) 12%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--paper) 6%, transparent),
+    0 10px 28px rgba(0, 0, 0, 0.55);
+}
+
+.power-btn {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  z-index: 6;
+  box-sizing: border-box;
+  width: 2rem;
+  height: 2rem;
+  margin: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid #3f3f46;
+  background: linear-gradient(180deg, #222 0%, #121212 100%);
+  color: #71717a;
+  cursor: pointer;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 2px 8px rgba(0, 0, 0, 0.45);
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.power-btn:hover {
+  color: #a1a1aa;
+  border-color: #52525b;
+}
+
+.power-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.power-btn.on {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 55%, #2a2a2a);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 0 14px var(--accent-dim),
+    0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+.power-icon {
+  display: block;
+}
+
+.km-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.kb-wrap {
+  flex: 1 1 18rem;
+  min-width: 0;
+  max-width: 36rem;
+}
+
+.kb-wrap .board {
+  width: 100%;
+}
+
+/* Cyan activation polish on desk schematics (proto accent). */
+.desk .key.active {
+  background: var(--accent);
+  color: #0a0a0a;
+  border-color: color-mix(in srgb, var(--accent) 80%, #fff);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 0 14px var(--accent-dim);
+}
+
+.desk .press.active,
+.desk .wheel.active {
+  fill: var(--accent);
+  filter: drop-shadow(0 0 5px var(--accent));
+}
+
+.desk .mouse-wrap.lit .outline {
+  stroke: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.mouse-wrap {
+  flex: 0 0 auto;
+  padding-bottom: 0.35rem;
+}
+
+@keyframes caret-blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes cable-ignite {
+  0% {
+    stroke: #3a3a3a;
+    filter: none;
+  }
+  45% {
+    stroke: #e8ffff;
+    filter: drop-shadow(0 0 10px var(--accent));
+  }
+  100% {
+    stroke: color-mix(in srgb, var(--accent) 55%, #1a1a1a);
+    filter: drop-shadow(0 0 3px var(--accent-dim));
+  }
+}
+
+/* Dash travels along path from jack (start) toward monitor port (end).
+   Keyframes live with `.cable-packet` above. */
+
+@media (max-width: 640px) {
+  .desk {
+    padding: 2rem 0.5rem 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage {
+    animation: none;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    /* `none` — leave no transform containing block (breaks HUD fixed/absolute outro). */
+    transform: none;
+  }
+}

@@ -104,4 +104,22 @@ Shell holds `logLines` + `appendLog`. Panels that need to report save failures r
 - Shared HUD: `import { KeyboardMap, HudView, createHudSlots } from "z-key-cast-hud-view"`
 - Overlay composition: `src/routes/overlay/+page.svelte` → package `HudView` + `createHudSlots`
 - Website demo: `website/src/lib/dom-input-adapter.ts` → chips → same package views
-- Website locales: `website/src/routes/+page.svelte` (en) + `website/src/routes/zh/+page.svelte` → `marketing-page.svelte` + `lib/i18n.ts`
+- Website locales: `website/src/routes/+page.svelte` (en) + `website/src/routes/zh/+page.svelte` → `$lib/marketing/MarketingPage.svelte` + `lib/i18n.ts`
+- Website marketing layout:
+
+```
+$lib/marketing/
+  MarketingPage.svelte                 # page shell: snap nav + download fetch + compose
+  marketing-chrome.css                 # :root tokens, html snap, .page / .panel
+  constants.ts                         # PRODUCT_NAME, PANEL_NAV, BLIND_SLAT_COUNT
+  panel-scroll.ts                      # panelList / nearest / scrollTo (page-level)
+  fetch-mac-download.ts                # placeholder + latest.json (page-level)
+  components/
+    BrandPanel.svelte
+    PageRail.svelte                    # chrome UI (not a snap .panel)
+    DownloadPanel.svelte
+    StagePanel/
+      StagePanel.svelte                # blinds, HUD, notepad, desk, cables
+      stage-panel.css
+      cable-layout.ts                  # Stage-only geometry
+```

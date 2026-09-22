@@ -5,7 +5,8 @@ export type UiLocale = "en" | "zh";
 export type MessageKey = keyof typeof en;
 
 const en = {
-  "brand.tagline": "Show your keystrokes, without the noise.",
+  "brand.tagline":
+    "Lightweight keystroke overlay for streaming & recording.",
 
   "nav.aria": "Page sections",
   "nav.brand": "Brand",
@@ -33,8 +34,7 @@ const en = {
   "intro.invite": "Press any key to take control.",
 
   "download.panel.title": "Get z-key-cast",
-  "download.panel.lead":
-    "Lightweight keystroke overlay for streaming & recording.",
+  "download.panel.lead": "Show your keystrokes, without the noise.",
   "download.panel.cta": "Download Latest Version",
 
   /** Kept for future first-screen / Windows CTA reuse. */
@@ -61,7 +61,7 @@ const en = {
 } as const;
 
 const zh: Record<MessageKey, string> = {
-  "brand.tagline": "在屏幕上实时同步你的键鼠操作",
+  "brand.tagline": "轻量键鼠浮窗，适合直播与录屏。",
 
   "nav.aria": "页面分区",
   "nav.brand": "品牌",
@@ -87,7 +87,7 @@ const zh: Record<MessageKey, string> = {
   "intro.invite": "按任意键接管。",
 
   "download.panel.title": "获取 z-key-cast",
-  "download.panel.lead": "轻量键鼠浮窗，适合直播与录屏。",
+  "download.panel.lead": "在屏幕上实时同步你的键鼠操作",
   "download.panel.cta": "下载最新版本",
 
   "cta.download": "下载",

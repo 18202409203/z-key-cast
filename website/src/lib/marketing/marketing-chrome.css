@@ -1,0 +1,97 @@
+/* Theme tokens on :root so html/body (and fixed stage wash) resolve correctly. */
+:root {
+  --bg: #050505;
+  --bg-elev: #0c0c0c;
+  --fg: #f4f4f5;
+  --fg-muted: #a1a1aa;
+  --accent: #80ffff;
+  --accent-dim: color-mix(in srgb, #80ffff 35%, transparent);
+  --bezel: #141414;
+  --noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+}
+
+html {
+  /* Hard stop on panels — avoid resting in the junction between sections. */
+  scroll-snap-type: y mandatory;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  line-height: 1.45;
+  color: var(--fg);
+  background: var(--bg);
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-snap-type: none;
+  }
+}
+
+.page {
+  position: relative;
+  margin: 0 auto;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  isolation: isolate;
+}
+
+.page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 80% 50% at 50% 18%,
+      color-mix(in srgb, var(--accent) 7%, transparent),
+      transparent 62%
+    ),
+    var(--bg);
+}
+
+.page::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: var(--noise);
+  background-size: 180px 180px;
+}
+
+.panel {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100dvh;
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 1.75rem 1.25rem 3.75rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+@media (max-width: 640px) {
+  .panel {
+    padding: 1.25rem 1rem;
+  }
+}
