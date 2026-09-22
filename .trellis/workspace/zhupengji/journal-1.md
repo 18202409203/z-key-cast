@@ -880,3 +880,36 @@ Shipped marketing page for z-key-cast: monitor (Lite + notepad) + Full KeyboardM
 ### Next Steps
 
 - None - task complete
+
+
+## Session 23: Website stage blinds theme
+
+**Date**: 2026-09-22
+**Task**: Website stage blinds theme
+**Branch**: `main`
+
+### Summary
+
+Shipped stage room-light via blind cord (same-family HUD+notepad, desk exposure), left page rail, enter/leave power, full-panel mouse capture with rail/cord exempt. Archived 09-21-website-theme.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4b4ec9c` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
