@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import {
     DEFAULT_HUD_STYLE,
     HudView,
@@ -10,6 +10,7 @@
     guessKeyboardLegendLayout,
     hudBackgroundCss,
     type HudChip,
+    type HudColorPresetId,
   } from "z-key-cast-hud-view";
   import { attachDomInputAdapter } from "$lib/dom-input-adapter";
   import type { DomInputAdapter } from "$lib/dom-input-adapter";
@@ -39,13 +40,15 @@
   const versionLabel = $derived(
     publishedVersion ?? t("version.none", locale),
   );
-  const darkColors = colorsFromHudPreset("dark");
+  /** Stage-local HUD color only — no persistence / page-shell theme. */
+  const INITIAL_HUD_COLOR: HudColorPresetId = "dark";
+  let hudColor: HudColorPresetId = $state(INITIAL_HUD_COLOR);
   const liteSlots = createHudSlots();
   const fullSlots = createHudSlots();
 
   liteSlots.applyStyle({
     ...DEFAULT_HUD_STYLE,
-    ...darkColors,
+    ...colorsFromHudPreset(INITIAL_HUD_COLOR),
     hudPreset: "lite",
     backgroundOpacity: 0.78,
     fontSizePx: 13,
@@ -54,10 +57,56 @@
   });
   fullSlots.applyStyle({
     ...DEFAULT_HUD_STYLE,
-    ...darkColors,
+    ...colorsFromHudPreset(INITIAL_HUD_COLOR),
     hudPreset: "full",
     backgroundOpacity: 0.88,
   });
+
+  function applyHudColor(id: HudColorPresetId) {
+    const colors = colorsFromHudPreset(id);
+    liteSlots.applyStyle({ ...liteSlots.style, ...colors });
+    fullSlots.applyStyle({ ...fullSlots.style, ...colors });
+  }
+
+  /** Brief window so theme paint crossfades without stretching keypress feedback. */
+  const THEME_CROSSFADE_MS = 220;
+  let themeCrossfade = $state(false);
+  let themeCrossfadeTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function clearThemeCrossfadeTimer() {
+    if (themeCrossfadeTimer !== null) {
+      clearTimeout(themeCrossfadeTimer);
+      themeCrossfadeTimer = null;
+    }
+  }
+
+  async function setHudColor(id: HudColorPresetId) {
+    if (hudColor === id) return;
+    // Transition must be armed in the DOM before color props flip, or the paint snaps.
+    themeCrossfade = true;
+    await tick();
+    hudColor = id;
+    applyHudColor(id);
+    clearThemeCrossfadeTimer();
+    themeCrossfadeTimer = setTimeout(() => {
+      themeCrossfade = false;
+      themeCrossfadeTimer = null;
+    }, THEME_CROSSFADE_MS);
+  }
+
+  const hudThemeAria = $derived(
+    t("stage.theme.aria", locale, {
+      label: t("stage.theme", locale),
+      current: t(
+        hudColor === "dark" ? "stage.theme.dark" : "stage.theme.light",
+        locale,
+      ),
+      next: t(
+        hudColor === "dark" ? "stage.theme.light" : "stage.theme.dark",
+        locale,
+      ),
+    }),
+  );
 
   const boardBg = $derived(
     hudBackgroundCss(
@@ -67,6 +116,7 @@
   );
   const legendLayout = guessKeyboardLegendLayout();
 
+  let pageEl: HTMLElement | undefined = $state();
   let stageRoot: HTMLDivElement | undefined = $state();
   let panelStageEl: HTMLElement | undefined = $state();
   let notepadEl: HTMLTextAreaElement | undefined = $state();
@@ -244,6 +294,37 @@
     else inputAdapter.powerOn();
   }
 
+  /** Snap panels under `.page` — Brand / Stage / Download. */
+  function panelList(): HTMLElement[] {
+    if (!pageEl) return [];
+    return Array.from(pageEl.querySelectorAll<HTMLElement>(":scope > .panel"));
+  }
+
+  function nearestPanelIndex(): number {
+    const panels = panelList();
+    if (panels.length === 0) return 0;
+    const y = window.scrollY;
+    let best = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < panels.length; i++) {
+      const dist = Math.abs(panels[i].offsetTop - y);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  function scrollToPanel(index: number) {
+    const panels = panelList();
+    if (panels.length === 0) return;
+    const clamped = Math.max(0, Math.min(panels.length - 1, index));
+    const target = panels[clamped];
+    // scrollTo + snap keeps alignment; smooth helps read as one deliberate step.
+    window.scrollTo({ top: target.offsetTop, behavior: "smooth" });
+  }
+
   onMount(() => {
     let cancelled = false;
     let adapter: DomInputAdapter | undefined;
@@ -284,6 +365,37 @@
           )
         : null;
     if (panelStageEl) io?.observe(panelStageEl);
+
+    // Trackpad inertia can skip snap-stop panels (Brand → Download). Throttle
+    // wheel: always preventDefault, advance at most one panel per cooldown so
+    // continuous scroll keeps stepping. Stage power still owns wheel via adapter.
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    );
+    let lastStepAt = 0;
+    const STEP_COOLDOWN_MS = 700;
+
+    function onPageWheel(event: WheelEvent) {
+      if (cancelled || reduceMotion.matches) return;
+      // Adapter capture listener owns the gesture while the demo is powered.
+      if (adapter?.powered) return;
+      if (event.ctrlKey) return; // leave pinch-zoom alone
+      if (Math.abs(event.deltaY) < Math.abs(event.deltaX)) return;
+      if (event.deltaY === 0) return;
+
+      event.preventDefault();
+      const now = Date.now();
+      if (now - lastStepAt < STEP_COOLDOWN_MS) return;
+
+      lastStepAt = now;
+      const dir = event.deltaY > 0 ? 1 : -1;
+      scrollToPanel(nearestPanelIndex() + dir);
+    }
+
+    window.addEventListener("wheel", onPageWheel, {
+      passive: false,
+      capture: true,
+    });
 
     queueMicrotask(() => {
       fitStageHeight();
@@ -359,8 +471,10 @@
       inputAdapter = undefined;
       io?.disconnect();
       ro?.disconnect();
+      window.removeEventListener("wheel", onPageWheel, true);
       window.removeEventListener("resize", onViewportResize);
       document.removeEventListener("selectionchange", onSelectionChange);
+      clearThemeCrossfadeTimer();
       liteSlots.clearAllIdleTimers();
       fullSlots.clearAllIdleTimers();
     };
@@ -373,7 +487,7 @@
   });
 </script>
 
-<main class="page">
+<main class="page" bind:this={pageEl}>
   <section class="panel panel-brand" aria-label={productName}>
     <header class="brand">
       <h1>{productName}</h1>
@@ -399,6 +513,8 @@
     <div
       class="stage"
       class:focused={stageFocused}
+      class:theme-crossfade={themeCrossfade}
+      data-hud-color={hudColor}
       bind:this={stageRoot}
       role="application"
       aria-label={t("stage.aria", locale)}
@@ -465,6 +581,31 @@
 
           <div class="desk">
             <div class="desk-glow" aria-hidden="true"></div>
+            <!-- Theme left / power right — clear of the cable runway between bezel and keys. -->
+            <div
+              class="hud-theme"
+              role="group"
+              aria-label={hudThemeAria}
+            >
+              <button
+                type="button"
+                class="hud-theme-opt"
+                class:active={hudColor === "dark"}
+                aria-pressed={hudColor === "dark"}
+                onclick={() => setHudColor("dark")}
+              >
+                {t("stage.theme.dark", locale)}
+              </button>
+              <button
+                type="button"
+                class="hud-theme-opt"
+                class:active={hudColor === "light"}
+                aria-pressed={hudColor === "light"}
+                onclick={() => setHudColor("light")}
+              >
+                {t("stage.theme.light", locale)}
+              </button>
+            </div>
             <button
               type="button"
               class="power-btn"
@@ -647,8 +788,6 @@
     --fg-muted: #a1a1aa;
     --accent: #80ffff;
     --accent-dim: color-mix(in srgb, #80ffff 35%, transparent);
-    --paper: #f4f4f5;
-    --paper-ink: #18181b;
     --bezel: #141414;
     --noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
   }
@@ -903,6 +1042,55 @@
   }
 
   /* Screen powers off until the desk is armed; lights to paper when live. */
+  .stage[data-hud-color="dark"] {
+    --paper: #ffffff;
+    --paper-ink: #333333;
+  }
+
+  .stage[data-hud-color="light"] {
+    --paper: #1e1e1e;
+    --paper-ink: #d4d4d4;
+  }
+
+  .stage.focused .screen,
+  .stage.focused .notepad,
+  .stage.focused .notepad-caret {
+    transition:
+      background-color 180ms ease,
+      background 180ms ease,
+      color 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  /* Theme-only: do not leave permanent transitions on keys/mouse (press is 120ms in hud-view). */
+  .stage.theme-crossfade :global(.hud .chip),
+  .stage.theme-crossfade :global(.board .key),
+  .stage.theme-crossfade :global(.mouse .shell),
+  .stage.theme-crossfade :global(.mouse .press),
+  .stage.theme-crossfade :global(.mouse .side-mark) {
+    transition:
+      color 180ms ease,
+      background 180ms ease,
+      background-color 180ms ease,
+      fill 180ms ease,
+      stroke 180ms ease,
+      border-color 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stage.focused .screen,
+    .stage.focused .notepad,
+    .stage.focused .notepad-caret,
+    .stage.theme-crossfade :global(.hud .chip),
+    .stage.theme-crossfade :global(.board .key),
+    .stage.theme-crossfade :global(.mouse .shell),
+    .stage.theme-crossfade :global(.mouse .press),
+    .stage.theme-crossfade :global(.mouse .side-mark) {
+      transition: none;
+    }
+  }
+
   .stage:not(.focused) .screen {
     background: #0a0a0a;
     box-shadow:
@@ -1192,11 +1380,59 @@
       inset 0 0 0 1px rgba(255, 255, 255, 0.03);
   }
 
+  .hud-theme {
+    position: absolute;
+    top: 0.55rem;
+    left: 0.55rem;
+    /* Above .cable (z-index 5) so the control stays visible and clickable. */
+    z-index: 6;
+    display: inline-flex;
+    align-items: stretch;
+    border-radius: 999px;
+    border: 1px solid #3f3f46;
+    background: linear-gradient(180deg, #222 0%, #121212 100%);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.06) inset,
+      0 2px 8px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+  }
+
+  .hud-theme-opt {
+    margin: 0;
+    padding: 0.28rem 0.55rem;
+    border: 0;
+    background: transparent;
+    color: #71717a;
+    font: inherit;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition:
+      color 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .hud-theme-opt:hover {
+    color: #a1a1aa;
+  }
+
+  .hud-theme-opt:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    outline-offset: -2px;
+  }
+
+  .hud-theme-opt.active {
+    color: var(--fg);
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+
   .power-btn {
     position: absolute;
     top: 0.55rem;
     right: 0.55rem;
-    z-index: 4;
+    z-index: 6;
     box-sizing: border-box;
     width: 2rem;
     height: 2rem;

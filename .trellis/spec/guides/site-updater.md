@@ -76,7 +76,7 @@ Apply when changing:
 
 ## Marketing page (`website/` hero)
 
-Three **scroll-snap** panels (`mandatory` + `scroll-snap-stop: always` on `html`): Brand → Stage → Download. Language footer lives **inside** Download (not after the last snap — mandatory would bounce content back). Brand/Stage show a bottom scroll hint; `prefers-reduced-motion` disables snap + hint motion.
+Three **scroll-snap** panels (`mandatory` + `scroll-snap-stop: always` on `html`): Brand → Stage → Download. Language footer lives **inside** Download (not after the last snap — mandatory would bounce content back). Brand/Stage show a bottom scroll hint; `prefers-reduced-motion` disables snap + hint motion. Wheel/trackpad is **throttled** (~700ms, one adjacent panel per tick) because macOS inertia can skip `scroll-snap-stop`; stage **powered** still owns wheel via the DOM adapter.
 
 Demo-first desk (monitor Lite + Full schematics). Capture is an explicit **power session**, not hover-target:
 

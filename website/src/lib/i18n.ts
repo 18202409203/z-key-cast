@@ -18,6 +18,10 @@ const en = {
   "stage.on": "On",
   "stage.off": "Off",
   "stage.power": "Power",
+  "stage.theme": "HUD appearance",
+  "stage.theme.dark": "Dark",
+  "stage.theme.light": "Light",
+  "stage.theme.aria": "{label} — {current}. Switch to {next}.",
   "stage.help.aria": "How to use the demo",
   "stage.help":
     "Power button toggles the demo · click outside also turns it off. Capture stays on this page only.",
@@ -67,6 +71,10 @@ const zh: Record<MessageKey, string> = {
   "stage.on": "开启",
   "stage.off": "关闭",
   "stage.power": "电源",
+  "stage.theme": "HUD 外观",
+  "stage.theme.dark": "深色",
+  "stage.theme.light": "浅色",
+  "stage.theme.aria": "{label} — {current}。切换为 {next}。",
   "stage.help.aria": "演示用法",
   "stage.help": "电源键开关演示 · 外侧点击也可关闭。捕获仅限本页。",
 

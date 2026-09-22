@@ -1,9 +1,9 @@
 {
   "id": "website-theme",
   "name": "website-theme",
-  "title": "Website black/white theme toggle",
-  "description": "Deferred: page shell light/dark; separate from website-i18n",
-  "status": "planning",
+  "title": "Website stage HUD dark/light toggle",
+  "description": "Stage-only HUD dark/light + dual notepad; no page-shell theme",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,
