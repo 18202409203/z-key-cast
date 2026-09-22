@@ -251,8 +251,9 @@
     stroke: color-mix(in srgb, var(--m-fg) 35%, var(--m-bg));
   }
 
+  /* Stronger than shell (10%) / outline (16%) so the L/R split reads on light HUD. */
   .seam {
-    stroke: color-mix(in srgb, var(--m-fg) 16%, var(--m-bg));
+    stroke: color-mix(in srgb, var(--m-fg) 38%, var(--m-bg));
     stroke-width: 1;
     stroke-linecap: round;
   }
