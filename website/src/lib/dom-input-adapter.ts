@@ -51,6 +51,11 @@ function isPageInteractive(el: EventTarget | null): boolean {
   );
 }
 
+/** Desk power toggle — handled by the control's click, not as capture/chips. */
+function isStagePowerToggle(el: EventTarget | null): boolean {
+  return el instanceof Element && Boolean(el.closest("[data-stage-power]"));
+}
+
 export type DomInputAdapterOptions = {
   onChip: (chip: HudChip) => void;
   /** Fires when the power session flips (screen on/off). */
@@ -149,6 +154,9 @@ export function attachDomInputAdapter(
   }
 
   function onKeyDown(event: KeyboardEvent) {
+    // Let the power button receive Space/Enter → click; do not wake/capture as chips.
+    if (isStagePowerToggle(event.target)) return;
+
     if (!powered) {
       if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
         return;
@@ -196,6 +204,15 @@ export function attachDomInputAdapter(
 
   function onPointerDown(event: PointerEvent) {
     const target = event.target;
+    // Desk power button: toggle here; suppress click so it does not double-fire.
+    if (isStagePowerToggle(target)) {
+      if (powered) powerOff();
+      else powerOn();
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
     const inside =
       target instanceof Node ? root.contains(target) : false;
 

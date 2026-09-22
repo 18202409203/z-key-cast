@@ -12,6 +12,7 @@
     type HudChip,
   } from "z-key-cast-hud-view";
   import { attachDomInputAdapter } from "$lib/dom-input-adapter";
+  import type { DomInputAdapter } from "$lib/dom-input-adapter";
   import { t, type UiLocale } from "$lib/i18n";
   import { getTextareaCaretPoint } from "$lib/notepad-caret";
 
@@ -19,34 +20,22 @@
   let { locale }: Props = $props();
 
   const productName = "z-key-cast";
-  const changelogUrl =
-    "https://gitee.com/zhupengji/z-key-cast/blob/main/CHANGELOG.md";
   // Locale is fixed per route mount (`/` vs `/zh/`); capture invite once for notepad seed.
   // svelte-ignore state_referenced_locally
   const inviteText = t("intro.invite", locale);
 
-  type DownloadLink = { label: string; href: string; note: string };
+  type MacDownload = { href: string; note: string };
 
-  function placeholderDownloads(loc: UiLocale): DownloadLink[] {
-    return [
-      {
-        label: "macOS",
-        href: "/downloads/",
-        note: t("downloads.macos.note", loc),
-      },
-      {
-        label: "Windows",
-        href: "/downloads/",
-        note: t("downloads.windows.note", loc),
-      },
-    ];
+  function placeholderMac(loc: UiLocale): MacDownload {
+    return {
+      href: "/downloads/",
+      note: t("downloads.macos.note", loc),
+    };
   }
 
-  let manifestDownloads: DownloadLink[] | null = $state(null);
+  // svelte-ignore state_referenced_locally
+  let macDownload: MacDownload = $state(placeholderMac(locale));
   let publishedVersion: string | null = $state(null);
-  const downloads = $derived(
-    manifestDownloads ?? placeholderDownloads(locale),
-  );
   const versionLabel = $derived(
     publishedVersion ?? t("version.none", locale),
   );
@@ -79,12 +68,14 @@
   const legendLayout = guessKeyboardLegendLayout();
 
   let stageRoot: HTMLDivElement | undefined = $state();
+  let panelStageEl: HTMLElement | undefined = $state();
   let notepadEl: HTMLTextAreaElement | undefined = $state();
   let rigEl: HTMLDivElement | undefined = $state();
   let baseEl: HTMLDivElement | undefined = $state();
   let kbWrapEl: HTMLDivElement | undefined = $state();
   let mouseWrapEl: HTMLDivElement | undefined = $state();
   let stageFocused = $state(false);
+  let inputAdapter: DomInputAdapter | undefined = $state();
   let notepadText = $state(inviteText);
   /** Remount packet overlays — one-shot current toward the monitor. */
   let kbPulseNonce = $state(0);
@@ -92,6 +83,9 @@
   let caretPos = $state<{ left: number; top: number; height: number } | null>(
     null,
   );
+  /** Fit short viewports; 1 means no transform (avoid HUD containing block). */
+  let rigScale = $state(1);
+  let rigSlotHeight = $state<number | null>(null);
 
   /** Measured orthogonal cable geometry (rig-local px). */
   let cableGeo = $state<{
@@ -105,8 +99,10 @@
     msPort: { x: number; y: number };
   } | null>(null);
 
-  const stageHint = $derived(
-    stageFocused ? t("stage.on", locale) : t("stage.off", locale),
+  const powerLabel = $derived(
+    `${t("stage.power", locale)} — ${
+      stageFocused ? t("stage.on", locale) : t("stage.off", locale)
+    }`,
   );
 
   function layoutCables() {
@@ -163,6 +159,49 @@
     };
   }
 
+  /** Shrink `.rig` when layout height exceeds the stage panel budget. */
+  function fitStageHeight() {
+    const panel = panelStageEl;
+    const rig = rigEl;
+    if (!panel || !rig) return;
+
+    const caption = panel.querySelector(".stage-caption");
+    const captionH = caption?.getBoundingClientRect().height ?? 0;
+    const styles = getComputedStyle(panel);
+    const padY =
+      (parseFloat(styles.paddingTop) || 0) +
+      (parseFloat(styles.paddingBottom) || 0);
+    const gap = 12;
+    // Budget from viewport — not panel.clientHeight (content overflow grows the panel).
+    const viewportH = window.innerHeight || document.documentElement.clientHeight;
+    const budget = viewportH - padY - captionH - gap;
+    if (budget < 80) return;
+
+    // offsetHeight is pre-transform layout size (safe while scaled).
+    const natural = rig.offsetHeight;
+    if (natural < 8) return;
+
+    const next = natural > budget ? Math.max(0.45, budget / natural) : 1;
+    const nextSlot = next < 1 ? natural * next : null;
+    if (
+      Math.abs(next - rigScale) < 0.01 &&
+      ((nextSlot == null && rigSlotHeight == null) ||
+        (nextSlot != null &&
+          rigSlotHeight != null &&
+          Math.abs(nextSlot - rigSlotHeight) < 1))
+    ) {
+      return;
+    }
+    rigScale = next;
+    rigSlotHeight = nextSlot;
+    queueMicrotask(() => layoutCables());
+  }
+
+  function onViewportResize() {
+    fitStageHeight();
+    layoutCables();
+  }
+
   function updateNotepadCaret() {
     const el = notepadEl;
     if (!el || !stageFocused || document.activeElement !== el) {
@@ -193,9 +232,21 @@
     // No place mode on the website demo.
   }
 
+  /** Keyboard activation for the desk power button (mouse is handled in the adapter). */
+  function onPowerClick(event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    // Mouse path: adapter toggles on pointerdown and preventDefault suppresses click.
+    // If a click still arrives from a pointer, detail >= 1 — ignore to avoid double toggle.
+    if (event.detail !== 0) return;
+    if (!inputAdapter) return;
+    if (inputAdapter.powered) inputAdapter.powerOff();
+    else inputAdapter.powerOn();
+  }
+
   onMount(() => {
     let cancelled = false;
-    let adapter: ReturnType<typeof attachDomInputAdapter> | undefined;
+    let adapter: DomInputAdapter | undefined;
 
     if (stageRoot) {
       adapter = attachDomInputAdapter(stageRoot, {
@@ -210,11 +261,32 @@
         getFocusTarget: () => notepadEl,
         getScrollTarget: () => notepadEl,
       });
+      inputAdapter = adapter;
     }
 
-    // Boot powered on so first input works immediately.
+    // Stay off on load so Brand scroll works. First time Stage is mostly
+    // visible → power on once; later visits rely on the power button / desk.
+    let stageAutoOnDone = false;
+    const io =
+      typeof IntersectionObserver !== "undefined" && panelStageEl
+        ? new IntersectionObserver(
+            (entries) => {
+              if (stageAutoOnDone || cancelled) return;
+              const entry = entries[0];
+              if (!entry?.isIntersecting || entry.intersectionRatio < 0.45) {
+                return;
+              }
+              stageAutoOnDone = true;
+              adapter?.powerOn();
+              io?.disconnect();
+            },
+            { threshold: [0, 0.45, 0.6, 1] },
+          )
+        : null;
+    if (panelStageEl) io?.observe(panelStageEl);
+
     queueMicrotask(() => {
-      adapter?.powerOn();
+      fitStageHeight();
       layoutCables();
       updateNotepadCaret();
     });
@@ -222,12 +294,14 @@
     const ro =
       typeof ResizeObserver !== "undefined"
         ? new ResizeObserver(() => {
+            fitStageHeight();
             layoutCables();
             updateNotepadCaret();
           })
         : null;
     if (rigEl) ro?.observe(rigEl);
-    window.addEventListener("resize", layoutCables);
+    if (panelStageEl) ro?.observe(panelStageEl);
+    window.addEventListener("resize", onViewportResize);
 
     function onSelectionChange() {
       if (document.activeElement === notepadEl) updateNotepadCaret();
@@ -268,25 +342,12 @@
         }
 
         if (cancelled) return;
-        manifestDownloads = [
-          {
-            label: "macOS",
-            href: macosHref,
-            note: t("downloads.versionNote", locale, {
-              version: manifest.version,
-            }),
-          },
-          {
-            label: t("downloads.browse", locale),
-            href: folder,
-            note: t("downloads.browse.note", locale),
-          },
-          {
-            label: "Windows",
-            href: "/downloads/",
-            note: t("downloads.windows.note", locale),
-          },
-        ];
+        macDownload = {
+          href: macosHref,
+          note: t("downloads.versionNote", locale, {
+            version: manifest.version,
+          }),
+        };
       } catch {
         // Keep placeholders when serve has no manifest yet.
       }
@@ -295,8 +356,10 @@
     return () => {
       cancelled = true;
       adapter?.dispose();
+      inputAdapter = undefined;
+      io?.disconnect();
       ro?.disconnect();
-      window.removeEventListener("resize", layoutCables);
+      window.removeEventListener("resize", onViewportResize);
       document.removeEventListener("selectionchange", onSelectionChange);
       liteSlots.clearAllIdleTimers();
       fullSlots.clearAllIdleTimers();
@@ -311,223 +374,268 @@
 </script>
 
 <main class="page">
-  <header class="brand">
-    <h1>{productName}</h1>
-    <p class="tagline">{t("brand.tagline", locale)}</p>
-  </header>
+  <section class="panel panel-brand" aria-label={productName}>
+    <header class="brand">
+      <h1>{productName}</h1>
+      <p class="tagline">{t("brand.tagline", locale)}</p>
+    </header>
+    <a
+      class="scroll-hint"
+      href="#stage"
+      aria-label={t("scroll.hint.aria", locale)}
+    >
+      <span class="scroll-hint-label">{t("scroll.hint", locale)}</span>
+      <span class="scroll-hint-chevron" aria-hidden="true"></span>
+    </a>
+  </section>
 
-  <!-- Capture surface: listeners on stage; typing focus always parks on notepad. -->
-  <div
-    class="stage"
-    class:focused={stageFocused}
-    bind:this={stageRoot}
-    role="application"
+  <section
+    id="stage"
+    class="panel panel-stage"
+    bind:this={panelStageEl}
     aria-label={t("stage.aria", locale)}
   >
-    <div class="rig" bind:this={rigEl}>
-      <div class="monitor">
-        <div class="bezel">
-          <div class="screen">
-            <div class="hud-corner" aria-hidden="true">
-              <HudView
-                style={liteSlots.style}
-                {locale}
-                placeMode={false}
-                contentCorner="tl"
-                timeline={liteSlots.timeline}
-                statusActive={liteSlots.statusActive}
-                activeKeyIds={liteSlots.activeKeyIds}
-                mouseActiveButtons={liteSlots.mouseActiveButtons}
-                scrollDirection={liteSlots.scrollDirection}
-                scrollPulseNonce={liteSlots.scrollPulseNonce}
-                showKmGroup={liteSlots.showKmGroup}
-                showKeyboardMap={liteSlots.showKeyboardMap}
-                showMouseSchematic={liteSlots.showMouseSchematic}
-                isFull={liteSlots.isFull}
-                isLite={liteSlots.isLite}
-                showNumpad={false}
-                {onPlacePointerDown}
-              />
-            </div>
-            <textarea
-              class="notepad"
-              bind:this={notepadEl}
-              bind:value={notepadText}
-              spellcheck="false"
-              autocomplete="off"
-              aria-label={t("notepad.aria", locale)}
-              oninput={() => updateNotepadCaret()}
-              onclick={() => updateNotepadCaret()}
-              onkeyup={() => updateNotepadCaret()}
-              onscroll={() => updateNotepadCaret()}
-            ></textarea>
-            {#if stageFocused && caretPos}
-              <div
-                class="notepad-caret"
-                style:left={`${caretPos.left}px`}
-                style:top={`${caretPos.top}px`}
-                style:height={`${caretPos.height}px`}
-                aria-hidden="true"
-              ></div>
-            {/if}
-          </div>
-        </div>
-        <div class="stand" aria-hidden="true"></div>
-        <div class="base" bind:this={baseEl} aria-hidden="true"></div>
-      </div>
-
-      <div class="desk">
-        <div class="desk-glow" aria-hidden="true"></div>
-        <div class="km-row">
-          <div class="kb-wrap" bind:this={kbWrapEl}>
-            <KeyboardMap
-              activeIds={fullSlots.activeKeyIds}
-              showNumpad={true}
-              textColor={fullSlots.style.textColor}
-              backgroundCss={boardBg}
-              fontSizePx={18}
-              legendLayout={legendLayout}
-            />
-          </div>
-          <div class="mouse-wrap" bind:this={mouseWrapEl}>
-            <MouseSchematic
-              activeButtons={fullSlots.mouseActiveButtons}
-              scrollDirection={fullSlots.scrollDirection}
-              scrollPulseNonce={fullSlots.scrollPulseNonce}
-              textColor={fullSlots.style.textColor}
-              backgroundCss={boardBg}
-              fontSizePx={16}
-              size="board"
-            />
-          </div>
-        </div>
-      </div>
-
-      {#if cableGeo}
-        <svg
-          class="cable"
-          class:powered={stageFocused}
-          aria-hidden="true"
-          viewBox={`0 0 ${cableGeo.w} ${cableGeo.h}`}
-          width={cableGeo.w}
-          height={cableGeo.h}
+    <!-- Capture surface: listeners on stage; typing focus always parks on notepad. -->
+    <div
+      class="stage"
+      class:focused={stageFocused}
+      bind:this={stageRoot}
+      role="application"
+      aria-label={t("stage.aria", locale)}
+    >
+      <div
+        class="rig-scaler"
+        style:height={rigSlotHeight != null ? `${rigSlotHeight}px` : undefined}
+      >
+        <div
+          class="rig"
+          bind:this={rigEl}
+          style:transform={rigScale < 1 ? `scale(${rigScale})` : undefined}
         >
-          <path class="cable-track" d={cableGeo.kb} fill="none" />
-          <path class="cable-track" d={cableGeo.ms} fill="none" />
-          <path
-            class="cable-live"
-            d={cableGeo.kb}
-            fill="none"
-          />
-          <path
-            class="cable-live"
-            d={cableGeo.ms}
-            fill="none"
-          />
-          {#key kbPulseNonce}
-            {#if kbPulseNonce > 0}
-              <path
-                class="cable-packet"
-                d={cableGeo.kb}
-                fill="none"
-                pathLength="100"
+          <div class="monitor">
+            <div class="bezel">
+              <div class="screen">
+                <div class="hud-corner" aria-hidden="true">
+                  <HudView
+                    style={liteSlots.style}
+                    {locale}
+                    placeMode={false}
+                    contentCorner="tl"
+                    timeline={liteSlots.timeline}
+                    statusActive={liteSlots.statusActive}
+                    activeKeyIds={liteSlots.activeKeyIds}
+                    mouseActiveButtons={liteSlots.mouseActiveButtons}
+                    scrollDirection={liteSlots.scrollDirection}
+                    scrollPulseNonce={liteSlots.scrollPulseNonce}
+                    showKmGroup={liteSlots.showKmGroup}
+                    showKeyboardMap={liteSlots.showKeyboardMap}
+                    showMouseSchematic={liteSlots.showMouseSchematic}
+                    isFull={liteSlots.isFull}
+                    isLite={liteSlots.isLite}
+                    showNumpad={false}
+                    {onPlacePointerDown}
+                  />
+                </div>
+                <textarea
+                  class="notepad"
+                  bind:this={notepadEl}
+                  bind:value={notepadText}
+                  spellcheck="false"
+                  autocomplete="off"
+                  aria-label={t("notepad.aria", locale)}
+                  oninput={() => updateNotepadCaret()}
+                  onclick={() => updateNotepadCaret()}
+                  onkeyup={() => updateNotepadCaret()}
+                  onscroll={() => updateNotepadCaret()}
+                ></textarea>
+                {#if stageFocused && caretPos}
+                  <div
+                    class="notepad-caret"
+                    style:left={`${caretPos.left}px`}
+                    style:top={`${caretPos.top}px`}
+                    style:height={`${caretPos.height}px`}
+                    aria-hidden="true"
+                  ></div>
+                {/if}
+              </div>
+            </div>
+            <div class="stand" aria-hidden="true"></div>
+            <div class="base" bind:this={baseEl} aria-hidden="true"></div>
+          </div>
+
+          <div class="desk">
+            <div class="desk-glow" aria-hidden="true"></div>
+            <button
+              type="button"
+              class="power-btn"
+              class:on={stageFocused}
+              data-stage-power
+              aria-pressed={stageFocused}
+              aria-label={powerLabel}
+              onclick={onPowerClick}
+            >
+              <svg
+                class="power-icon"
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                aria-hidden="true"
+              >
+                <path
+                  d="M12 3v9"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M7.5 6.2a7 7 0 1 0 9 0"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </button>
+            <div class="km-row">
+              <div class="kb-wrap" bind:this={kbWrapEl}>
+                <KeyboardMap
+                  activeIds={fullSlots.activeKeyIds}
+                  showNumpad={true}
+                  textColor={fullSlots.style.textColor}
+                  backgroundCss={boardBg}
+                  fontSizePx={18}
+                  legendLayout={legendLayout}
+                />
+              </div>
+              <div class="mouse-wrap" bind:this={mouseWrapEl}>
+                <MouseSchematic
+                  activeButtons={fullSlots.mouseActiveButtons}
+                  scrollDirection={fullSlots.scrollDirection}
+                  scrollPulseNonce={fullSlots.scrollPulseNonce}
+                  textColor={fullSlots.style.textColor}
+                  backgroundCss={boardBg}
+                  fontSizePx={16}
+                  size="board"
+                />
+              </div>
+            </div>
+          </div>
+
+          {#if cableGeo}
+            <svg
+              class="cable"
+              class:powered={stageFocused}
+              aria-hidden="true"
+              viewBox={`0 0 ${cableGeo.w} ${cableGeo.h}`}
+              width={cableGeo.w}
+              height={cableGeo.h}
+            >
+              <path class="cable-track" d={cableGeo.kb} fill="none" />
+              <path class="cable-track" d={cableGeo.ms} fill="none" />
+              <path class="cable-live" d={cableGeo.kb} fill="none" />
+              <path class="cable-live" d={cableGeo.ms} fill="none" />
+              {#key kbPulseNonce}
+                {#if kbPulseNonce > 0}
+                  <path
+                    class="cable-packet"
+                    d={cableGeo.kb}
+                    fill="none"
+                    pathLength="100"
+                  />
+                {/if}
+              {/key}
+              {#key msPulseNonce}
+                {#if msPulseNonce > 0}
+                  <path
+                    class="cable-packet"
+                    d={cableGeo.ms}
+                    fill="none"
+                    pathLength="100"
+                  />
+                {/if}
+              {/key}
+              <circle
+                class="cable-jack"
+                cx={cableGeo.kbJack.x}
+                cy={cableGeo.kbJack.y}
+                r="2.6"
               />
-            {/if}
-          {/key}
-          {#key msPulseNonce}
-            {#if msPulseNonce > 0}
-              <path
-                class="cable-packet"
-                d={cableGeo.ms}
-                fill="none"
-                pathLength="100"
+              <circle
+                class="cable-jack"
+                cx={cableGeo.msJack.x}
+                cy={cableGeo.msJack.y}
+                r="2.6"
               />
-            {/if}
-          {/key}
-          <circle
-            class="cable-jack"
-            cx={cableGeo.kbJack.x}
-            cy={cableGeo.kbJack.y}
-            r="2.6"
-          />
-          <circle
-            class="cable-jack"
-            cx={cableGeo.msJack.x}
-            cy={cableGeo.msJack.y}
-            r="2.6"
-          />
-          <circle
-            class="cable-port"
-            cx={cableGeo.kbPort.x}
-            cy={cableGeo.kbPort.y}
-            r="2.4"
-          />
-          <circle
-            class="cable-port"
-            cx={cableGeo.msPort.x}
-            cy={cableGeo.msPort.y}
-            r="2.4"
-          />
-        </svg>
-      {/if}
+              <circle
+                class="cable-port"
+                cx={cableGeo.kbPort.x}
+                cy={cableGeo.kbPort.y}
+                r="2.4"
+              />
+              <circle
+                class="cable-port"
+                cx={cableGeo.msPort.x}
+                cy={cableGeo.msPort.y}
+                r="2.4"
+              />
+            </svg>
+          {/if}
+        </div>
+      </div>
+
+      <div class="stage-caption">
+        <p class="stage-help" aria-label={t("stage.help.aria", locale)}>
+          {t("stage.help", locale)}
+        </p>
+      </div>
+    </div>
+    <a
+      class="scroll-hint"
+      href="#downloads"
+      aria-label={t("scroll.hint.aria", locale)}
+    >
+      <span class="scroll-hint-label">{t("scroll.hint", locale)}</span>
+      <span class="scroll-hint-chevron" aria-hidden="true"></span>
+    </a>
+  </section>
+
+  <section
+    id="downloads"
+    class="panel panel-download"
+    aria-label={t("downloads.aria", locale)}
+  >
+    <div class="download-inner">
+      <h2 class="download-title">{t("download.panel.title", locale)}</h2>
+      <p class="download-lead">{t("download.panel.lead", locale)}</p>
+
+      <div class="cta-row">
+        <a class="download-btn" href={macDownload.href}
+          >{t("download.panel.cta", locale)}</a
+        >
+        <!-- Future: Windows sibling button in this flex row -->
+      </div>
+      <p class="download-footnote">
+        <span class="ver"
+          >{t("cta.latest", locale, { version: versionLabel })}</span
+        >
+        · {macDownload.note}
+      </p>
     </div>
 
-    <p class="stage-status" class:live={stageFocused} aria-live="polite">
-      <span class="stage-status-dot" aria-hidden="true"></span>
-      {stageHint}
-    </p>
-  </div>
-
-  <div class="cta-bar">
-    <a class="download-btn" href="#downloads">{t("cta.download", locale)}</a>
-    <p class="cta-note">
-      <span class="ver"
-        >{t("cta.latest", locale, { version: versionLabel })}</span
-      >
-      <br />
-      <span>{t("cta.note", locale)}</span>
-    </p>
-  </div>
-
-  <section aria-label={t("boundary.aria", locale)} class="boundary">
-    <p>{t("boundary.body", locale)}</p>
+    <!-- Lang footer lives in panel 3 — mandatory snap rejects content after the last snap target. -->
+    <footer class="site-footer">
+      <nav class="lang" aria-label={t("lang.switch", locale)}>
+        <a href="/" aria-current={locale === "en" ? "page" : undefined}
+          >{t("lang.en", locale)}</a
+        >
+        <span class="lang-sep" aria-hidden="true">|</span>
+        <a href="/zh/" aria-current={locale === "zh" ? "page" : undefined}
+          >{t("lang.zh", locale)}</a
+        >
+      </nav>
+    </footer>
   </section>
-
-  <section id="downloads" aria-label={t("downloads.aria", locale)} class="downloads">
-    <h2>{t("downloads.title", locale)}</h2>
-    <ul>
-      {#each downloads as item}
-        <li>
-          <a href={item.href}>{item.label}</a>
-          <span class="note">{item.note}</span>
-        </li>
-      {/each}
-    </ul>
-  </section>
-
-  <section aria-label={t("version.aria", locale)} class="version">
-    <h2>{t("version.title", locale)}</h2>
-    <p>
-      {t("version.published", locale)} <strong>{versionLabel}</strong>.
-      {t("version.artifacts", locale)}
-      <code>/downloads/</code>; {t("version.manifest", locale)}
-      <code><a href="/updates/latest.json">/updates/latest.json</a></code>.
-      {t("version.changelog", locale)}
-      <a href={changelogUrl} rel="noreferrer">CHANGELOG.md</a>
-    </p>
-  </section>
-
-  <footer class="site-footer">
-    <nav class="lang" aria-label={t("lang.switch", locale)}>
-      <a href="/" aria-current={locale === "en" ? "page" : undefined}
-        >{t("lang.en", locale)}</a
-      >
-      <span class="lang-sep" aria-hidden="true">|</span>
-      <a href="/zh/" aria-current={locale === "zh" ? "page" : undefined}
-        >{t("lang.zh", locale)}</a
-      >
-    </nav>
-  </footer>
 </main>
 
 <style>
@@ -543,6 +651,11 @@
     --paper-ink: #18181b;
     --bezel: #141414;
     --noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  }
+
+  :global(html) {
+    /* Hard stop on panels — avoid resting in the junction between sections. */
+    scroll-snap-type: y mandatory;
   }
 
   :global(html, body) {
@@ -562,14 +675,18 @@
     height: 0;
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    :global(html) {
+      scroll-snap-type: none;
+    }
+  }
+
   .page {
     position: relative;
-    max-width: 56rem;
     margin: 0 auto;
-    padding: 2.5rem 1.25rem 3.5rem;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 1.75rem;
     isolation: isolate;
   }
 
@@ -599,9 +716,80 @@
     background-size: 180px 180px;
   }
 
+  .panel {
+    position: relative;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 100dvh;
+    max-width: 56rem;
+    margin: 0 auto;
+    padding: 1.75rem 1.25rem 3.75rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  .scroll-hint {
+    position: absolute;
+    left: 50%;
+    bottom: 1.1rem;
+    transform: translateX(-50%);
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.6rem;
+    border: none;
+    background: transparent;
+    color: var(--fg-muted);
+    text-decoration: none;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.72;
+    transition: opacity 0.2s ease, color 0.2s ease;
+    z-index: 3;
+  }
+
+  .scroll-hint:hover {
+    opacity: 1;
+    color: var(--fg);
+  }
+
+  .scroll-hint-label {
+    line-height: 1;
+  }
+
+  .scroll-hint-chevron {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg);
+    animation: hint-bob 1.6s ease-in-out infinite;
+  }
+
+  @keyframes hint-bob {
+    0%,
+    100% {
+      transform: rotate(45deg) translateY(0);
+      opacity: 0.55;
+    }
+    50% {
+      transform: rotate(45deg) translateY(4px);
+      opacity: 1;
+    }
+  }
+
+  .panel-brand {
+    animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
   .brand {
     text-align: center;
-    animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   h1 {
@@ -614,14 +802,6 @@
     color: #fff;
   }
 
-  h2 {
-    margin: 0 0 0.5rem;
-    font-family: Syne, "IBM Plex Sans", sans-serif;
-    font-size: 1.05rem;
-    font-weight: 700;
-    letter-spacing: 0.01em;
-  }
-
   .tagline {
     margin: 0.55rem 0 0;
     font-size: clamp(0.95rem, 2.2vw, 1.1rem);
@@ -630,9 +810,30 @@
     letter-spacing: 0.01em;
   }
 
+  .panel-stage {
+    /* Height budget for CSS width clamp; JS scale is the fallback. */
+    --stage-chrome: 5.5rem;
+    --rig-budget: calc(100dvh - var(--stage-chrome) - 3.5rem);
+  }
+
+  .panel-download {
+    justify-content: space-between;
+    padding-bottom: 1.5rem;
+  }
+
+  .panel-download .download-inner {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+  }
+
   .site-footer {
-    margin-top: 0.5rem;
-    padding-top: 1.25rem;
+    flex: 0 0 auto;
+    width: 100%;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
     border-top: 1px solid color-mix(in srgb, var(--fg) 8%, transparent);
     text-align: center;
   }
@@ -668,6 +869,7 @@
     flex-direction: column;
     align-items: center;
     gap: 0;
+    width: 100%;
     animation: rise 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
     cursor: text;
   }
@@ -680,8 +882,9 @@
 
   .stage.focused .bezel {
     box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--accent) 35%, #2a2a2a),
-      0 0 28px color-mix(in srgb, var(--accent) 12%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--accent) 45%, #2a2a2a),
+      0 0 28px var(--accent-dim),
+      0 0 48px color-mix(in srgb, var(--accent) 14%, transparent),
       0 24px 48px rgba(0, 0, 0, 0.55);
   }
 
@@ -711,7 +914,8 @@
     background: var(--paper);
     box-shadow:
       inset 0 0 0 1px rgba(0, 0, 0, 0.08),
-      0 0 32px color-mix(in srgb, var(--paper) 22%, transparent);
+      0 0 28px var(--accent-dim),
+      0 0 40px color-mix(in srgb, var(--paper) 18%, transparent);
   }
 
   .stage:not(.focused) .notepad {
@@ -761,51 +965,40 @@
     filter: none;
   }
 
-  .stage-status {
-    display: inline-flex;
+  .stage-caption {
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 0.45rem;
-    margin: 0.85rem 0 0;
-    padding: 0.35rem 0.75rem;
-    border-radius: 999px;
+    margin-top: 0.85rem;
+    max-width: 26rem;
+    text-align: center;
+  }
+
+  .stage-help {
+    margin: 0;
     font-size: 0.8rem;
-    letter-spacing: 0.02em;
+    line-height: 1.45;
     color: var(--fg-muted);
-    background: color-mix(in srgb, var(--bg-elev) 80%, #000);
-    border: 1px solid #2a2a2a;
-    transition:
-      color 0.2s ease,
-      border-color 0.2s ease,
-      box-shadow 0.2s ease;
+    letter-spacing: 0.01em;
   }
 
-  .stage-status.live {
-    color: #e4fffc;
-    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
-    box-shadow: 0 0 16px var(--accent-dim);
-  }
-
-  .stage-status-dot {
-    width: 0.45rem;
-    height: 0.45rem;
-    border-radius: 50%;
-    background: #52525b;
-    flex: 0 0 auto;
-  }
-
-  .stage-status.live .stage-status-dot {
-    background: var(--accent);
-    box-shadow: 0 0 8px var(--accent);
-    animation: cable-pulse 1.6s ease-in-out infinite;
+  .rig-scaler {
+    position: relative;
+    width: min(100%, 48rem, calc(var(--rig-budget) * 0.92));
+    display: flex;
+    justify-content: center;
+    /* When JS sets height for scaled rig, clip empty space. */
   }
 
   .rig {
     position: relative;
-    width: min(100%, 48rem);
+    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.65rem;
+    transform-origin: top center;
+    /* transform only when rigScale < 1 (inline); otherwise none — no HUD containing block. */
   }
 
   .monitor {
@@ -999,6 +1192,57 @@
       inset 0 0 0 1px rgba(255, 255, 255, 0.03);
   }
 
+  .power-btn {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.55rem;
+    z-index: 4;
+    box-sizing: border-box;
+    width: 2rem;
+    height: 2rem;
+    margin: 0;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid #3f3f46;
+    background: linear-gradient(180deg, #222 0%, #121212 100%);
+    color: #71717a;
+    cursor: pointer;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.06) inset,
+      0 2px 8px rgba(0, 0, 0, 0.45);
+    transition:
+      color 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .power-btn:hover {
+    color: #a1a1aa;
+    border-color: #52525b;
+  }
+
+  .power-btn:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    outline-offset: 2px;
+  }
+
+  .power-btn.on {
+    color: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 55%, #2a2a2a);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.08) inset,
+      0 0 14px var(--accent-dim),
+      0 2px 8px rgba(0, 0, 0, 0.45);
+  }
+
+  .power-icon {
+    display: block;
+  }
+
   .desk-glow {
     position: absolute;
     inset: -1px;
@@ -1050,88 +1294,85 @@
     padding-bottom: 0.35rem;
   }
 
-  .cta-bar {
+  .download-inner {
+    width: 100%;
+    max-width: 36rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.85rem;
+    animation: rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+  }
+
+  .download-title {
+    margin: 0;
+    font-family: Syne, "IBM Plex Sans", sans-serif;
+    font-weight: 800;
+    /* Keep one line on common laptop widths; shrink before wrapping. */
+    font-size: clamp(1.85rem, 5.2vw, 3.25rem);
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    color: #fff;
+    font-style: italic;
+    white-space: nowrap;
+  }
+
+  .download-lead {
+    margin: 0;
+    max-width: 28rem;
+    font-size: clamp(0.95rem, 2vw, 1.1rem);
+    color: var(--fg-muted);
+  }
+
+  .cta-row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
-    gap: 0.85rem 1.25rem;
-    animation: rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
+    gap: 0.85rem 1rem;
+    margin-top: 0.35rem;
   }
 
   .download-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 8.5rem;
-    padding: 0.65rem 1.35rem;
-    border: 1px solid rgba(255, 255, 255, 0.82);
-    border-radius: 0.35rem;
-    background: #0a0a0a;
-    color: #fff;
+    min-width: 12rem;
+    padding: 0.85rem 1.6rem;
+    border: 1px solid rgba(255, 255, 255, 0.92);
+    border-radius: 0.45rem;
+    background: #fff;
+    color: #0a0a0a;
     font-family: Syne, "IBM Plex Sans", sans-serif;
     font-weight: 700;
-    font-size: 0.95rem;
-    letter-spacing: 0.02em;
+    font-size: 0.98rem;
+    letter-spacing: 0.01em;
     text-decoration: none;
     transition:
       border-color 160ms ease,
       box-shadow 160ms ease,
-      background 160ms ease;
+      background 160ms ease,
+      color 160ms ease;
   }
 
   .download-btn:hover {
     border-color: var(--accent);
+    background: #0a0a0a;
+    color: #fff;
     box-shadow: 0 0 18px var(--accent-dim);
   }
 
-  .cta-note {
+  .download-footnote {
     margin: 0;
-    max-width: 22rem;
+    max-width: 26rem;
     font-size: 0.85rem;
     color: var(--fg-muted);
-    line-height: 1.4;
+    line-height: 1.45;
   }
 
-  .cta-note .ver {
+  .download-footnote .ver {
     color: var(--fg);
-  }
-
-  .boundary,
-  .downloads,
-  .version {
-    color: var(--fg-muted);
-    font-size: 0.92rem;
-  }
-
-  .boundary p,
-  .version p {
-    margin: 0;
-  }
-
-  .downloads a,
-  .version a {
-    color: var(--accent);
-  }
-
-  ul {
-    margin: 0;
-    padding-left: 1.2rem;
-  }
-
-  li {
-    margin: 0.35rem 0;
-  }
-
-  .note {
-    margin-left: 0.5rem;
-    color: #71717a;
-    font-size: 0.88rem;
-  }
-
-  code {
-    font-size: 0.9em;
-    color: #d4d4d8;
   }
 
   @keyframes rise {
@@ -1195,16 +1436,28 @@
   }
 
   @media (max-width: 640px) {
-    .page {
-      padding-top: 1.75rem;
+    .panel {
+      padding: 1.25rem 1rem;
     }
 
     .desk {
       padding: 2rem 0.5rem 0.75rem;
     }
 
-    .cta-note {
+    .download-footnote {
       text-align: center;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .panel-brand,
+    .stage,
+    .download-inner {
+      animation: none;
+    }
+
+    .scroll-hint-chevron {
+      animation: none;
     }
   }
 </style>

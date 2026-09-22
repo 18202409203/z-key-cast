@@ -7,24 +7,33 @@ export type MessageKey = keyof typeof en;
 const en = {
   "brand.tagline": "Show your keystrokes, without the noise.",
 
+  "scroll.hint": "Scroll",
+  "scroll.hint.aria": "Scroll to next section",
+
   "lang.switch": "Language",
   "lang.en": "English",
   "lang.zh": "中文",
 
   "stage.aria": "Interactive keystroke demo — desktop keyboard and mouse",
-  "stage.on": "On — keys & mouse captured · click outside to power off",
-  "stage.off": "Off — click the monitor or desk to power on",
+  "stage.on": "On",
+  "stage.off": "Off",
+  "stage.power": "Power",
+  "stage.help.aria": "How to use the demo",
+  "stage.help":
+    "Power button toggles the demo · click outside also turns it off. Capture stays on this page only.",
 
   "notepad.aria": "Demo notepad — type here",
   "intro.invite": "Press any key to take control.",
 
+  "download.panel.title": "Get z-key-cast",
+  "download.panel.lead":
+    "Lightweight keystroke overlay for streaming & recording.",
+  "download.panel.cta": "Download Latest Version",
+
+  /** Kept for future first-screen / Windows CTA reuse. */
   "cta.download": "Download",
   "cta.latest": "Latest: {version}",
   "cta.note": "Keyboard & mouse visualization.",
-
-  "boundary.aria": "Capability boundary",
-  "boundary.body":
-    "While the screen is on, this page captures keyboard, mouse, and wheel for the demo (not OS-global). Click outside the desk once to power off — then Download and normal browsing work again.",
 
   "downloads.aria": "Downloads",
   "downloads.title": "Downloads",
@@ -47,24 +56,30 @@ const en = {
 const zh: Record<MessageKey, string> = {
   "brand.tagline": "在屏幕上实时同步你的键鼠操作",
 
+  "scroll.hint": "向下滚动",
+  "scroll.hint.aria": "滚动到下一区",
+
   "lang.switch": "语言",
   "lang.en": "English",
   "lang.zh": "中文",
 
   "stage.aria": "交互式按键演示 — 桌面键盘与鼠标",
-  "stage.on": "已开启 — 正在捕获键盘与鼠标 · 点击外侧关闭",
-  "stage.off": "已关闭 — 点击显示器或桌面开启",
+  "stage.on": "开启",
+  "stage.off": "关闭",
+  "stage.power": "电源",
+  "stage.help.aria": "演示用法",
+  "stage.help": "电源键开关演示 · 外侧点击也可关闭。捕获仅限本页。",
 
   "notepad.aria": "演示记事本 — 在此输入",
   "intro.invite": "按任意键接管。",
 
+  "download.panel.title": "获取 z-key-cast",
+  "download.panel.lead": "轻量键鼠浮窗，适合直播与录屏。",
+  "download.panel.cta": "下载最新版本",
+
   "cta.download": "下载",
   "cta.latest": "最新：{version}",
   "cta.note": "键鼠可视化。",
-
-  "boundary.aria": "能力边界",
-  "boundary.body":
-    "屏幕开启时，本页会捕获键盘、鼠标与滚轮用于演示（非系统全局）。点击桌面外侧一次即可关闭 — 之后可正常下载与浏览。",
 
   "downloads.aria": "下载",
   "downloads.title": "下载",
