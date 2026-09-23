@@ -63,6 +63,7 @@ pnpm tauri build
 | 方式 | 命令 | 目录 |
 |---|---|---|
 | 公网 | `pnpm site:dist` | `website/publish/` |
+| 发版 | `pnpm release` | 打 tag 后写入 `website/publish/` |
 | 测试 | `pnpm site:dist-test` | `website/publish-test/` |
 
 `pnpm tauri build` 带自动更新。不带更新的临时包是 `pnpm tauri:build-once`。Gitee Release 仍为手动上传。更新密钥见 [`website/keys/README.zh-CN.md`](./website/keys/README.zh-CN.md)。

@@ -21,23 +21,23 @@ export default defineConfig({
     commitMessage: 'chore: release ${tag}',
     branch: 'main',
     remote: 'origin',
-    requireClean: 'ask',
+    requireClean: true,
     push: false,
   },
   build: {
-    // Keep false: Gitee Release uploads stay manual. Run `pnpm tauri build` (or
-    // `--build`) before release when you also want site:publish to copy bundles.
-    command: 'pnpm tauri build',
-    run: false,
+    // Runs after the tag, on that commit. site:publish then fills website/publish/.
+    // Upload stays manual. 45m covers a cold Tauri compile plus the site build.
+    command: 'pnpm tauri build && pnpm website:build',
+    run: true,
+    timeout: '45m',
   },
   hooks: {
-    // Same core command as `pnpm site:publish`. Skips when dry-run.
-    // Does not upload to Gitee. Requires prior build artifacts if you want a real publish.
+    // Copies the bundle and website/build into website/publish/ and writes latest.json.
+    // Skips when dry-run. Does not upload.
     postrelease: [
       {
         name: 'site:publish',
         run: 'pnpm site:publish',
-        onError: 'warn',
       },
     ],
   },

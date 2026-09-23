@@ -63,6 +63,7 @@ See [`website/README.md`](./website/README.md) ([简体中文](./website/README.
 | Path | Command | Directory |
 |---|---|---|
 | Public | `pnpm site:dist` | `website/publish/` |
+| Release | `pnpm release` | Tag, then write `website/publish/` |
 | Test | `pnpm site:dist-test` | `website/publish-test/` |
 
 `pnpm tauri build` includes auto-update. A one-off package without it is `pnpm tauri:build-once`. Gitee Releases stay manual. Updater keys: [`website/keys/README.md`](./website/keys/README.md).

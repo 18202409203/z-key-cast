@@ -24,7 +24,7 @@ Apply when changing:
 | Public build | `pnpm tauri build` → feature `updater` + generated merge config; endpoint `{UPDATE_BASE_URL}/updates/latest.json`; pubkey `website/keys/updater.key.pub`; signs with `website/keys/updater.key` |
 | Once build | `pnpm tauri:build-once` → no updater feature, no updater artifacts |
 | Test publish | `pnpm site:publish-test` writes **only** `website/publish-test/` and bumps `website/.site-test-version` (not package/Cargo/tauri.conf) |
-| Release publish | `pnpm site:publish` writes **only** `website/publish/` (release-kit `postrelease`); Gitee upload stays **manual**. |
+| Release publish | `pnpm release` (`release:patch` / `minor` / `major`) requires a clean `main`, tags that commit, then runs `pnpm tauri build && pnpm website:build` (timeout `45m`) and `postrelease` `pnpm site:publish` into `website/publish/`. Cloudflare upload stays **manual**. |
 | One-shot public | `pnpm site:dist` = `pnpm tauri build && pnpm website:build && pnpm site:publish` → `website/publish/` |
 | One-shot test | `pnpm site:dist-test` = `pnpm tauri:build-test -- --bump-test-version && pnpm website:build && pnpm site:publish-test -- --skip-build` → `website/publish-test/`. One test-app build, one patch bump. |
 

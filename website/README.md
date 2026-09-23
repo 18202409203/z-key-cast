@@ -45,7 +45,7 @@ pnpm website:build        # site pages
 pnpm site:publish         # copy into publish/downloads/<version>/ and write latest.json
 ```
 
-Version comes from `package.json` (or release-kit env). This does not bump `.site-test-version`. `site:publish` is also the release-kit `postrelease` hook, which expects the app and pages to exist already.
+Version comes from `package.json` (or release-kit env). This does not bump `.site-test-version`. `pnpm release` tags a clean tree, then runs `pnpm tauri build && pnpm website:build` (45 minute timeout) and `postrelease` `pnpm site:publish` into `website/publish/`. The binary is that tag.
 
 After that, upload `website/publish/` to the Cloudflare Worker at `UPDATE_BASE_URL`. The command does not upload.
 
