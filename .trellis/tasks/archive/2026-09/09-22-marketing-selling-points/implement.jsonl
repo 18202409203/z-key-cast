@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Website marketing module layout; BrandPanel lives under $lib/marketing/components"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Svelte 5 props, scoped styles, transform/HUD pitfalls on marketing page"}
+{"file": ".trellis/spec/guides/site-updater.md", "reason": "Marketing three-panel snap + i18n contracts; deferred feature cards note"}

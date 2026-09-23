@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Marketing file placement and BrandPanel boundary"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Component quality patterns for Brand feature cards"}
+{"file": ".trellis/spec/guides/site-updater.md", "reason": "Snap/i18n contracts and Brand feature-cards deferred line to clear"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Avoid duplicating patterns; keep website i18n separate from app"}
