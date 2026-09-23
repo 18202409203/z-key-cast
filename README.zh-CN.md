@@ -16,6 +16,14 @@
   <img src="./docs/screenshots/lite.png" alt="Lite 预设操作时间线" width="520" />
 </p>
 
+## 安装
+
+仅 macOS（M 芯片）。应用尚未公证。若系统提示「已损坏」，把 `z-key-cast.app` 拖进「应用程序」后执行：
+
+```bash
+xattr -dr com.apple.quarantine /Applications/z-key-cast.app
+```
+
 ## 功能
 
 - **角落 HUD** — Text · Lite · Full 三档预设；可改四角位置，支持拖拽放置

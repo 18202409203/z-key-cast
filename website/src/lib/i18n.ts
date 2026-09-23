@@ -42,7 +42,12 @@ const en = {
 
   "download.panel.title": "Get z-key-cast",
   "download.panel.lead": "Show your keystrokes, without the noise.",
-  "download.panel.cta": "Download Latest Version",
+  "download.panel.cta": "Download for macOS",
+  "download.panel.platform": "Apple Silicon",
+  "download.panel.quarantine":
+    "If macOS says the app is damaged, move it to Applications and run",
+  "download.panel.copy": "Copy command",
+  "download.panel.copied": "Copied",
 
   /** Kept for future first-screen / Windows CTA reuse. */
   "cta.download": "Download",
@@ -99,7 +104,11 @@ const zh: Record<MessageKey, string> = {
 
   "download.panel.title": "获取 z-key-cast",
   "download.panel.lead": "在屏幕上实时同步你的键鼠操作",
-  "download.panel.cta": "下载最新版本",
+  "download.panel.cta": "下载 macOS 版",
+  "download.panel.platform": "M 芯片",
+  "download.panel.quarantine": "若提示「已损坏」，拖进「应用程序」后执行",
+  "download.panel.copy": "复制命令",
+  "download.panel.copied": "已复制",
 
   "cta.download": "下载",
   "cta.latest": "最新：{version}",

@@ -57,45 +57,14 @@ export async function fetchMacDownload(
     if (!manifest.version || signal?.cancelled) return null;
 
     const folder = `/downloads/${encodeURIComponent(manifest.version)}/`;
-    const platforms = Object.values(manifest.platforms ?? {});
-    const darwin = Object.entries(manifest.platforms ?? {}).find(([key]) =>
-      key.startsWith("darwin-"),
-    )?.[1];
+    const apple = manifest.platforms?.["darwin-aarch64"];
 
-    let macosHref = folder;
+    let macosHref = "/downloads/";
     let sizeBytes: number | undefined;
 
-    if (darwin?.installer?.url) {
-      macosHref = pathnameOf(darwin.installer.url, folder);
-      sizeBytes = darwin.installer.size;
-    } else {
-      const platformUrls = platforms
-        .map((p) => p.url)
-        .filter((u): u is string => Boolean(u));
-      try {
-        const listing = await fetch(folder, { cache: "no-store" });
-        const html = await listing.text();
-        const dmg = html.match(/href="([^"]+\.dmg)"/i)?.[1];
-        if (dmg) {
-          macosHref = dmg.startsWith("http")
-            ? new URL(dmg).pathname
-            : dmg.startsWith("/")
-              ? dmg
-              : `${folder}${dmg}`;
-        } else if (darwin?.url) {
-          macosHref = pathnameOf(darwin.url, folder);
-          sizeBytes = darwin.size;
-        } else if (platformUrls[0]) {
-          macosHref = platformUrls[0];
-        }
-      } catch {
-        if (darwin?.url) {
-          macosHref = pathnameOf(darwin.url, folder);
-          sizeBytes = darwin.size;
-        } else if (platformUrls[0]) {
-          macosHref = platformUrls[0];
-        }
-      }
+    if (apple?.installer?.url) {
+      macosHref = pathnameOf(apple.installer.url, folder);
+      sizeBytes = apple.installer.size;
     }
 
     if (signal?.cancelled) return null;

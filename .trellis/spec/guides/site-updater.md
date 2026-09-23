@@ -110,7 +110,7 @@ Visual references: `design/website/proto.png` (desk likeness); `design/website/s
 | Adapter | No SPA `fallback: "index.html"` that can swallow `/zh/` |
 | Serve | `site:serve-test` must hit real `zh/index.html`; missing `/zh…` → **404**, never English root fallback |
 | Shared | `/downloads/` and `/updates/latest.json` are language-agnostic |
-| Download UI | macOS-only primary CTA. Footnote is `Latest: {version}` plus the linked package size when `latest.json` has `installer.size` (formatted MB). No second version string. |
+| Download UI | Apple Silicon macOS only (no Intel). One primary CTA: en “Download for macOS”, zh「下载 macOS 版」. Footnote is `Latest: {version}` · `Apple Silicon` / `M 芯片` · installer size when `latest.json` has `installer.size` (formatted MB). Href is `darwin-aarch64` `installer`, or `/downloads/` when that installer is missing. A later extra platform may be Windows only. No second version string. Under the footnote, one muted line for the unsigned-app case, then the command on its own line with a small copy icon in front: `xattr -dr com.apple.quarantine /Applications/z-key-cast.app`. The icon copies that command only. Remove the line once the app is notarized. |
 | Brand | Three outlined cards under the tagline: local screen / stacked chip / code mark. Titles: Runs offline, Under 3 MB, 100% Free (zh: 离线可用, 不到 3 MB, 100% 免费). One muted lead line each. Icons are decorative. |
 | Stage boot | Blinds start **closed** (dark room, dark HUD). Cord still toggles light. |
 | Out | No `Accept-Language` / `navigator.language` auto-redirect |

@@ -16,6 +16,14 @@ Corner HUD that shows keyboard and mouse actions during screen recording.
   <img src="./docs/screenshots/lite.png" alt="Lite preset timeline chips" width="520" />
 </p>
 
+## Install
+
+macOS on Apple Silicon. The app is not notarized. If macOS says it is damaged, move `z-key-cast.app` to Applications and run:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/z-key-cast.app
+```
+
 ## Features
 
 - **Corner HUD** — Text · Lite · Full presets; corner placement with drag-to-place
