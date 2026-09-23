@@ -9,7 +9,7 @@
 Apply when changing:
 
 - `website/` layout, publish/serve scripts, `UPDATE_BASE_URL`, or `UPDATE_BASE_URL_TEST`
-- `tauri-plugin-updater` / `updater` feature / About update UI
+- `tauri-plugin-updater` / `updater` feature / About update UI / repo-root `updater-keys/`
 - release-kit hooks that call `site:publish-*` or `wrangler deploy`
 - repo-root `wrangler.jsonc` (Worker `z-key-cast`, assets directory `website/publish/`)
 
@@ -21,8 +21,8 @@ Apply when changing:
 | Public root | `website/publish/` = Cloudflare document root (pages + release `downloads/` + release `updates/`). Upload this tree only. |
 | Manifest | `GET {base}/updates/latest.json`. `base` is `UPDATE_BASE_URL_TEST` on the LAN tree and `UPDATE_BASE_URL` on the public tree. Platform objects keep `url` + `signature` for the updater. Optional `size` (bytes) is the updater archive. Optional `installer: { url, size }` is the user-facing package (macOS `.dmg`). The updater ignores unknown fields. Marketing footnote shows `installer.size` when the button links to that file. |
 | Artifacts | `{base}/downloads/<version>/…` inside the same tree that owns that manifest |
-| Test build | `pnpm tauri:build-test` → feature `updater` + merge `tauri.internal.conf.json`; endpoint from `UPDATE_BASE_URL_TEST`; signs with `website/keys/updater.test.key` |
-| Public build | `pnpm tauri build` → feature `updater` + generated merge config; endpoint `{UPDATE_BASE_URL}/updates/latest.json`; pubkey `website/keys/updater.key.pub`; signs with `website/keys/updater.key` |
+| Test build | `pnpm tauri:build-test` → feature `updater` + merge `tauri.internal.conf.json`; endpoint from `UPDATE_BASE_URL_TEST`; signs with `updater-keys/updater.test.key` |
+| Public build | `pnpm tauri build` → feature `updater` + generated merge config; endpoint `{UPDATE_BASE_URL}/updates/latest.json`; pubkey `updater-keys/updater.key.pub`; signs with `updater-keys/updater.key` |
 | Once build | `pnpm tauri:build-once` → no updater feature, no updater artifacts |
 | Test publish | `pnpm site:publish-test` writes **only** `website/publish-test/` and bumps `website/.site-test-version` (not package/Cargo/tauri.conf) |
 | Release publish | `pnpm release` (`release:patch` / `minor` / `major`) requires a clean `main`, tags that commit, then runs `pnpm tauri build && pnpm website:build` (timeout `45m`). `postrelease` then runs `pnpm site:publish` into `website/publish/`, then `pnpm exec wrangler deploy` (timeout `15m`, `onError` default `fail`). Dry-run prints both commands and does not upload. |
@@ -39,8 +39,8 @@ Apply when changing:
 
 ### Keys
 
-- Test public: `website/keys/updater.test.key.pub` (committed). Private: `website/keys/updater.test.key`
-- Release public: `website/keys/updater.key.pub`. Private: `website/keys/updater.key`
+- Test public: `updater-keys/updater.test.key.pub` (committed). Private: `updater-keys/updater.test.key`
+- Release public: `updater-keys/updater.key.pub`. Private: `updater-keys/updater.key`
 - Private keys are gitignored. Do not sign a public build with the test private key. A non-empty key password is `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
 
 ### About UI
@@ -62,7 +62,7 @@ Apply when changing:
 
 ## 5. Good / Base / Bad
 
-- **Good**: `website/` holds src + scripts + keys + `publish/` + `publish-test/`; root stays app-focused; pnpm workspace includes `.` + `website`; the two trees never share `downloads/` or `latest.json`
+- **Good**: `website/` holds src + scripts + `publish/` + `publish-test/`; updater signing keys live at repo-root `updater-keys/`; pnpm workspace includes `.` + `website`; the two trees never share `downloads/` or `latest.json`
 - **Base**: LAN C-loop on macOS; Windows download placeholder OK
 - **Bad**: Signing the public build with the test private key; committing a private key; using root `site/` as second deploy root; linking `/downloads/` without listing or real file
 

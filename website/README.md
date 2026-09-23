@@ -2,7 +2,7 @@
 
 English | [简体中文](./README.zh-CN.md)
 
-Static site: pages, installers, and `updates/latest.json`. This package is decoupled from the Tauri app under repo-root `src/`. Publish scripts, keys, and both deploy roots live under `website/`.
+Static site: pages, installers, and `updates/latest.json`. This package is decoupled from the Tauri app under repo-root `src/`. Publish scripts and both deploy roots live under `website/`. Updater signing keys live at repo-root `updater-keys/`.
 
 Run every command from the **repo root**. Pages are built once (`pnpm website:build` → `website/build/`) and copied into each tree. `downloads/` and `updates/latest.json` stay separate.
 
@@ -12,7 +12,6 @@ Run every command from the **repo root**. Pages are built once (`pnpm website:bu
 website/
   src/ …                 # SvelteKit source
   scripts/               # sync / publish / LAN serve
-  keys/                  # test updater keys (pub committed; private gitignored)
   env.example            # copy → website/.env
   publish/               # public root (gitignored except .gitkeep)
     downloads/<version>/
@@ -49,7 +48,7 @@ Version comes from `package.json` (or release-kit env). This does not bump `.sit
 
 `pnpm release` tags a clean tree, then runs `pnpm tauri build && pnpm website:build` (45 minute timeout). `postrelease` runs `pnpm site:publish` into `website/publish/`, then `pnpm exec wrangler deploy` uploads that directory to the Worker at `UPDATE_BASE_URL`. The binary is that tag. A `.dmg` or `.app.tar.gz` over 25 MiB fails `wrangler deploy`.
 
-A package without auto-update is `pnpm tauri:build-once`. Key generation: [`keys/README.md`](./keys/README.md).
+A package without auto-update is `pnpm tauri:build-once`. Key generation: [`updater-keys/README.md`](../updater-keys/README.md).
 
 ## Test publish
 
@@ -67,7 +66,7 @@ pnpm website:build
 pnpm site:publish-test -- --skip-build         # copy and write the manifest; do not compile again
 ```
 
-The test app enables the updater, embeds the pubkey for `website/keys/updater.test.key`, and points at `UPDATE_BASE_URL_TEST`. It does not change `package.json`, Cargo, or `tauri.conf.json`.
+The test app enables the updater, embeds the pubkey for `updater-keys/updater.test.key`, and points at `UPDATE_BASE_URL_TEST`. It does not change `package.json`, Cargo, or `tauri.conf.json`.
 
 Serve the test tree locally:
 
@@ -78,7 +77,7 @@ pnpm site:serve-test    # default 0.0.0.0:4173, document root = website/publish-
 ### LAN update loop (macOS)
 
 1. Copy `website/env.example` → `website/.env` and set `UPDATE_BASE_URL_TEST` to this machine's LAN origin (for example `http://192.168.16.129:4173`).
-2. Keep the test private key at `website/keys/updater.test.key` (gitignored). The public key is committed.
+2. Keep the test private key at `updater-keys/updater.test.key` (gitignored). The public key is committed.
 3. Install a lower build as the old app (this step does not bump the test version):
 
    ```bash

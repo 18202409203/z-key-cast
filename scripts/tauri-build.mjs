@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Public Tauri build: updater on, production pubkey, endpoint from UPDATE_BASE_URL.
- * Signs updater artifacts with website/keys/updater.key.
+ * Signs updater artifacts with updater-keys/updater.key.
  * Does not edit tauri.conf.json. Invoked by `pnpm tauri build`.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -17,9 +17,9 @@ const dryRun =
 const passThrough = args.filter((arg) => arg !== "--dry-run");
 
 const env = loadSiteEnv({ apply: true });
-const { repoRoot, websiteRoot, UPDATE_BASE_URL } = env;
-const privateKeyPath = resolve(websiteRoot, "keys/updater.key");
-const publicKeyPath = resolve(websiteRoot, "keys/updater.key.pub");
+const { repoRoot, UPDATE_BASE_URL } = env;
+const privateKeyPath = resolve(repoRoot, "updater-keys/updater.key");
+const publicKeyPath = resolve(repoRoot, "updater-keys/updater.key.pub");
 const generatedConf = resolve(repoRoot, "src-tauri/tauri.generated.conf.json");
 
 function fail(message) {
@@ -69,7 +69,7 @@ function main() {
   }
   if (!existsSync(privateKeyPath)) {
     fail(
-      `Missing ${privateKeyPath}. Generate with:\n  pnpm tauri signer generate -w website/keys/updater.key`,
+      `Missing ${privateKeyPath}. Generate with:\n  pnpm tauri signer generate -w updater-keys/updater.key`,
     );
   }
   if (!existsSync(publicKeyPath)) {

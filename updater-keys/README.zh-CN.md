@@ -11,7 +11,7 @@
 `pnpm tauri:build-test` 和 `pnpm site:dist-test` 使用。空密码生成：
 
 ```bash
-pnpm tauri signer generate --ci -w website/keys/updater.test.key
+pnpm tauri signer generate --ci -w updater-keys/updater.test.key
 ```
 
 | 文件 | 作用 |
@@ -24,7 +24,7 @@ pnpm tauri signer generate --ci -w website/keys/updater.test.key
 `pnpm tauri build` 和 `pnpm site:dist` 使用。按提示设置密码：
 
 ```bash
-pnpm tauri signer generate -w website/keys/updater.key
+pnpm tauri signer generate -w updater-keys/updater.key
 ```
 
 | 文件 | 作用 |
@@ -35,5 +35,5 @@ pnpm tauri signer generate -w website/keys/updater.key
 非空密码放在环境变量 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`。空密码不用设，生成时加上 `--ci`：
 
 ```bash
-pnpm tauri signer generate --ci -w website/keys/updater.key
+pnpm tauri signer generate --ci -w updater-keys/updater.key
 ```

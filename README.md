@@ -66,7 +66,7 @@ See [`website/README.md`](./website/README.md) ([简体中文](./website/README.
 | Release | `pnpm release` | Tag, write `website/publish/`, then `wrangler deploy` |
 | Test | `pnpm site:dist-test` | `website/publish-test/` |
 
-`pnpm tauri build` includes auto-update. A one-off package without it is `pnpm tauri:build-once`. `pnpm site:publish` alone does not deploy. `pnpm release` uploads `website/publish/` with Wrangler after `site:publish`. A `.dmg` or `.app.tar.gz` over 25 MiB fails `wrangler deploy`. Gitee Releases stay manual. Updater keys: [`website/keys/README.md`](./website/keys/README.md).
+`pnpm tauri build` includes auto-update. A one-off package without it is `pnpm tauri:build-once`. `pnpm site:publish` alone does not deploy. `pnpm release` uploads `website/publish/` with Wrangler after `site:publish`. A `.dmg` or `.app.tar.gz` over 25 MiB fails `wrangler deploy`. Gitee Releases stay manual. Updater keys: [`updater-keys/README.md`](./updater-keys/README.md).
 
 ## Docs
 

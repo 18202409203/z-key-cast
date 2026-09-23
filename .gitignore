@@ -43,6 +43,6 @@ src-tauri/tauri.local.conf.json
 src-tauri/tauri.generated.internal.conf.json
 src-tauri/tauri.generated.conf.json
 
-# Updater signing private keys under website/keys (public .pub may be committed)
-/website/keys/*.key
-/website/keys/*.key.password
+# Updater signing private keys (public .pub may be committed)
+/updater-keys/*.key
+/updater-keys/*.key.password

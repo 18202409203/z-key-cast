@@ -11,7 +11,7 @@ Commands are run from the **repo root**.
 Used by `pnpm tauri:build-test` and `pnpm site:dist-test`. Empty password:
 
 ```bash
-pnpm tauri signer generate --ci -w website/keys/updater.test.key
+pnpm tauri signer generate --ci -w updater-keys/updater.test.key
 ```
 
 | File | Role |
@@ -24,7 +24,7 @@ pnpm tauri signer generate --ci -w website/keys/updater.test.key
 Used by `pnpm tauri build` and `pnpm site:dist`. Set a password at the prompt:
 
 ```bash
-pnpm tauri signer generate -w website/keys/updater.key
+pnpm tauri signer generate -w updater-keys/updater.key
 ```
 
 | File | Role |
@@ -35,5 +35,5 @@ pnpm tauri signer generate -w website/keys/updater.key
 Put a non-empty password in `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. An empty password needs no variable; generate with the same `--ci` form as the test key:
 
 ```bash
-pnpm tauri signer generate --ci -w website/keys/updater.key
+pnpm tauri signer generate --ci -w updater-keys/updater.key
 ```

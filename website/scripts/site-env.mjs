@@ -50,8 +50,8 @@ export function loadSiteEnv(opts = {}) {
     UPDATE_BASE_URL: "",
     UPDATE_BASE_URL_TEST: "http://127.0.0.1:4173",
     TAURI_SIGNING_PRIVATE_KEY_PATH: resolve(
-      websiteRoot,
-      "keys/updater.test.key",
+      repoRoot,
+      "updater-keys/updater.test.key",
     ),
     ...fileVars,
   };

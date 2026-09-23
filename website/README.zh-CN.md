@@ -2,7 +2,7 @@
 
 [English](./README.md) | 简体中文
 
-静态官网：页面、安装包、`updates/latest.json`。本包与仓库根目录 Tauri 应用的 `src/` 解耦。发布脚本、密钥和两个部署根都在 `website/` 下。
+静态官网：页面、安装包、`updates/latest.json`。本包与仓库根目录 Tauri 应用的 `src/` 解耦。发布脚本和两个部署根都在 `website/` 下。更新签名密钥在仓库根目录 `updater-keys/`。
 
 命令都在**仓库根目录**执行。页面只构建一次（`pnpm website:build` → `website/build/`），公网和测试各拷一份。两边的 `downloads/` 和 `updates/latest.json` 分开。
 
@@ -12,7 +12,6 @@
 website/
   src/ …                 # SvelteKit 源码
   scripts/               # 同步 / 发布 / 局域网服务
-  keys/                  # 测试 updater 密钥（公钥可提交；私钥 gitignore）
   env.example            # 复制为 website/.env
   publish/               # 公网根（除 .gitkeep 外 gitignore）
     downloads/<version>/
@@ -49,7 +48,7 @@ pnpm site:publish         # 拷入 publish/downloads/<版本>/，写 latest.json
 
 `pnpm release` 在打完 tag 之后执行 `pnpm tauri build && pnpm website:build`（超时 45 分钟）。`postrelease` 先跑 `pnpm site:publish` 写入 `website/publish/`，再由 `pnpm exec wrangler deploy` 把该目录上传到 `UPDATE_BASE_URL` 对应的 Worker。工作区必须干净，编进去的才是这个 tag。单个 `.dmg` 或 `.app.tar.gz` 超过 25 MiB 时，`wrangler deploy` 会失败。
 
-不带自动更新的临时包用 `pnpm tauri:build-once`。密钥生成见 [`keys/README.zh-CN.md`](./keys/README.zh-CN.md)。
+不带自动更新的临时包用 `pnpm tauri:build-once`。密钥生成见 [`updater-keys/README.zh-CN.md`](../updater-keys/README.zh-CN.md)。
 
 ## 测试发布
 
@@ -67,7 +66,7 @@ pnpm website:build
 pnpm site:publish-test -- --skip-build         # 只拷贝和写清单，不再编译第二次
 ```
 
-测试包启用 updater，嵌入 `website/keys/updater.test.key` 对应的公钥，更新地址是 `UPDATE_BASE_URL_TEST`。不会改 `package.json`、Cargo 或 `tauri.conf.json`。
+测试包启用 updater，嵌入 `updater-keys/updater.test.key` 对应的公钥，更新地址是 `UPDATE_BASE_URL_TEST`。不会改 `package.json`、Cargo 或 `tauri.conf.json`。
 
 本地看测试站：
 
@@ -78,7 +77,7 @@ pnpm site:serve-test    # 默认 0.0.0.0:4173，文档根 = website/publish-test
 ### 局域网更新闭环（macOS）
 
 1. 复制 `website/env.example` → `website/.env`，把 `UPDATE_BASE_URL_TEST` 设成这台机器的局域网地址（例如 `http://192.168.16.129:4173`）。
-2. 测试私钥放在 `website/keys/updater.test.key`（gitignore）。公钥已入库。
+2. 测试私钥放在 `updater-keys/updater.test.key`（gitignore）。公钥已入库。
 3. 先装一个较低版本当旧版（这一步不抬升版本号）：
 
    ```bash

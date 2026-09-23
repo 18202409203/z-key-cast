@@ -25,7 +25,7 @@ const generatedConf = resolve(
   repoRoot,
   "src-tauri/tauri.generated.internal.conf.json",
 );
-const defaultKeyPath = resolve(websiteRoot, "keys/updater.test.key");
+const defaultKeyPath = resolve(repoRoot, "updater-keys/updater.test.key");
 
 function repoVersion() {
   return String(
@@ -97,7 +97,7 @@ function main() {
 
   if (!existsSync(keyPath) && !process.env.TAURI_SIGNING_PRIVATE_KEY) {
     console.error(
-      `Missing signing private key at ${keyPath}. Generate with:\n  pnpm tauri signer generate --ci -w website/keys/updater.test.key`,
+      `Missing signing private key at ${keyPath}. Generate with:\n  pnpm tauri signer generate --ci -w updater-keys/updater.test.key`,
     );
     process.exit(1);
   }
