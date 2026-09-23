@@ -7,6 +7,13 @@ export type MessageKey = keyof typeof en;
 const en = {
   "brand.tagline":
     "Lightweight keystroke overlay for streaming & recording.",
+  "brand.features.aria": "Product highlights",
+  "brand.feature.offline": "Runs offline",
+  "brand.feature.offline.lead": "Full use, no connection",
+  "brand.feature.size": "Under 3 MB",
+  "brand.feature.size.lead": "Light install, little space",
+  "brand.feature.oss": "100% Free",
+  "brand.feature.oss.lead": "Open source, yours to use",
 
   "nav.aria": "Page sections",
   "nav.brand": "Brand",
@@ -44,12 +51,9 @@ const en = {
 
   "downloads.aria": "Downloads",
   "downloads.title": "Downloads",
-  "downloads.macos.note":
-    "Open folder if no artifact yet — run pnpm site:publish-test",
   "downloads.windows.note": "Placeholder — updater C-loop not required",
   "downloads.browse": "Browse all",
   "downloads.browse.note": "Version folder",
-  "downloads.versionNote": "v{version}",
 
   "version.aria": "Version",
   "version.title": "Version",
@@ -62,6 +66,13 @@ const en = {
 
 const zh: Record<MessageKey, string> = {
   "brand.tagline": "轻量键鼠浮窗，适合直播与录屏。",
+  "brand.features.aria": "产品卖点",
+  "brand.feature.offline": "离线可用",
+  "brand.feature.offline.lead": "无需联网，功能全程可用",
+  "brand.feature.size": "不到 3 MB",
+  "brand.feature.size.lead": "轻量安装，不占多余空间",
+  "brand.feature.oss": "100% 免费",
+  "brand.feature.oss.lead": "开源代码，可自由使用",
 
   "nav.aria": "页面分区",
   "nav.brand": "品牌",
@@ -96,12 +107,9 @@ const zh: Record<MessageKey, string> = {
 
   "downloads.aria": "下载",
   "downloads.title": "下载",
-  "downloads.macos.note":
-    "若尚无产物请打开目录 — 运行 pnpm site:publish-test",
   "downloads.windows.note": "占位 — 不要求 updater C-loop",
   "downloads.browse": "浏览全部",
   "downloads.browse.note": "版本目录",
-  "downloads.versionNote": "v{version}",
 
   "version.aria": "版本",
   "version.title": "版本",

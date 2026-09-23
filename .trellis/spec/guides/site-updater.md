@@ -17,7 +17,7 @@ Apply when changing:
 | Surface | Contract |
 |---|---|
 | Deploy root | `website/publish/` = sole HTTP document root (pages + `downloads/` + `updates/`) |
-| Manifest | `GET {UPDATE_BASE_URL}/updates/latest.json` |
+| Manifest | `GET {UPDATE_BASE_URL}/updates/latest.json`. Platform objects keep `url` + `signature` for the updater. Optional `size` (bytes) is the updater archive. Optional `installer: { url, size }` is the user-facing package (macOS `.dmg`). The updater ignores unknown fields. Marketing footnote shows `installer.size` when the button links to that file. |
 | Artifacts | `{UPDATE_BASE_URL}/downloads/<version>/…` |
 | Internal build | `pnpm tauri:build:internal` → feature `internal-updater` + merge `tauri.internal.conf.json` |
 | Public build | `pnpm tauri build` → **no** updater feature, **no** test pubkey, **no** updater ACL |
@@ -103,8 +103,10 @@ Visual references: `design/website/proto.png` (desk likeness); `design/website/s
 | Adapter | No SPA `fallback: "index.html"` that can swallow `/zh/` |
 | Serve | `site:serve` must hit real `zh/index.html`; missing `/zh…` → **404**, never English root fallback |
 | Shared | `/downloads/` and `/updates/latest.json` are language-agnostic |
-| Download UI | macOS-only primary CTA for now; layout reserves a flex row for a future Windows sibling |
-| Out | No `Accept-Language` / `navigator.language` auto-redirect; Brand feature cards deferred |
+| Download UI | macOS-only primary CTA. Footnote is `Latest: {version}` plus the linked package size when `latest.json` has `installer.size` (formatted MB). No second version string. |
+| Brand | Three outlined cards under the tagline: local screen / stacked chip / code mark. Titles: Runs offline, Under 3 MB, 100% Free (zh: 离线可用, 不到 3 MB, 100% 免费). One muted lead line each. Icons are decorative. |
+| Stage boot | Blinds start **closed** (dark room, dark HUD). Cord still toggles light. |
+| Out | No `Accept-Language` / `navigator.language` auto-redirect |
 
 **Wrong**: boot `powerOn` while Brand is showing (steals wheel → looks like broken scroll); outside-click power-off that also kills blind-cord clicks; putting lang footer after the last snap panel under `mandatory`; client-only locale flip with empty prerender shell; serve falling back `/zh/` → root English `index.html`.
 

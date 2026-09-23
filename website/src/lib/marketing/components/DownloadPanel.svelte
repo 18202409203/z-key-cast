@@ -29,7 +29,9 @@
       <span class="ver"
         >{t("cta.latest", locale, { version: versionLabel })}</span
       >
-      · {macDownload.note}
+      {#if macDownload.sizeLabel}
+        · {macDownload.sizeLabel}
+      {/if}
     </p>
   </div>
 

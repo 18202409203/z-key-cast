@@ -35,8 +35,9 @@
    * Room light via blinds (stage-local only).
    * Open blinds → bright room → light HUD + light paper.
    * Closed blinds → dim room → dark HUD + dark paper.
+   * Default closed (night) so Stage matches the dark marketing chrome on first view.
    */
-  const INITIAL_BLINDS_OPEN = true;
+  const INITIAL_BLINDS_OPEN = false;
   let blindsOpen = $state(INITIAL_BLINDS_OPEN);
   const hudColor = $derived<HudColorPresetId>(
     blindsOpen ? "light" : "dark",

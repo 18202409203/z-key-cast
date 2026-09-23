@@ -117,7 +117,7 @@ function readSig(sigPath) {
  * @param {string} version
  */
 function collectPlatforms(version) {
-  /** @type {Record<string, { url: string, signature: string }>} */
+  /** @type {Record<string, { url: string, signature: string, size?: number, installer?: { url: string, size: number } }>} */
   const platforms = {};
   const versionUrl = `${UPDATE_BASE_URL}/downloads/${encodeURIComponent(version)}`;
 
@@ -134,7 +134,20 @@ function collectPlatforms(version) {
     platforms[key] = {
       url: `${versionUrl}/${fileName}`,
       signature: readSig(sig),
+      size: statSync(tar).size,
     };
+    const dmgs = findFiles(
+      join(bundleRoot, "dmg"),
+      (n) => n.endsWith(".dmg"),
+    );
+    const dmg =
+      dmgs.find((p) => basename(p).includes(version)) ?? dmgs[0];
+    if (dmg) {
+      platforms[key].installer = {
+        url: `${versionUrl}/${basename(dmg)}`,
+        size: statSync(dmg).size,
+      };
+    }
   }
 
   const nsisDir = join(bundleRoot, "nsis");
@@ -253,6 +266,11 @@ function main() {
         "darwin-aarch64": {
           url: `${UPDATE_BASE_URL}/downloads/${encodeURIComponent(version)}/example.app.tar.gz`,
           signature: "<dry-run>",
+          size: 0,
+          installer: {
+            url: `${UPDATE_BASE_URL}/downloads/${encodeURIComponent(version)}/example.dmg`,
+            size: 0,
+          },
         },
       });
       console.log(
