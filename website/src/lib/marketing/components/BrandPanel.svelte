@@ -102,8 +102,8 @@
 
 <style>
   .panel-brand {
-    animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
     gap: 2.35rem;
+    animation: fade 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   .brand {
@@ -229,18 +229,6 @@
     text-wrap: balance;
   }
 
-  @keyframes rise {
-    from {
-      opacity: 0;
-      transform: translateY(12px);
-    }
-    to {
-      opacity: 1;
-      /* `none` — leave no transform containing block (breaks HUD fixed/absolute outro). */
-      transform: none;
-    }
-  }
-
   @media (max-width: 560px) {
     .features {
       grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
@@ -284,6 +272,15 @@
 
     .lead {
       font-size: 0.7rem;
+    }
+  }
+
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
     }
   }
 

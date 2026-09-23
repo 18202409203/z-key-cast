@@ -207,7 +207,7 @@
   align-items: center;
   gap: 0;
   width: 100%;
-  animation: rise 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+  animation: fade 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
   cursor: text;
 }
 
@@ -776,14 +776,11 @@
   }
 }
 
-@keyframes rise {
+@keyframes fade {
   from {
     opacity: 0;
-    transform: translateY(12px);
   }
   to {
     opacity: 1;
-    /* `none` — leave no transform containing block (breaks HUD fixed/absolute outro). */
-    transform: none;
   }
 }

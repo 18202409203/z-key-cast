@@ -197,7 +197,7 @@
     flex-direction: column;
     align-items: center;
     gap: 0.85rem;
-    animation: rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+    animation: fade 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
   }
 
   .download-title {
@@ -321,14 +321,12 @@
     height: 14px;
   }
 
-  @keyframes rise {
+  @keyframes fade {
     from {
       opacity: 0;
-      transform: translateY(12px);
     }
     to {
       opacity: 1;
-      transform: none;
     }
   }
 
