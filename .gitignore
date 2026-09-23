@@ -29,13 +29,16 @@ src-tauri/gen/schemas
 /website/.env
 /website/.site-test-version
 
-# Sole deploy / document root (LAN publish)
+# Public deploy root and LAN test root (except .gitkeep)
 /website/publish/**
 !/website/publish/.gitkeep
+/website/publish-test/**
+!/website/publish-test/.gitkeep
 
 # Local updater merge configs
 src-tauri/tauri.local.conf.json
 src-tauri/tauri.generated.internal.conf.json
+src-tauri/tauri.generated.conf.json
 
 # Updater signing private keys under website/keys (public .pub may be committed)
 /website/keys/*.key

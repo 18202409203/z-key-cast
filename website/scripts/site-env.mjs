@@ -6,8 +6,10 @@ import { fileURLToPath } from "node:url";
 const websiteRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 /** Monorepo / app root (parent of `website/`). */
 const repoRoot = resolve(websiteRoot, "..");
-/** Sole LAN deploy document root. */
+/** Public Cloudflare document root (pages + release downloads + updates). */
 const publishRoot = resolve(websiteRoot, "publish");
+/** LAN test document root. Served by site:serve-test; written by site:publish-test. */
+const publishTestRoot = resolve(websiteRoot, "publish-test");
 
 /**
  * Parse a simple KEY=VALUE env file (no export, # comments).
@@ -45,7 +47,8 @@ export function loadSiteEnv(opts = {}) {
   const fileVars = parseEnvFile(resolve(websiteRoot, ".env"));
   /** @type {Record<string, string>} */
   const merged = {
-    UPDATE_BASE_URL: "http://127.0.0.1:4173",
+    UPDATE_BASE_URL: "",
+    UPDATE_BASE_URL_TEST: "http://127.0.0.1:4173",
     TAURI_SIGNING_PRIVATE_KEY_PATH: resolve(
       websiteRoot,
       "keys/updater.test.key",
@@ -65,11 +68,16 @@ export function loadSiteEnv(opts = {}) {
     repoRoot,
     websiteRoot,
     publishRoot,
+    publishTestRoot,
     ...merged,
-    UPDATE_BASE_URL: merged.UPDATE_BASE_URL.replace(/\/$/, ""),
+    UPDATE_BASE_URL: String(merged.UPDATE_BASE_URL || "").replace(/\/$/, ""),
+    UPDATE_BASE_URL_TEST: String(merged.UPDATE_BASE_URL_TEST || "").replace(
+      /\/$/,
+      "",
+    ),
   };
 }
 
-export { websiteRoot, repoRoot, publishRoot };
+export { websiteRoot, repoRoot, publishRoot, publishTestRoot };
 /** @deprecated Use repoRoot — kept for older call sites. */
 export const root = repoRoot;

@@ -6,18 +6,18 @@ use tauri::{Manager, RunEvent, WindowEvent};
 
 #[tauri::command]
 fn is_updater_enabled() -> bool {
-    cfg!(feature = "internal-updater")
+    cfg!(feature = "updater")
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    #[cfg(feature = "internal-updater")]
+    #[cfg(feature = "updater")]
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init());
 
-    #[cfg(not(feature = "internal-updater"))]
+    #[cfg(not(feature = "updater"))]
     let builder = tauri::Builder::default().plugin(tauri_plugin_opener::init());
 
     builder

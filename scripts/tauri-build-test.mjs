@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Internal / debug Tauri build: enables updater feature + merges internal (+ local) config.
+ * Test Tauri build: enables updater feature + merges internal (+ local) config.
  * Overrides app version from website/.site-test-version when --bump-test-version is passed
  * (used by site:publish-test). Does not edit package.json / Cargo.toml / tauri.conf.json on disk.
  */
@@ -17,7 +17,7 @@ const dryRun =
   process.env.RELEASE_KIT_DRY_RUN === "true";
 
 const env = loadSiteEnv({ apply: true });
-const { repoRoot, websiteRoot, UPDATE_BASE_URL } = env;
+const { repoRoot, websiteRoot, UPDATE_BASE_URL_TEST } = env;
 const testVersionFile = resolve(websiteRoot, ".site-test-version");
 const localConf = resolve(repoRoot, "src-tauri/tauri.local.conf.json");
 const internalConf = resolve(repoRoot, "src-tauri/tauri.internal.conf.json");
@@ -50,7 +50,7 @@ function resolveTestVersion() {
 }
 
 function writeGeneratedConf(version) {
-  const endpoint = `${UPDATE_BASE_URL}/updates/latest.json`;
+  const endpoint = `${UPDATE_BASE_URL_TEST}/updates/latest.json`;
   /** @type {Record<string, unknown>} */
   const conf = {
     version,
@@ -120,16 +120,16 @@ function main() {
     gen,
     "--",
     "--features",
-    "internal-updater",
+    "updater",
   ];
 
   console.log(
-    `tauri:build:internal version=${version} endpoint=${UPDATE_BASE_URL}/updates/latest.json`,
+    `tauri:build-test version=${version} endpoint=${UPDATE_BASE_URL_TEST}/updates/latest.json`,
   );
-  console.log(`$ pnpm ${tauriArgs.join(" ")}`);
+  console.log(`$ pnpm exec ${tauriArgs.join(" ")}`);
   if (dryRun) return;
 
-  const res = spawnSync("pnpm", tauriArgs, {
+  const res = spawnSync("pnpm", ["exec", ...tauriArgs], {
     cwd: repoRoot,
     stdio: "inherit",
     env: process.env,

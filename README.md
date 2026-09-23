@@ -48,9 +48,16 @@ Build:
 pnpm tauri build
 ```
 
-### LAN site + updater (internal)
+### Site publish
 
-See [`website/README.md`](./website/README.md) ([简体中文](./website/README.zh-CN.md)) for the local static site under `website/publish/`, `site:publish-test`, and macOS updater C-loop. Public/`pnpm tauri build` packages do **not** enable the updater; Gitee Releases stay manual.
+See [`website/README.md`](./website/README.md) ([简体中文](./website/README.zh-CN.md)).
+
+| Path | Command | Directory |
+|---|---|---|
+| Public | `pnpm site:dist` | `website/publish/` |
+| Test | `pnpm site:dist-test` | `website/publish-test/` |
+
+`pnpm tauri build` includes auto-update. A one-off package without it is `pnpm tauri:build-once`. Gitee Releases stay manual. Updater keys: [`website/keys/README.md`](./website/keys/README.md).
 
 ## Docs
 

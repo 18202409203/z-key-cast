@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 /**
  * Core publish: sync website build (optional), copy updater/installer artifacts into
- * website/publish/, write updates/latest.json.
- * Shared by site:publish-artifacts and site:publish-test.
+ * website/publish/ (release) or website/publish-test/ (test), write updates/latest.json.
+ * Shared by site:publish and site:publish-test.
  *
  * Env:
  *   RELEASE_KIT_VERSION / SITE_PUBLISH_VERSION — version folder + manifest version
- *   UPDATE_BASE_URL — absolute URL prefix for platform download URLs in latest.json
+ *   UPDATE_BASE_URL — https prefix for the public manifest
+ *   UPDATE_BASE_URL_TEST — LAN prefix for the --test manifest
  *   RELEASE_KIT_DRY_RUN=1 — print actions only
  */
 import {
@@ -20,7 +21,7 @@ import {
 } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
-import { loadSiteEnv, publishRoot, websiteRoot } from "./site-env.mjs";
+import { loadSiteEnv, websiteRoot } from "./site-env.mjs";
 
 const args = new Set(process.argv.slice(2));
 const isTest = args.has("--test");
@@ -31,9 +32,17 @@ const dryRun =
   process.env.RELEASE_KIT_DRY_RUN === "1" ||
   process.env.RELEASE_KIT_DRY_RUN === "true";
 
-const { repoRoot, UPDATE_BASE_URL } = loadSiteEnv({ apply: true });
-const downloadsRoot = resolve(publishRoot, "downloads");
-const updatesRoot = resolve(publishRoot, "updates");
+const {
+  repoRoot,
+  publishRoot,
+  publishTestRoot,
+  UPDATE_BASE_URL,
+  UPDATE_BASE_URL_TEST,
+} = loadSiteEnv({ apply: true });
+const activeRoot = isTest ? publishTestRoot : publishRoot;
+const baseUrl = isTest ? UPDATE_BASE_URL_TEST : UPDATE_BASE_URL;
+const downloadsRoot = resolve(activeRoot, "downloads");
+const updatesRoot = resolve(activeRoot, "updates");
 const bundleRoot = resolve(repoRoot, "src-tauri/target/release/bundle");
 const testVersionFile = resolve(websiteRoot, ".site-test-version");
 const syncScript = resolve(websiteRoot, "scripts/site-sync-web.mjs");
@@ -82,10 +91,12 @@ function run(cmd, cmdArgs, opts = {}) {
 function syncWebsiteIntoPublish() {
   if (skipWeb) return;
   if (dryRun) {
-    console.log("[dry-run] sync website/build → website/publish/");
+    console.log(
+      `[dry-run] sync website/build → ${relative(repoRoot, activeRoot)}/`,
+    );
     return;
   }
-  run("node", [syncScript]);
+  run("node", [syncScript, isTest ? "--test" : "--public"]);
 }
 
 /**
@@ -119,7 +130,7 @@ function readSig(sigPath) {
 function collectPlatforms(version) {
   /** @type {Record<string, { url: string, signature: string, size?: number, installer?: { url: string, size: number } }>} */
   const platforms = {};
-  const versionUrl = `${UPDATE_BASE_URL}/downloads/${encodeURIComponent(version)}`;
+  const versionUrl = `${baseUrl}/downloads/${encodeURIComponent(version)}`;
 
   const macosDir = join(bundleRoot, "macos");
   for (const tar of findFiles(macosDir, (n) => n.endsWith(".app.tar.gz"))) {
@@ -212,7 +223,7 @@ function copyArtifacts(version) {
   const files = findFiles(bundleRoot, copyPred);
   if (files.length === 0) {
     console.error(
-      `No bundle artifacts under ${bundleRoot}. Run pnpm tauri:build:internal (or tauri build) first.`,
+      `No bundle artifacts under ${bundleRoot}. Run pnpm tauri build or pnpm tauri:build-test first.`,
     );
     process.exit(1);
   }
@@ -247,11 +258,22 @@ function maybeBuildInternal() {
   run("node", [buildInternalScript, "--bump-test-version"]);
 }
 
+function assertBaseUrl() {
+  if (isTest) return;
+  if (!baseUrl.startsWith("https://")) {
+    console.error(
+      "UPDATE_BASE_URL must be an https origin in website/.env. Refusing to write the public manifest.",
+    );
+    process.exit(1);
+  }
+}
+
 function main() {
+  assertBaseUrl();
   maybeBuildInternal();
   const version = resolveVersion();
   console.log(
-    `site-publish${isTest ? " (test)" : ""}${dryRun ? " [dry-run]" : ""} version=${version} base=${UPDATE_BASE_URL}`,
+    `site-publish${isTest ? " (test)" : ""}${dryRun ? " [dry-run]" : ""} version=${version} root=${relative(repoRoot, activeRoot)} base=${baseUrl}`,
   );
 
   syncWebsiteIntoPublish();
@@ -264,17 +286,17 @@ function main() {
       console.warn(`[dry-run] ${msg}`);
       writeLatestJson(version, {
         "darwin-aarch64": {
-          url: `${UPDATE_BASE_URL}/downloads/${encodeURIComponent(version)}/example.app.tar.gz`,
+          url: `${baseUrl}/downloads/${encodeURIComponent(version)}/example.app.tar.gz`,
           signature: "<dry-run>",
           size: 0,
           installer: {
-            url: `${UPDATE_BASE_URL}/downloads/${encodeURIComponent(version)}/example.dmg`,
+            url: `${baseUrl}/downloads/${encodeURIComponent(version)}/example.dmg`,
             size: 0,
           },
         },
       });
       console.log(
-        `done (dry-run). Manifest would be at ${UPDATE_BASE_URL}/updates/latest.json`,
+        `done (dry-run). Manifest would be at ${baseUrl}/updates/latest.json`,
       );
       return;
     }
@@ -282,8 +304,8 @@ function main() {
     process.exit(1);
   }
   writeLatestJson(version, platforms);
-  console.log(`done. Manifest: ${UPDATE_BASE_URL}/updates/latest.json`);
-  console.log(`Serve with: pnpm site:serve`);
+  console.log(`done. Manifest: ${baseUrl}/updates/latest.json`);
+  if (isTest) console.log("Serve with: pnpm site:serve-test");
 }
 
 main();

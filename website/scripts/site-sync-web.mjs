@@ -1,5 +1,8 @@
 #!/usr/bin/env node
-/** Sync website/build → website/publish while preserving downloads/ and updates/. */
+/**
+ * Sync website/build pages into a publish root, preserving downloads/ and updates/.
+ * Flags: --public (default) syncs website/publish/. --test syncs website/publish-test/.
+ */
 import {
   copyFileSync,
   existsSync,
@@ -10,10 +13,13 @@ import {
 } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
-import { publishRoot, repoRoot, websiteRoot } from "./site-env.mjs";
+import { publishRoot, publishTestRoot, repoRoot, websiteRoot } from "./site-env.mjs";
 
 const websiteBuild = resolve(websiteRoot, "build");
-const skipBuild = process.argv.includes("--skip-build");
+const args = new Set(process.argv.slice(2));
+const skipBuild = args.has("--skip-build");
+const wantTest = args.has("--test");
+const wantPublic = args.has("--public");
 
 function ensureBuild() {
   if (existsSync(join(websiteBuild, "index.html"))) return;
@@ -28,20 +34,22 @@ function ensureBuild() {
   if (res.status !== 0) process.exit(res.status ?? 1);
 }
 
-function sync() {
-  ensureBuild();
-  mkdirSync(join(publishRoot, "downloads"), { recursive: true });
-  mkdirSync(join(publishRoot, "updates"), { recursive: true });
+/**
+ * @param {string} root
+ */
+function syncInto(root) {
+  mkdirSync(join(root, "downloads"), { recursive: true });
+  mkdirSync(join(root, "updates"), { recursive: true });
 
-  for (const name of readdirSync(publishRoot)) {
+  for (const name of readdirSync(root)) {
     if (name === "downloads" || name === "updates" || name === ".gitkeep") continue;
-    rmSync(join(publishRoot, name), { recursive: true, force: true });
+    rmSync(join(root, name), { recursive: true, force: true });
   }
 
   const walk = (dir) => {
     for (const name of readdirSync(dir)) {
       const from = join(dir, name);
-      const to = join(publishRoot, relative(websiteBuild, from));
+      const to = join(root, relative(websiteBuild, from));
       if (statSync(from).isDirectory()) {
         mkdirSync(to, { recursive: true });
         walk(from);
@@ -53,8 +61,17 @@ function sync() {
   };
   walk(websiteBuild);
   console.log(
-    `synced ${relative(repoRoot, websiteBuild)} → ${relative(repoRoot, publishRoot)}`,
+    `synced ${relative(repoRoot, websiteBuild)} → ${relative(repoRoot, root)}`,
   );
+}
+
+function sync() {
+  ensureBuild();
+  /** @type {string[]} */
+  const roots = [];
+  if (wantTest) roots.push(publishTestRoot);
+  if (wantPublic || !wantTest) roots.push(publishRoot);
+  for (const root of roots) syncInto(root);
 }
 
 sync();

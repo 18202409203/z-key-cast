@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Serve website/publish (pages + downloads + updates) on the LAN.
- * Default port 4173 to match website/env.example / internal updater endpoint.
+ * Serve website/publish-test (pages + downloads + updates) on the LAN.
+ * Default port 4173 to match UPDATE_BASE_URL_TEST / the test updater endpoint.
  */
 import { createServer } from "node:http";
 import {
@@ -14,9 +14,9 @@ import {
 import { basename, extname, join, normalize, resolve, sep } from "node:path";
 import { networkInterfaces } from "node:os";
 import { spawnSync } from "node:child_process";
-import { loadSiteEnv, publishRoot, websiteRoot } from "./site-env.mjs";
+import { loadSiteEnv, publishTestRoot, websiteRoot } from "./site-env.mjs";
 
-const { UPDATE_BASE_URL } = loadSiteEnv({ apply: true });
+const { UPDATE_BASE_URL_TEST } = loadSiteEnv({ apply: true });
 const syncScript = resolve(websiteRoot, "scripts/site-sync-web.mjs");
 
 const port = Number(process.env.SITE_SERVE_PORT || 4173);
@@ -42,10 +42,10 @@ const MIME = {
 };
 
 function ensurePublishRoot() {
-  mkdirSync(join(publishRoot, "downloads"), { recursive: true });
-  mkdirSync(join(publishRoot, "updates"), { recursive: true });
-  if (!existsSync(join(publishRoot, "index.html"))) {
-    const sync = spawnSync("node", [syncScript], {
+  mkdirSync(join(publishTestRoot, "downloads"), { recursive: true });
+  mkdirSync(join(publishTestRoot, "updates"), { recursive: true });
+  if (!existsSync(join(publishTestRoot, "index.html"))) {
+    const sync = spawnSync("node", [syncScript, "--test"], {
       cwd: websiteRoot,
       stdio: "inherit",
     });
@@ -121,7 +121,7 @@ ensurePublishRoot();
 const server = createServer((req, res) => {
   const url = req.url || "/";
   const reqPath = url.split("?")[0] || "/";
-  let filePath = safeJoin(publishRoot, reqPath === "/" ? "/index.html" : reqPath);
+  let filePath = safeJoin(publishTestRoot, reqPath === "/" ? "/index.html" : reqPath);
   if (!filePath) {
     send(res, 403, "Forbidden");
     return;
@@ -141,7 +141,7 @@ const server = createServer((req, res) => {
     }
   }
   if (!existsSync(filePath)) {
-    const fallback = join(publishRoot, "index.html");
+    const fallback = join(publishTestRoot, "index.html");
     // Never SPA-fallback known locale prefixes to English index.html.
     const isLocalePath =
       reqPath === "/zh" ||
@@ -176,9 +176,9 @@ const server = createServer((req, res) => {
 });
 
 server.listen(port, host, () => {
-  console.log(`Serving ${publishRoot}`);
+  console.log(`Serving ${publishTestRoot}`);
   console.log(`  local:  http://127.0.0.1:${port}`);
   for (const u of lanUrls()) console.log(`  lan:    ${u}`);
-  console.log(`website/.env UPDATE_BASE_URL=${UPDATE_BASE_URL}`);
-  console.log(`updater: ${UPDATE_BASE_URL}/updates/latest.json`);
+  console.log(`website/.env UPDATE_BASE_URL_TEST=${UPDATE_BASE_URL_TEST}`);
+  console.log(`updater: ${UPDATE_BASE_URL_TEST}/updates/latest.json`);
 });

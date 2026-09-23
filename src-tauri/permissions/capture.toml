@@ -85,5 +85,5 @@ commands.allow = ["set_ui_appearance_settings"]
 
 [[permission]]
 identifier = "allow-is-updater-enabled"
-description = "Allows reading whether the internal updater feature is compiled in"
+description = "Allows reading whether the updater feature is compiled in"
 commands.allow = ["is_updater_enabled"]
