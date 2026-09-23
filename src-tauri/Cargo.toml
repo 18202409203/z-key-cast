@@ -1,6 +1,6 @@
 [package]
 name = "z-key-cast"
-version = "1.5.3"
+version = "1.5.4"
 description = "Corner HUD for keyboard and mouse actions while screen recording"
 authors = ["you"]
 edition = "2021"

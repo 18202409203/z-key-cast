@@ -167,3 +167,39 @@
 
   - add custom content-corner picker
 
+
+## 1.5.4 (2026-09-23)
+
+### Features
+
+  - deploy the publish tree with Wrangler
+  - build publish tree on release
+  - label Apple Silicon download
+  - split publish roots and ship updater
+  - add brand selling points and installer size
+  - stage blinds theme, page rail, and capture polish
+  - three-panel snap and desk power
+  - add en/zh dual static marketing pages
+  - demo-first marketing hero with power-session desk
+  - share view package for app and site
+  - add LAN website and internal updater
+
+### Bug Fixes
+
+  - use the brand mark as favicon
+  - drop entrance rise slide
+  - raise mouse seam contrast on light
+  - throttle snap scroll; add HUD theme
+  - static intro invite sentence
+  - custom notepad caret width and line-box centering
+  - avoid crypto.randomUUID for clip ids
+
+### Other
+
+  - refactor: move updater keys to repo root
+  - refactor(website): split marketing page into modules
+  - docs(spec): record marketing snap and power contracts
+  - docs(spec): record website dual-HTML i18n contracts
+  - docs(spec): record website power-session demo and timelineOut pitfall
+  - refactor(hud): share font size clamp 12–64
+
