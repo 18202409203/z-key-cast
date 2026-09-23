@@ -1,6 +1,9 @@
 # OS
 .DS_Store
 
+# Wrangler local cache
+.wrangler/
+
 # Node
 node_modules
 .pnpm-store

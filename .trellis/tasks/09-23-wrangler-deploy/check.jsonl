@@ -1,0 +1,4 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/guides/site-updater.md", "reason": "Verify only the public tree is deployed and /zh/ is not an SPA fallback"}
+{"file": ".trellis/spec/guides/index.md", "reason": "Site-updater guide applies when release hooks or publish roots change"}
+{"file": ".trellis/tasks/09-23-wrangler-deploy/research/wrangler-assets.md", "reason": "Check config against Workers asset limits and routing defaults"}

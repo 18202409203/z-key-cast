@@ -62,11 +62,11 @@ pnpm tauri build
 
 | 方式 | 命令 | 目录 |
 |---|---|---|
-| 公网 | `pnpm site:dist` | `website/publish/` |
-| 发版 | `pnpm release` | 打 tag 后写入 `website/publish/` |
+| 公网 | `pnpm site:dist` | 只写入 `website/publish/`，不部署 |
+| 发版 | `pnpm release` | 打 tag、写入 `website/publish/`，再 `wrangler deploy` |
 | 测试 | `pnpm site:dist-test` | `website/publish-test/` |
 
-`pnpm tauri build` 带自动更新。不带更新的临时包是 `pnpm tauri:build-once`。Gitee Release 仍为手动上传。更新密钥见 [`website/keys/README.zh-CN.md`](./website/keys/README.zh-CN.md)。
+`pnpm tauri build` 带自动更新。不带更新的临时包是 `pnpm tauri:build-once`。单独的 `pnpm site:publish` 不会部署。`pnpm release` 在 `site:publish` 之后用 Wrangler 上传 `website/publish/`。单个 `.dmg` 或 `.app.tar.gz` 超过 25 MiB 时，`wrangler deploy` 会失败。Gitee Release 仍为手动上传。更新密钥见 [`website/keys/README.zh-CN.md`](./website/keys/README.zh-CN.md)。
 
 ## 文档
 

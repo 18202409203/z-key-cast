@@ -24,7 +24,7 @@ These guides help you **ask the right questions before coding**.
 | [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md) | Identify patterns and reduce duplication | When you notice repeated patterns |
 | [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md) | Think through data flow across layers | Features spanning multiple layers |
 | [Release Conventions](./release.md) | Changelog / release-kit ownership | Committing, finishing work, or documenting releases |
-| [Site + Updater](./site-updater.md) | `website/publish` vs `website/publish-test`, internal vs public builds, updater keys | LAN site, Cloudflare upload root, `site:publish-*`, About update check |
+| [Site + Updater](./site-updater.md) | `website/publish` vs `website/publish-test`, internal vs public builds, updater keys, Wrangler release upload | LAN site, Cloudflare upload root, `site:publish-*`, `wrangler deploy` on `pnpm release`, About update check |
 
 ---
 
@@ -34,7 +34,7 @@ These guides help you **ask the right questions before coding**.
 
 - [ ] About to edit `CHANGELOG.md` for a feature/fix? **Stop** — release-kit owns it ([Release Conventions](./release.md))
 - [ ] User-facing change? Put the story in the **commit message**; do not hand-maintain the changelog
-- [ ] Touching `website/`, updater, or `site:publish-*`? Read [Site + Updater](./site-updater.md)
+- [ ] Touching `website/`, updater, `site:publish-*`, or `wrangler.jsonc`? Read [Site + Updater](./site-updater.md)
 
 ### When to Think About Cross-Layer Issues
 

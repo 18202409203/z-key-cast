@@ -45,9 +45,9 @@ pnpm website:build        # site pages
 pnpm site:publish         # copy into publish/downloads/<version>/ and write latest.json
 ```
 
-Version comes from `package.json` (or release-kit env). This does not bump `.site-test-version`. `pnpm release` tags a clean tree, then runs `pnpm tauri build && pnpm website:build` (45 minute timeout) and `postrelease` `pnpm site:publish` into `website/publish/`. The binary is that tag.
+Version comes from `package.json` (or release-kit env). This does not bump `.site-test-version`. `pnpm site:dist` and `pnpm site:publish` only fill `website/publish/`. They do not deploy.
 
-After that, upload `website/publish/` to the Cloudflare Worker at `UPDATE_BASE_URL`. The command does not upload.
+`pnpm release` tags a clean tree, then runs `pnpm tauri build && pnpm website:build` (45 minute timeout). `postrelease` runs `pnpm site:publish` into `website/publish/`, then `pnpm exec wrangler deploy` uploads that directory to the Worker at `UPDATE_BASE_URL`. The binary is that tag. A `.dmg` or `.app.tar.gz` over 25 MiB fails `wrangler deploy`.
 
 A package without auto-update is `pnpm tauri:build-once`. Key generation: [`keys/README.md`](./keys/README.md).
 

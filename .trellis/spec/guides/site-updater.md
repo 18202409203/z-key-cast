@@ -10,7 +10,8 @@ Apply when changing:
 
 - `website/` layout, publish/serve scripts, `UPDATE_BASE_URL`, or `UPDATE_BASE_URL_TEST`
 - `tauri-plugin-updater` / `updater` feature / About update UI
-- release-kit hooks that call `site:publish-*`
+- release-kit hooks that call `site:publish-*` or `wrangler deploy`
+- repo-root `wrangler.jsonc` (Worker `z-key-cast`, assets directory `website/publish/`)
 
 ## 2. Signatures
 
@@ -24,7 +25,7 @@ Apply when changing:
 | Public build | `pnpm tauri build` → feature `updater` + generated merge config; endpoint `{UPDATE_BASE_URL}/updates/latest.json`; pubkey `website/keys/updater.key.pub`; signs with `website/keys/updater.key` |
 | Once build | `pnpm tauri:build-once` → no updater feature, no updater artifacts |
 | Test publish | `pnpm site:publish-test` writes **only** `website/publish-test/` and bumps `website/.site-test-version` (not package/Cargo/tauri.conf) |
-| Release publish | `pnpm release` (`release:patch` / `minor` / `major`) requires a clean `main`, tags that commit, then runs `pnpm tauri build && pnpm website:build` (timeout `45m`) and `postrelease` `pnpm site:publish` into `website/publish/`. Cloudflare upload stays **manual**. |
+| Release publish | `pnpm release` (`release:patch` / `minor` / `major`) requires a clean `main`, tags that commit, then runs `pnpm tauri build && pnpm website:build` (timeout `45m`). `postrelease` then runs `pnpm site:publish` into `website/publish/`, then `pnpm exec wrangler deploy` (timeout `15m`, `onError` default `fail`). Dry-run prints both commands and does not upload. |
 | One-shot public | `pnpm site:dist` = `pnpm tauri build && pnpm website:build && pnpm site:publish` → `website/publish/` |
 | One-shot test | `pnpm site:dist-test` = `pnpm tauri:build-test -- --bump-test-version && pnpm website:build && pnpm site:publish-test -- --skip-build` → `website/publish-test/`. One test-app build, one patch bump. |
 
@@ -34,6 +35,7 @@ Apply when changing:
 
 - `UPDATE_BASE_URL` — `https://` origin (no trailing slash) baked into `website/publish/updates/latest.json`. `site:publish` refuses to write the public manifest when this is missing or not https. Current origin: `https://z-key-cast.1224777638.workers.dev`.
 - `UPDATE_BASE_URL_TEST` — LAN origin matching `site:serve-test` (no trailing slash). Baked into test app endpoints and absolute URLs in `website/publish-test/updates/latest.json`.
+- Wrangler: repo-root `wrangler.jsonc`, `name` `z-key-cast`, `assets.directory` `./website/publish`, `html_handling` `auto-trailing-slash`. No `main`, no `assets.binding`, no `not_found_handling` (default `none`, so a missing path 404s and `/zh/` is not the English SPA shell). `pnpm exec wrangler deploy` runs only from `postrelease`, after `site:publish`. `pnpm site:dist` and `pnpm site:publish` do not deploy. OAuth from `wrangler login` stays in the user config; `.wrangler/` is gitignored. One static file max **25 MiB** (a `.dmg` or `.app.tar.gz` over that fails deploy).
 
 ### Keys
 
@@ -55,6 +57,8 @@ Apply when changing:
 | `pnpm tauri build` invokes updater UI | `is_updater_enabled` true; endpoint is `UPDATE_BASE_URL` |
 | `.env` IP changed after install | Old app still has old endpoint — rebuild+reinstall internal baseline |
 | Bump `.site-test-version` without rebuild | Invalid — version must be embedded via internal build |
+| `.dmg` or `.app.tar.gz` in `website/publish/` over 25 MiB | `wrangler deploy` fails; release-kit hook `onError` default `fail` |
+| `pnpm site:dist` / `pnpm site:publish` | Writes `website/publish/` only. Does not call Wrangler |
 
 ## 5. Good / Base / Bad
 
@@ -78,6 +82,8 @@ Apply when changing:
 | Nested `website/pnpm-lock.yaml` as second install | Root `pnpm install` via `pnpm-workspace.yaml` |
 | Check-for-updates immediately installs | Confirm with version first |
 | Public release embeds the test pubkey | `pnpm tauri build` embeds `updater.key.pub` and `UPDATE_BASE_URL` only |
+| `wrangler deploy` before `site:publish`, or deploying `publish-test/` | `postrelease` order is `site:publish`, then `pnpm exec wrangler deploy` of `website/publish/` only |
+| SPA `not_found_handling` on the Worker | Omit it. Default `none` plus `auto-trailing-slash` serves `/zh/` from `zh/index.html` |
 
 ---
 

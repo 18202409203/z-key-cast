@@ -45,9 +45,9 @@ pnpm website:build        # 官网页面
 pnpm site:publish         # 拷入 publish/downloads/<版本>/，写 latest.json
 ```
 
-版本来自 `package.json`（或 release-kit 环境变量），不会抬升 `.site-test-version`。`pnpm release` 在打完 tag 之后执行 `pnpm tauri build && pnpm website:build`（超时 45 分钟），再由 `postrelease` 跑 `pnpm site:publish` 写入 `website/publish/`。工作区必须干净，编进去的才是这个 tag。
+版本来自 `package.json`（或 release-kit 环境变量），不会抬升 `.site-test-version`。`pnpm site:dist` 和 `pnpm site:publish` 只写入 `website/publish/`，不会部署。
 
-生成后把 `website/publish/` 上传到 Cloudflare Workers（`UPDATE_BASE_URL` 那个源）。上传不在这条命令里。
+`pnpm release` 在打完 tag 之后执行 `pnpm tauri build && pnpm website:build`（超时 45 分钟）。`postrelease` 先跑 `pnpm site:publish` 写入 `website/publish/`，再由 `pnpm exec wrangler deploy` 把该目录上传到 `UPDATE_BASE_URL` 对应的 Worker。工作区必须干净，编进去的才是这个 tag。单个 `.dmg` 或 `.app.tar.gz` 超过 25 MiB 时，`wrangler deploy` 会失败。
 
 不带自动更新的临时包用 `pnpm tauri:build-once`。密钥生成见 [`keys/README.zh-CN.md`](./keys/README.zh-CN.md)。
 

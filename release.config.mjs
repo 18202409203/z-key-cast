@@ -26,18 +26,23 @@ export default defineConfig({
   },
   build: {
     // Runs after the tag, on that commit. site:publish then fills website/publish/.
-    // Upload stays manual. 45m covers a cold Tauri compile plus the site build.
+    // wrangler deploy uploads that tree. 45m covers a cold Tauri compile plus the site build.
     command: 'pnpm tauri build && pnpm website:build',
     run: true,
     timeout: '45m',
   },
   hooks: {
     // Copies the bundle and website/build into website/publish/ and writes latest.json.
-    // Skips when dry-run. Does not upload.
+    // Then wrangler deploy uploads website/publish/. Both skip when dry-run.
     postrelease: [
       {
         name: 'site:publish',
         run: 'pnpm site:publish',
+      },
+      {
+        name: 'wrangler:deploy',
+        run: 'pnpm exec wrangler deploy',
+        timeout: '15m',
       },
     ],
   },
