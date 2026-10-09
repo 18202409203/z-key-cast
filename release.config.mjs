@@ -22,6 +22,8 @@ export default defineConfig({
     branch: 'main',
     remote: 'origin',
     requireClean: true,
+    // postbump rewrites this before git add, so the lock version ships with the tag.
+    addFiles: ['src-tauri/Cargo.lock'],
     push: false,
   },
   build: {
@@ -32,6 +34,8 @@ export default defineConfig({
     timeout: '45m',
   },
   hooks: {
+    // After Cargo.toml is bumped, before the release commit is staged.
+    postbump: ['node scripts/sync-cargo-lock.mjs'],
     // Copies the bundle and website/build into website/publish/ and writes latest.json.
     // Then wrangler deploy uploads website/publish/. Both skip when dry-run.
     postrelease: [
