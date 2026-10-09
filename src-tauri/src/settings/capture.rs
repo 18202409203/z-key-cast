@@ -94,9 +94,9 @@ pub fn cancel_ignore_capture() {
     IGNORE_KEY_CAPTURE_ARMED.store(false, Ordering::SeqCst);
 }
 
-/// If armed, disarm and return true (caller should suppress `cast://event`).
-pub fn take_ignore_capture() -> bool {
-    IGNORE_KEY_CAPTURE_ARMED.swap(false, Ordering::SeqCst)
+/// True while Add key is waiting. Stays armed across keys until cancel.
+pub fn ignore_capture_armed() -> bool {
+    IGNORE_KEY_CAPTURE_ARMED.load(Ordering::SeqCst)
 }
 
 #[tauri::command]
@@ -429,13 +429,13 @@ mod tests {
         assert!(!IGNORE_KEY_CAPTURE_ARMED.load(Ordering::SeqCst));
         arm_ignore_capture();
         assert!(IGNORE_KEY_CAPTURE_ARMED.load(Ordering::SeqCst));
-        assert!(take_ignore_capture());
-        assert!(!IGNORE_KEY_CAPTURE_ARMED.load(Ordering::SeqCst));
-        assert!(!take_ignore_capture());
-
+        assert!(ignore_capture_armed());
+        assert!(IGNORE_KEY_CAPTURE_ARMED.load(Ordering::SeqCst));
         arm_ignore_capture();
+        assert!(ignore_capture_armed());
+
         cancel_ignore_capture();
         assert!(!IGNORE_KEY_CAPTURE_ARMED.load(Ordering::SeqCst));
-        assert!(!take_ignore_capture());
+        assert!(!ignore_capture_armed());
     }
 }

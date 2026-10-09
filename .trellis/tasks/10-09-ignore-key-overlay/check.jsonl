@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "Verify session-long ignore capture against the spec"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Overlay stays on window tokens and panel patterns"}
+{"file": ".trellis/tasks/10-09-ignore-key-overlay/prd.md", "reason": "Acceptance criteria"}
+{"file": ".trellis/tasks/10-09-ignore-key-overlay/design.md", "reason": "Confirm/disarm order"}

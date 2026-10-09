@@ -98,7 +98,8 @@ export function formatHudLabel(chip: HudChip, legendLayout?: KeyboardLegendLayou
 | Primary `key.id` ∈ `ignoredKeyIds` | After reduce, drop whole key chip before emit |
 | Mod `id` ∈ `ignoredKeyIds` | Strip that mod from `mods` (may leave empty `mods`); primary still emits |
 | Ignore list + mouse | Key ignore list does not affect mouse/scroll; mouse ignore list does not affect keys |
-| Ignore-key capture armed + key/mod **down** | Emit `cast://ignore-key-captured` (`KeyRef` id-only); suppress that raw’s `cast://event`; still `reduce` held mods; Escape adds Escape (does not cancel) |
+| Ignore-key capture armed + key/mod **down** | Emit `cast://ignore-key-captured` (`KeyRef` id-only) and stay armed; suppress that raw’s `cast://event`; still `reduce` held mods; Escape is a candidate (does not cancel) |
+| Ignore-key capture armed + key/mod **up** | Suppress `cast://event`; still `reduce` held mods; do not emit `cast://ignore-key-captured` |
 | Ignore-key capture + mouse | Mouse still follows normal emit path; does not disarm |
 | Frontend receives unknown payload | `isHudChip` / `isHookStatus` / `isIgnoreKeyCaptured` / `isMouseRippleEvent` reject; ignore |
 
@@ -109,7 +110,7 @@ export function formatHudLabel(chip: HudChip, legendLayout?: KeyboardLegendLayou
 | `get_hook_status` | — | `HookStatus \| null` | Last emitted hook status (null until first emit). Late subscribers / HMR use this after `listen(cast://hook-status)` |
 | `get_capture_settings` | — | `CaptureSettings` | Reads process atomics + ignored-id list (loaded from `app_config_dir/settings.json` at setup) |
 | `set_capture_settings` | `{ settings: CaptureSettings }` | `CaptureSettings` | Apply runtime **then** persist; dedupe `ignoredKeyIds` (preserve order, drop empties); sync ripple window show/hide; emit `cast://capture-settings` with saved payload; on disk failure revert and return `Err` |
-| `arm_ignore_key_capture` | — | — | Arm next key/mod down for ignore list |
+| `arm_ignore_key_capture` | — | — | Arm Add key. Stays armed across keys until cancel |
 | `cancel_ignore_key_capture` | — | — | Disarm without changing the list |
 
 ```ts
@@ -126,7 +127,7 @@ type CaptureSettings = {
 **Legacy**: JSON with `captureScroll: false` migrates on load into `ignoredMouseActions` including `"scroll"` (field is not written back).
 
 **`cast://capture-settings` → `CaptureSettings`** — emitted after successful `set_capture_settings` so Overlay Full `showNumpad` hot-updates (mirror `cast://hud-style`).
-**`cast://ignore-key-captured` → `KeyRef`** — once per successful arm consume (`{ id }` only).
+**`cast://ignore-key-captured` → `KeyRef`** — each key/mod down while armed (`{ id }` only). Does not write the ignore list.
 
 - Owners: Rust `src-tauri/src/settings/` (`capture` + `store`); TS `$lib/settings.ts` + `$lib/key-ignore-presets.ts` (category → id[])
 - Hot path (macOS tap / Windows LL hooks, after `EventFilter`, after/around `ChipReducer::reduce`): ignore-capture consume → `filter_key_chip` (keys + ignored mouse/scroll) → `allows_chip` → `emit(EVENT_CHANNEL)`
@@ -198,8 +199,8 @@ void listen(EVENT_CHANNEL, (event) => {
 ### Ignore key list (filter after reduce)
 
 - **Decision**: Flat persisted `ignoredKeyIds`; runtime `HashSet` lookup; `filter_key_chip` drops ignored primaries and strips ignored mods; category presets expand on the frontend only
-- **Add-key capture**: Arm via command; next key/mod down emits `cast://ignore-key-captured` (`{ id }`) and suppresses that raw’s `cast://event`; Cancel disarms; Escape is data
-- **Capture UI (frontend only)**: Two sections — **Keyboard** (listen keyboard → has numpad → ignore key categories + `KeyboardMap`) and **Mouse** (listen mouse → ignore L/M/R/Scroll → click ripple). When listen keyboard/mouse is off, grey out that section’s ignore controls (ripple stays independent of `captureMouse` and of the mouse ignore list). Shared `$lib/components/KeyboardMap.svelte` — Overlay is display-only (`activeIds` / `.key.active`); Capture uses `interactive` + muted `.key.ignored` click-toggle. `showNumpad` / `hasNumpad` hides the numpad column only. Main ignore path is board click; **Add key** discovers ids not in `layoutKeyIds(hasNumpad)`; under-board list shows only that off-board set difference. Do not reuse `.active` for ignore state. Rust contract unchanged.
+- **Add-key capture**: Arm via command; each key/mod down emits `cast://ignore-key-captured` (`{ id }`) without disarming; key down and up both skip `cast://event` until `cancel_ignore_key_capture`; Escape is data. The settings window writes the id only after Confirm.
+- **Capture UI (frontend only)**: Two sections — **Keyboard** (listen keyboard → has numpad → ignore key categories + `KeyboardMap`) and **Mouse** (listen mouse → ignore L/M/R/Scroll → click ripple). When listen keyboard/mouse is off, grey out that section’s ignore controls (ripple stays independent of `captureMouse` and of the mouse ignore list). Shared `KeyboardMap` from `z-key-cast-hud-view` — Overlay is display-only (`activeIds` / `.key.active`); Capture uses `interactive` + muted `.key.ignored` click-toggle. `showNumpad` / `hasNumpad` hides the numpad column only. Main ignore path is board click; **Add key** opens a fixed overlay over the whole settings window (including tabs) for ids not on the board. No candidate: press prompt, Confirm disabled. Candidate shows the same short label + raw id as the off-board list; already-ignored ids are `--app-danger`, with a muted “already in the ignore list” line under the key, and Confirm stays disabled. Each already-ignored key down replays a short CSS shake on the label and id only; the “already in the ignore list” line stays still and does not fade. A different id, or the same not-yet-ignored id again, fades the label and id in. `prefers-reduced-motion` skips both. Another key replaces the candidate. Confirm, Cancel, scrim click, and settings-window blur end the session; only Confirm persists. Under-board list shows only the off-board set difference. Do not reuse `.active` for ignore state.
 - **Forbidden**: Skipping `reduce` while armed; using Escape to cancel; wiping non-category ids when a category is unchecked
 
 ### HUD style settings

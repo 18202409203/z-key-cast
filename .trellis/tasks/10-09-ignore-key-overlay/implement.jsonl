@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/tauri/cast-events.md", "reason": "Ignore-key capture channel and HUD suppress contract"}
+{"file": ".trellis/spec/tauri/index.md", "reason": "Tauri pre-dev checklist for capture commands"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Settings panel styling and a11y"}
+{"file": ".trellis/tasks/10-09-ignore-key-overlay/prd.md", "reason": "Agreed overlay behavior"}
+{"file": ".trellis/tasks/10-09-ignore-key-overlay/design.md", "reason": "Hook and overlay boundaries"}

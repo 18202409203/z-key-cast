@@ -144,14 +144,11 @@ fn process_raw(raw: RawInput) {
     };
 
     let mut suppress_emit = false;
-    if let RawInput::Key {
-        key,
-        phase: Phase::Down,
-        ..
-    } = &raw
-    {
-        if settings::take_ignore_capture() {
-            let _ = state.app.emit(IGNORE_KEY_CAPTURED_CHANNEL, key);
+    if let RawInput::Key { key, phase, .. } = &raw {
+        if settings::ignore_capture_armed() {
+            if *phase == Phase::Down {
+                let _ = state.app.emit(IGNORE_KEY_CAPTURED_CHANNEL, key);
+            }
             suppress_emit = true;
         }
     }

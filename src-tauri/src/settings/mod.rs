@@ -12,8 +12,8 @@ mod types;
 #[allow(unused_imports)] // facade: keep `settings::arm_ignore_capture` etc. stable
 pub use capture::{
     allows_chip, arm_ignore_capture, arm_ignore_key_capture, cancel_ignore_capture,
-    cancel_ignore_key_capture, filter_key_chip, get_capture_settings, set_capture_settings,
-    take_ignore_capture,
+    cancel_ignore_key_capture, filter_key_chip, get_capture_settings, ignore_capture_armed,
+    set_capture_settings,
 };
 pub use hud::{
     abandon_hud_place_mode, apply_hud_position, end_hud_place_mode, enter_hud_custom_mode,

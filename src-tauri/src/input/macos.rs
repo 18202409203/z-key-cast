@@ -88,16 +88,13 @@ fn run_tap(app: AppHandle) -> Result<(), HookStatus> {
                         raw
                     };
 
-                    // Capture next key/mod down for ignore list; still reduce held mods.
+                    // Add-key session: every key/mod down is a candidate; downs and ups stay off the HUD.
                     let mut suppress_emit = false;
-                    if let RawInput::Key {
-                        key,
-                        phase: Phase::Down,
-                        ..
-                    } = &raw
-                    {
-                        if settings::take_ignore_capture() {
-                            let _ = app_for_cb.emit(IGNORE_KEY_CAPTURED_CHANNEL, key);
+                    if let RawInput::Key { key, phase, .. } = &raw {
+                        if settings::ignore_capture_armed() {
+                            if *phase == Phase::Down {
+                                let _ = app_for_cb.emit(IGNORE_KEY_CAPTURED_CHANNEL, key);
+                            }
                             suppress_emit = true;
                         }
                     }
@@ -126,7 +123,7 @@ fn run_tap(app: AppHandle) -> Result<(), HookStatus> {
                         }
                     }
 
-                    // Caps unlock: clear Full held-set (Down already handled ignore-capture).
+                    // Caps unlock: clear Full held-set. Skip HUD while Add key is armed.
                     if unlock_caps {
                         let up = RawInput::Key {
                             key: KeyRef::new("CapsLock"),
@@ -137,10 +134,12 @@ fn run_tap(app: AppHandle) -> Result<(), HookStatus> {
                             .lock()
                             .map(|mut r| r.reduce(&up))
                             .unwrap_or(None);
-                        if let Some(chip) = chip {
-                            if let Some(chip) = settings::filter_key_chip(chip) {
-                                if settings::allows_chip(&chip) {
-                                    let _ = app_for_cb.emit(EVENT_CHANNEL, &chip);
+                        if !settings::ignore_capture_armed() {
+                            if let Some(chip) = chip {
+                                if let Some(chip) = settings::filter_key_chip(chip) {
+                                    if settings::allows_chip(&chip) {
+                                        let _ = app_for_cb.emit(EVENT_CHANNEL, &chip);
+                                    }
                                 }
                             }
                         }

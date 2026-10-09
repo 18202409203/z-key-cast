@@ -1,5 +1,6 @@
 <script lang="ts">
   import { listen } from "@tauri-apps/api/event";
+  import { getCurrentWindow } from "@tauri-apps/api/window";
   import { onMount } from "svelte";
   import FormRow from "$lib/components/FormRow.svelte";
   import FormSection from "$lib/components/FormSection.svelte";
@@ -57,6 +58,10 @@
   let ignoredKeyIds = $state<string[]>([]);
   let ignoredMouseActions = $state<IgnoredMouseAction[]>([]);
   let ignoreCapturing = $state(false);
+  let ignoreCandidateId = $state<string | null>(null);
+  let ignoreConfirming = $state(false);
+  let ignoreShake = $state(0);
+  let ignoreFade = $state(0);
   let captureReady = $state(false);
   let hookOk = $state<boolean | null>(null);
   let hudStyle = $state<HudStyleSettings>({ ...DEFAULT_HUD_STYLE });
@@ -79,6 +84,19 @@
   const mouseIgnoreDisabled = $derived(!captureReady || !captureMouse);
   const ignoreBoardDisabled = $derived(
     keyboardControlsDisabled || ignoreCapturing,
+  );
+  const ignoreCandidateInvalid = $derived(
+    ignoreCandidateId !== null && ignoredIdSet.has(ignoreCandidateId),
+  );
+  const ignoreConfirmDisabled = $derived(
+    ignoreConfirming ||
+      ignoreCandidateId === null ||
+      ignoreCandidateInvalid,
+  );
+  const ignoreCandidateLabel = $derived(
+    ignoreCandidateId
+      ? labelForKeyId(ignoreCandidateId, ignoreBoardLegendLayout)
+      : "",
   );
 
   function mouseActionLabelKey(
@@ -247,13 +265,62 @@
     }
   }
 
-  async function onCancelIgnoreKey() {
+  async function discardIgnoreKey() {
+    if (!ignoreCapturing || ignoreConfirming) return;
+    ignoreCapturing = false;
+    ignoreCandidateId = null;
+    ignoreShake = 0;
+    ignoreFade = 0;
     try {
       await cancelIgnoreKeyCapture();
     } catch (err) {
       appendLog(`ignore capture cancel failed: ${String(err)}`);
-    } finally {
+    }
+  }
+
+  async function onConfirmIgnoreKey() {
+    const id = ignoreCandidateId;
+    if (!id || ignoreConfirming || ignoredIdSet.has(id)) return;
+    ignoreConfirming = true;
+    const previous = currentCapture();
+    const next: CaptureSettings = {
+      ...previous,
+      ignoredKeyIds: [...previous.ignoredKeyIds, id],
+    };
+    try {
+      await cancelIgnoreKeyCapture();
+    } catch (err) {
+      ignoreConfirming = false;
+      appendLog(`ignore capture cancel failed: ${String(err)}`);
+      return;
+    }
+    try {
+      const saved = await setCaptureSettings(next);
+      captureKeyboard = saved.captureKeyboard;
+      captureMouse = saved.captureMouse;
+      mouseClickRipple = saved.mouseClickRipple;
+      hasNumpad = saved.hasNumpad;
+      ignoredKeyIds = [...saved.ignoredKeyIds];
+      ignoredMouseActions = [...saved.ignoredMouseActions];
       ignoreCapturing = false;
+      ignoreCandidateId = null;
+      ignoreShake = 0;
+      ignoreFade = 0;
+    } catch (err) {
+      appendLog(`settings save failed: ${String(err)}`);
+      ignoreCandidateId = id;
+      try {
+        await armIgnoreKeyCapture();
+        ignoreCapturing = true;
+      } catch (armErr) {
+        ignoreCapturing = false;
+        ignoreCandidateId = null;
+        ignoreShake = 0;
+        ignoreFade = 0;
+        appendLog(`ignore capture arm failed: ${String(armErr)}`);
+      }
+    } finally {
+      ignoreConfirming = false;
     }
   }
 
@@ -272,6 +339,25 @@
       },
     };
   }
+
+  $effect(() => {
+    if (active || !ignoreCapturing) return;
+    void discardIgnoreKey();
+  });
+
+  $effect(() => {
+    if (!ignoreCapturing) return;
+    const swallow = (event: KeyboardEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    window.addEventListener("keydown", swallow, true);
+    window.addEventListener("keyup", swallow, true);
+    return () => {
+      window.removeEventListener("keydown", swallow, true);
+      window.removeEventListener("keyup", swallow, true);
+    };
+  });
 
   onMount(() => {
     let cancelled = false;
@@ -329,15 +415,14 @@
         const unlistenIgnoreCapture = await listen(
           IGNORE_KEY_CAPTURED_CHANNEL,
           (event) => {
+            if (!ignoreCapturing || ignoreConfirming) return;
             if (!isIgnoreKeyCaptured(event.payload)) return;
-            ignoreCapturing = false;
-            const { id } = event.payload;
-            const previous = currentCapture();
-            if (previous.ignoredKeyIds.includes(id)) return;
-            void persistCapture(
-              { ...previous, ignoredKeyIds: [...previous.ignoredKeyIds, id] },
-              previous,
-            );
+            const id = event.payload.id;
+            const sameId = id === ignoreCandidateId;
+            const alreadyIgnored = ignoredIdSet.has(id);
+            ignoreCandidateId = id;
+            if (alreadyIgnored) ignoreShake += 1;
+            if (!alreadyIgnored || !sameId) ignoreFade += 1;
           },
         );
         if (cancelled) {
@@ -345,6 +430,17 @@
           return;
         }
         unsubs.push(unlistenIgnoreCapture);
+
+        const unlistenFocus = await getCurrentWindow().onFocusChanged(
+          ({ payload: focused }) => {
+            if (!focused) void discardIgnoreKey();
+          },
+        );
+        if (cancelled) {
+          unlistenFocus();
+          return;
+        }
+        unsubs.push(unlistenFocus);
       } catch (err) {
         if (!cancelled) {
           appendLog(`event listen failed: ${String(err)}`);
@@ -357,6 +453,9 @@
     return () => {
       cancelled = true;
       ignoreCapturing = false;
+      ignoreCandidateId = null;
+      ignoreShake = 0;
+      ignoreFade = 0;
       void cancelIgnoreKeyCapture().catch(() => {
         // Best-effort disarm if the window tears down mid-capture.
       });
@@ -514,26 +613,14 @@
         </div>
 
         <div class="ignore-actions">
-          {#if ignoreCapturing}
-            <button
-              type="button"
-              class="clear"
-              disabled={!captureReady}
-              onclick={() => void onCancelIgnoreKey()}
-            >
-              {t("settings.cancel", locale)}
-            </button>
-            <span class="muted">{t("settings.pressKey", locale)}</span>
-          {:else}
-            <button
-              type="button"
-              class="clear"
-              disabled={keyboardControlsDisabled}
-              onclick={() => void onAddIgnoreKey()}
-            >
-              {t("settings.addKey", locale)}
-            </button>
-          {/if}
+          <button
+            type="button"
+            class="clear"
+            disabled={keyboardControlsDisabled || ignoreCapturing}
+            onclick={() => void onAddIgnoreKey()}
+          >
+            {t("settings.addKey", locale)}
+          </button>
         </div>
 
         {#if offBoardIgnoredKeyIds.length > 0}
@@ -563,6 +650,79 @@
     </FormRow>
   </FormSection>
 </div>
+
+{#if ignoreCapturing}
+  <div class="ignore-capture">
+    <button
+      type="button"
+      class="ignore-capture-scrim"
+      tabindex="-1"
+      aria-label={t("settings.cancel", locale)}
+      onclick={() => void discardIgnoreKey()}
+    ></button>
+    <div
+      class="ignore-capture-card"
+      role="dialog"
+      tabindex="-1"
+      aria-modal="true"
+      aria-labelledby="ignore-capture-prompt"
+    >
+      <p id="ignore-capture-prompt" class="ignore-capture-prompt">
+        {t(
+          ignoreCandidateId === null
+            ? "settings.pressKey"
+            : "settings.pressKeyReplace",
+          locale,
+        )}
+      </p>
+      {#if ignoreCandidateId}
+        <div
+          class="ignore-capture-key"
+          class:invalid={ignoreCandidateInvalid}
+        >
+          {#key ignoreFade}
+            <div class="ignore-capture-identity" class:fade={ignoreFade > 0}>
+              {#key ignoreShake}
+                <div
+                  class="ignore-capture-motion"
+                  class:shake={ignoreCandidateInvalid}
+                >
+                  <span class="ignore-label">{ignoreCandidateLabel}</span>
+                  <code class="ignore-id">{ignoreCandidateId}</code>
+                </div>
+              {/key}
+            </div>
+          {/key}
+          {#if ignoreCandidateInvalid}
+            <p class="ignore-capture-exists">
+              {t("settings.ignoreKeyExists", locale)}
+            </p>
+          {/if}
+        </div>
+      {/if}
+      <div class="ignore-capture-actions">
+        <button
+          type="button"
+          class="clear"
+          tabindex="-1"
+          disabled={ignoreConfirming}
+          onclick={() => void discardIgnoreKey()}
+        >
+          {t("settings.cancel", locale)}
+        </button>
+        <button
+          type="button"
+          class="clear ignore-capture-confirm"
+          tabindex="-1"
+          disabled={ignoreConfirmDisabled}
+          onclick={() => void onConfirmIgnoreKey()}
+        >
+          {t("settings.confirm", locale)}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <style>
   .panel {
@@ -699,9 +859,128 @@
     font-size: 14px;
   }
 
-  input:disabled,
   button:disabled {
     opacity: 0.45;
     cursor: not-allowed;
+  }
+
+  .ignore-capture {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+  }
+
+  .ignore-capture-scrim {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: color-mix(in srgb, var(--app-bg) 62%, transparent);
+    cursor: pointer;
+  }
+
+  .ignore-capture-scrim:hover {
+    color: inherit;
+    border-color: transparent;
+    background: color-mix(in srgb, var(--app-bg) 62%, transparent);
+  }
+
+  .ignore-capture-card {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 320px);
+    display: grid;
+    gap: 14px;
+    padding: 20px;
+    border-radius: var(--radius-lg);
+    background: var(--app-control-bg);
+    border: 1px solid var(--app-hairline-strong);
+    box-shadow: 0 16px 40px color-mix(in srgb, #000 28%, transparent);
+  }
+
+  .ignore-capture-prompt {
+    margin: 0;
+    color: var(--app-fg);
+    font-size: 15px;
+  }
+
+  .ignore-capture-key {
+    display: grid;
+    gap: 4px;
+  }
+
+  .ignore-capture-key.invalid .ignore-label,
+  .ignore-capture-key.invalid .ignore-id {
+    color: var(--app-danger);
+  }
+
+  .ignore-capture-identity.fade {
+    animation: ignore-capture-fade 0.16s ease;
+  }
+
+  .ignore-capture-motion {
+    display: grid;
+    gap: 4px;
+  }
+
+  .ignore-capture-motion.shake {
+    animation: ignore-capture-shake 0.36s ease;
+  }
+
+  .ignore-capture-exists {
+    margin: 6px 0 0;
+    color: var(--app-muted);
+    font-size: 12px;
+  }
+
+  @keyframes ignore-capture-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes ignore-capture-shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    20% {
+      transform: translateX(-5px);
+    }
+    40% {
+      transform: translateX(5px);
+    }
+    60% {
+      transform: translateX(-3px);
+    }
+    80% {
+      transform: translateX(3px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ignore-capture-identity.fade,
+    .ignore-capture-motion.shake {
+      animation: none;
+    }
+  }
+
+  .ignore-capture-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .ignore-capture-confirm:not(:disabled) {
+    color: var(--app-fg);
+    border-color: var(--app-accent);
   }
 </style>
