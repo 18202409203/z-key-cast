@@ -179,7 +179,7 @@ void listen(EVENT_CHANNEL, (event) => {
 
 - **Decision**: Emit precise down/up for primary keys, bare modifiers, and mouse; snapshot `held_mods` onto mouse/scroll; autorepeat / short debounce still drop before reduce
 - **Consumers**: Text/Lite defer modifier downs; companion key/mouse/scroll enqueue with mods and mark those mod ids consumed; unconsumed modifier ups synthesize a display `key` chip (`phase: "down"`); consumed ups silent; shared operation timeline (`timelineMax`, default 5, clamp 1–10; fixed LTR right-enter — newest on right; same-direction scroll at tail refreshes dwell only when mods multiset matches). Full maintains held-sets + scroll pulse (may ignore mouse/scroll `mods`). Log records both phases and mods on mouse/scroll.
-- **Out of scope**: AxN combo badges; Caps Lock as chord modifier
+- **Out of scope**: AxN combo badges; Caps Lock as chord modifier (Caps emits as primary `CapsLock`, not `held_mods`)
 
 ### Capture toggles (filter after reduce)
 

@@ -64,7 +64,7 @@ export const MAIN_ROWS: LayoutRow[] = [
     { id: "Backslash", label: "\\", w: 1.2 },
   ],
   [
-    { id: "_CapsLock", label: "Caps", w: 1.7 },
+    { id: "CapsLock", label: "Caps", w: 1.7 },
     { id: "KeyA", label: "A" },
     { id: "KeyS", label: "S" },
     { id: "KeyD", label: "D" },

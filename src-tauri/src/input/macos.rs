@@ -74,6 +74,7 @@ fn run_tap(app: AppHandle) -> Result<(), HookStatus> {
                     .map(|mut f| f.allow(&raw))
                     .unwrap_or(true);
                 if should_process {
+                    let unlock_caps = caps_lock_needs_unlock_up(&raw, event);
                     let raw = if let RawInput::Scroll { direction } = raw {
                         let allow = scroll_coalesce
                             .lock()
@@ -117,6 +118,26 @@ fn run_tap(app: AppHandle) -> Result<(), HookStatus> {
                     if !suppress_emit {
                         if let Some(chip) = chip {
                             // Ignore-list then capture toggles — after reduce so held mods stay correct.
+                            if let Some(chip) = settings::filter_key_chip(chip) {
+                                if settings::allows_chip(&chip) {
+                                    let _ = app_for_cb.emit(EVENT_CHANNEL, &chip);
+                                }
+                            }
+                        }
+                    }
+
+                    // Caps unlock: clear Full held-set (Down already handled ignore-capture).
+                    if unlock_caps {
+                        let up = RawInput::Key {
+                            key: KeyRef::new("CapsLock"),
+                            phase: Phase::Up,
+                            is_modifier: false,
+                        };
+                        let chip = reducer
+                            .lock()
+                            .map(|mut r| r.reduce(&up))
+                            .unwrap_or(None);
+                        if let Some(chip) = chip {
                             if let Some(chip) = settings::filter_key_chip(chip) {
                                 if settings::allows_chip(&chip) {
                                     let _ = app_for_cb.emit(EVENT_CHANNEL, &chip);
@@ -274,9 +295,15 @@ fn normalize_flags_changed(
     is_holding: &dyn Fn(&str) -> bool,
 ) -> Option<RawInput> {
     let keycode = event.get_integer_value_field(EventField::KEYBOARD_EVENT_KEYCODE);
-    // CapsLock is not a chord modifier for HUD chips.
+    // CapsLock is a latching lock, not a chord modifier. Emit as a primary
+    // key Down so HUD / ignore-capture see the press (Windows already does).
+    // Caller may follow with Up when AlphaShift clears so Full held-set drops.
     if keycode == 57 {
-        return None;
+        return Some(RawInput::Key {
+            key: KeyRef::new("CapsLock"),
+            phase: Phase::Down,
+            is_modifier: false,
+        });
     }
     let (key, bit) = modifier_key_ref(keycode)?;
     let flags = event.get_flags();
@@ -288,6 +315,22 @@ fn normalize_flags_changed(
         phase,
         is_modifier: true,
     })
+}
+
+/// True when this CapsLock Down should be paired with an immediate Up.
+/// macOS usually delivers one FlagsChanged per toggle; while the lock stays
+/// on we keep Full held-set lit; unlocking clears it via the synthetic Up.
+fn caps_lock_needs_unlock_up(raw: &RawInput, event: &CGEvent) -> bool {
+    matches!(
+        raw,
+        RawInput::Key {
+            key,
+            phase: Phase::Down,
+            is_modifier: false,
+        } if key.id == "CapsLock"
+    ) && !event
+        .get_flags()
+        .contains(CGEventFlags::CGEventFlagAlphaShift)
 }
 
 fn mouse(button: MouseButton, phase: Phase) -> RawInput {
