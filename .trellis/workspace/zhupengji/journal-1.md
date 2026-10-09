@@ -946,3 +946,36 @@ Split website marketing-page into marketing/ shell + components (StagePanel fold
 ### Next Steps
 
 - None - task complete
+
+
+## Session 25: Ignore-key add overlay
+
+**Date**: 2026-10-09
+**Task**: Ignore-key add overlay
+**Branch**: `main`
+
+### Summary
+
+Add-key uses a settings-window overlay. The hook stays armed until Confirm, Cancel, scrim, or blur. Already-ignored keys shake the label and id; other presses fade them in.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c831a6c` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
