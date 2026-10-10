@@ -203,3 +203,15 @@
   - docs(spec): record website power-session demo and timelineOut pitfall
   - refactor(hud): share font size clamp 12–64
 
+
+## 1.6.0 (2026-10-10)
+
+### Features
+
+  - swap in slim swallowtail mark
+  - confirm ignore keys in overlay
+
+### Bug Fixes
+
+  - emit CapsLock as a primary key
+
