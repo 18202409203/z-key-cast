@@ -234,7 +234,8 @@ void listen(EVENT_CHANNEL, (event) => {
 
 ### Main window + system tray
 
-- **Cargo**: `tauri` feature `tray-icon` required (`src-tauri/Cargo.toml`); tray lives in `src-tauri/src/tray.rs`
+- **Cargo**: `tauri` features `tray-icon` and `image-png` required (`src-tauri/Cargo.toml`); tray lives in `src-tauri/src/tray.rs`
+- **Icons**: Dock / bundle use `src-tauri/icons/` (source `design/brand/icon-default.svg`, same as `icon-slim.svg`): slim swallowtail pair, cyan `#38bdf8` body plus a down-right echo `#1a6a96` on `#0f172a`; the pair's union box is centered. The shaft + amber variant is archived at `design/brand/icon-shaft.svg`. `tauri dev` Dock icon is `icons/icon.icns` embedded by `generate_context!`; `build.rs` stamps that file so an icon swap recompiles. macOS menu bar uses `icons/tray-template.png` (same slim pair: opaque body, lower-alpha echo, transparent, `icon_as_template`); do not template the rounded app icon. Website favicon is the same Dock mark (`icon-default.svg`), plate included, with the slim pair scaled 1.2 around the plate center so it stays inside the rounded rect. Other platforms use `default_window_icon()`.
 - **HUD**: always on while the process runs — tray must **not** show/hide overlay or pause capture
 - **Close (X) on `main`**: `CloseRequested` → `prevent_close` → `hide` → `abandon_hud_place_mode` (keep webview; do not destroy)
 - **Show Main**: `unminimize` + `show` + `set_focus` — tray left-click, menu `open-settings`, and macOS `RunEvent::Reopen` (always show Main; ignore `has_visible_windows` because overlay counts as visible)

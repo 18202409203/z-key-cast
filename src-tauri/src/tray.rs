@@ -2,6 +2,8 @@
 
 use std::sync::{Mutex, OnceLock};
 
+#[cfg(target_os = "macos")]
+use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager, Wry};
@@ -88,13 +90,18 @@ pub fn build_tray(app: &AppHandle) -> tauri::Result<()> {
             }
         });
 
-    if let Some(icon) = app.default_window_icon() {
-        builder = builder.icon(icon.clone());
-    }
-
+    // macOS menu bar: same slim pair as the Dock mark, black on transparency.
+    // The echo is lower alpha so template mode paints it as a dimmer shadow.
+    // Do not use the rounded app icon here; template mode would fill the plate.
     #[cfg(target_os = "macos")]
     {
-        builder = builder.icon_as_template(true);
+        let icon = Image::from_bytes(include_bytes!("../icons/tray-template.png"))?;
+        builder = builder.icon(icon).icon_as_template(true);
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    if let Some(icon) = app.default_window_icon() {
+        builder = builder.icon(icon.clone());
     }
 
     let _tray = builder.build(app)?;

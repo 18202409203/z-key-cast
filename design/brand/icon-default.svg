@@ -1,30 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
   <rect x="64" y="64" width="896" height="896" rx="220" fill="#0f172a"/>
-  <path fill="#38bdf8" fill-rule="evenodd" d="
-    M 820 540
-    L 820 239
-    A 35 35 0 0 0 785 204
-    L 239 204
-    A 35 35 0 0 0 204 239
-    L 204 785
-    A 35 35 0 0 0 239 820
-    L 719 820
-    L 701 794
-    L 239 794
-    A 9 9 0 0 1 230 785
-    L 230 239
-    A 9 9 0 0 1 239 230
-    L 785 230
-    A 9 9 0 0 1 794 239
-    L 794 528
-    Z"/>
-  <g fill="none" stroke="#38bdf8" stroke-width="26" stroke-linejoin="round">
-    <rect x="259" y="265" width="96" height="65"/>
-    <rect x="402" y="265" width="96" height="65"/>
-    <rect x="545" y="265" width="96" height="65"/>
-    <rect x="259" y="377" width="382" height="65"/>
-    <rect x="687" y="265" width="79" height="177"/>
+  <!-- Slim swallowtail, pair centered on the union box. Shadow sits down-right. -->
+  <g transform="translate(555.5 468.5)">
+    <g transform="translate(42 42) rotate(-45)">
+      <polygon points="330.6,0 -307.8,145.9 -22.8,0 -307.8,-145.9" fill="#1a6a96"/>
+    </g>
+    <g transform="translate(-42 -42) rotate(-45)">
+      <polygon points="330.6,0 -307.8,145.9 -22.8,0 -307.8,-145.9" fill="#38bdf8"/>
+    </g>
   </g>
-  <ellipse cx="769" cy="683" rx="66.5" ry="132.5" fill="#0f172a" stroke="#38bdf8" stroke-width="26"/>
-  <rect x="757" y="596" width="26" height="59" fill="#38bdf8"/>
 </svg>

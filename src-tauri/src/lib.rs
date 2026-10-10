@@ -2,6 +2,9 @@ mod input;
 mod settings;
 mod tray;
 
+// Read so an icon.icns change (stamped in build.rs) recompiles and refreshes the dev Dock icon.
+const _: &str = env!("Z_KEY_CAST_DOCK_ICON_STAMP");
+
 use tauri::{Manager, RunEvent, WindowEvent};
 
 #[tauri::command]
