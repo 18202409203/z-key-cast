@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 25
-- **Last Active**: 2026-10-09
+- **Total Sessions**: 26
+- **Last Active**: 2026-10-10
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~981 | Active |
+| `journal-1.md` | ~1015 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 26 | 2026-10-10 | Brand cards link to panels and source | `e9aa1b9`, `9dc3060` | `main` |
 | 25 | 2026-10-09 | Ignore-key add overlay | `c831a6c` | `main` |
 | 24 | 2026-09-22 | Refactor marketing page into modules | `e8479f2` | `main` |
 | 23 | 2026-09-22 | Website stage blinds theme | `4b4ec9c` | `main` |

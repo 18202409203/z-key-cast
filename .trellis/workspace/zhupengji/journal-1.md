@@ -979,3 +979,37 @@ Add-key uses a settings-window overlay. The hook stays armed until Confirm, Canc
 ### Next Steps
 
 - None - task complete
+
+
+## Session 26: Brand cards link to panels and source
+
+**Date**: 2026-10-10
+**Task**: Brand cards link to panels and source
+**Branch**: `main`
+
+### Summary
+
+Selling-point cards jump to the demo and download, and the open-source card opens the Gitee repo in a new tab.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e9aa1b9` | (see git log) |
+| `9dc3060` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
