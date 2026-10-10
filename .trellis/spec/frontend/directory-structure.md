@@ -111,11 +111,11 @@ Shell holds `logLines` + `appendLog`. Panels that need to report save failures r
 $lib/marketing/
   MarketingPage.svelte                 # page shell: snap nav + download fetch + compose
   marketing-chrome.css                 # :root tokens, html snap, .page / .panel
-  constants.ts                         # PRODUCT_NAME, PANEL_NAV, BLIND_SLAT_COUNT
+  constants.ts                         # PRODUCT_NAME, SOURCE_REPO_URL, PANEL_NAV, BLIND_SLAT_COUNT
   panel-scroll.ts                      # panelList / nearest / scrollTo (page-level)
   fetch-mac-download.ts                # placeholder + latest.json (page-level)
   components/
-    BrandPanel.svelte
+    BrandPanel.svelte                  # selling-point controls (see below)
     PageRail.svelte                    # chrome UI (not a snap .panel)
     DownloadPanel.svelte
     StagePanel/
@@ -123,3 +123,5 @@ $lib/marketing/
       stage-panel.css
       cable-layout.ts                  # Stage-only geometry
 ```
+
+Brand feature cards are controls. Offline and size call `MarketingPage`'s `onSelectPanel`, which uses `scrollToPanel` (stage, then download). The open-source card is an anchor to `SOURCE_REPO_URL` with `target="_blank"` and `rel="noopener noreferrer"`. Hover and active change border and glow only — do not translate or scale the card; the page is mandatory scroll-snap.

@@ -1,25 +1,43 @@
 <script lang="ts">
-  import { t, type UiLocale } from "$lib/i18n";
-  import { PRODUCT_NAME } from "../constants";
+  import { t, type MessageKey, type UiLocale } from "$lib/i18n";
+  import { PANEL_NAV, PRODUCT_NAME, SOURCE_REPO_URL } from "../constants";
 
-  type Props = { locale: UiLocale };
-  let { locale }: Props = $props();
+  type Props = {
+    locale: UiLocale;
+    onSelectPanel: (index: number) => void;
+  };
+  let { locale, onSelectPanel }: Props = $props();
 
-  const features = [
+  const stageIndex = PANEL_NAV.findIndex((item) => item.id === "stage");
+  const downloadIndex = PANEL_NAV.findIndex((item) => item.id === "downloads");
+
+  type FeatureBase = {
+    key: MessageKey;
+    lead: MessageKey;
+    icon: "offline" | "size" | "oss";
+  };
+  type Feature =
+    | (FeatureBase & { panel: number; href?: undefined })
+    | (FeatureBase & { href: string; panel?: undefined });
+
+  const features: Feature[] = [
     {
-      key: "brand.feature.offline" as const,
-      lead: "brand.feature.offline.lead" as const,
+      key: "brand.feature.offline",
+      lead: "brand.feature.offline.lead",
       icon: "offline",
+      panel: stageIndex,
     },
     {
-      key: "brand.feature.size" as const,
-      lead: "brand.feature.size.lead" as const,
+      key: "brand.feature.size",
+      lead: "brand.feature.size.lead",
       icon: "size",
+      panel: downloadIndex,
     },
     {
-      key: "brand.feature.oss" as const,
-      lead: "brand.feature.oss.lead" as const,
+      key: "brand.feature.oss",
+      lead: "brand.feature.oss.lead",
       icon: "oss",
+      href: SOURCE_REPO_URL,
     },
   ];
 </script>
@@ -34,9 +52,7 @@
     <p class="tagline">{t("brand.tagline", locale)}</p>
   </header>
 
-  <ul class="features" aria-label={t("brand.features.aria", locale)}>
-    {#each features as feature (feature.key)}
-      <li class="feature">
+  {#snippet featureBody(feature: Feature)}
         <span class="feature-frame" aria-hidden="true"></span>
         <span class="icon" aria-hidden="true">
           {#if feature.icon === "offline"}
@@ -95,6 +111,31 @@
           <span class="label">{t(feature.key, locale)}</span>
           <span class="lead">{t(feature.lead, locale)}</span>
         </span>
+  {/snippet}
+
+  <ul class="features" aria-label={t("brand.features.aria", locale)}>
+    {#each features as feature (feature.key)}
+      <li>
+        {#if feature.href}
+          <a
+            class="feature"
+            href={feature.href}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {@render featureBody(feature)}
+          </a>
+        {:else}
+          <button
+            type="button"
+            class="feature"
+            onclick={() => {
+              if (feature.panel !== undefined) onSelectPanel(feature.panel);
+            }}
+          >
+            {@render featureBody(feature)}
+          </button>
+        {/if}
       </li>
     {/each}
   </ul>
@@ -138,9 +179,22 @@
     gap: 1.15rem;
   }
 
+  .features > li {
+    display: flex;
+    min-width: 0;
+  }
+
   .feature {
     position: relative;
     isolation: isolate;
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0;
+    appearance: none;
+    font: inherit;
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -150,6 +204,10 @@
     padding: 1.05rem 0.75rem;
     text-align: center;
     border: 1px solid color-mix(in srgb, var(--accent) 72%, transparent);
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      color 160ms ease;
     border-radius: 0.35rem;
     background:
       linear-gradient(
@@ -162,6 +220,31 @@
       0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent),
       0 0 18px var(--accent-dim),
       inset 0 1px 0 color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+
+  .feature:hover {
+    border-color: var(--accent);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent),
+      0 0 26px var(--accent-dim),
+      inset 0 1px 0 color-mix(in srgb, var(--accent) 28%, transparent);
+  }
+
+  .feature:hover .icon {
+    color: color-mix(in srgb, var(--accent) 35%, white);
+  }
+
+  .feature:active {
+    border-color: var(--accent);
+    box-shadow:
+      0 0 0 1px var(--accent),
+      0 0 10px var(--accent-dim),
+      inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+
+  .feature:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    outline-offset: 3px;
   }
 
   /* HUD corner ticks — scroll.jpeg tech frame read */
@@ -197,6 +280,7 @@
     color: var(--accent);
     line-height: 0;
     filter: drop-shadow(0 0 5px var(--accent-dim));
+    transition: color 160ms ease;
   }
 
   .copy {
@@ -287,6 +371,11 @@
   @media (prefers-reduced-motion: reduce) {
     .panel-brand {
       animation: none;
+    }
+
+    .feature,
+    .icon {
+      transition: none;
     }
 
     .icon {

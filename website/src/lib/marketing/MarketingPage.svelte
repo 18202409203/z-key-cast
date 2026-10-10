@@ -96,7 +96,7 @@
 
 <main class="page" bind:this={pageEl}>
   <PageRail {locale} {activePanel} onSelect={goToPanel} />
-  <BrandPanel {locale} />
+  <BrandPanel {locale} onSelectPanel={goToPanel} />
   <StagePanel {locale} bind:powered={stagePowered} />
   <DownloadPanel {locale} {macDownload} {versionLabel} />
 </main>
