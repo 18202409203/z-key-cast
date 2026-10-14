@@ -4,8 +4,7 @@ English | [简体中文](./README.zh-CN.md)
 
 Corner HUD that shows keyboard and mouse actions during screen recording.
 
-- **Repository:** https://gitee.com/zhupengji/z-key-cast
-- **Releases:** https://gitee.com/zhupengji/z-key-cast/releases
+- **Website:** https://z-key-cast.1224777638.workers.dev/
 
 <p align="center">
   <img src="./docs/screenshots/black.png" alt="Full HUD on light background" width="420" />
@@ -44,6 +43,8 @@ xattr -dr com.apple.quarantine /Applications/z-key-cast.app
 pnpm install
 pnpm tauri dev
 ```
+
+`git push` updates Gitee (`origin`). Copy the current branch to GitHub with `git push github HEAD`.
 
 | Window | Route | Role |
 |---|---|---|

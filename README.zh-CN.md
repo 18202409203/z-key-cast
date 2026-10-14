@@ -4,8 +4,7 @@
 
 录屏时在屏幕角落显示键盘与鼠标操作的跨平台 HUD。
 
-- **仓库：** https://gitee.com/zhupengji/z-key-cast
-- **发布：** https://gitee.com/zhupengji/z-key-cast/releases
+- **官网：** https://z-key-cast.1224777638.workers.dev/zh/
 
 <p align="center">
   <img src="./docs/screenshots/black.png" alt="浅色背景 Full HUD" width="420" />
@@ -44,6 +43,8 @@ xattr -dr com.apple.quarantine /Applications/z-key-cast.app
 pnpm install
 pnpm tauri dev
 ```
+
+`git push` 推到 Gitee（`origin`）。把当前分支抄到 GitHub：`git push github HEAD`。
 
 | 窗口 | 路由 | 用途 |
 |---|---|---|

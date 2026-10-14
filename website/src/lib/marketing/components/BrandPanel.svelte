@@ -20,7 +20,7 @@
     | (FeatureBase & { panel: number; href?: undefined })
     | (FeatureBase & { href: string; panel?: undefined });
 
-  const features: Feature[] = [
+  const features = $derived.by((): Feature[] => [
     {
       key: "brand.feature.offline",
       lead: "brand.feature.offline.lead",
@@ -37,9 +37,9 @@
       key: "brand.feature.oss",
       lead: "brand.feature.oss.lead",
       icon: "oss",
-      href: SOURCE_REPO_URL,
+      href: SOURCE_REPO_URL[locale],
     },
-  ];
+  ]);
 </script>
 
 <section

@@ -124,4 +124,4 @@ $lib/marketing/
       cable-layout.ts                  # Stage-only geometry
 ```
 
-Brand feature cards are controls. Offline and size call `MarketingPage`'s `onSelectPanel`, which uses `scrollToPanel` (stage, then download). The open-source card is an anchor to `SOURCE_REPO_URL` with `target="_blank"` and `rel="noopener noreferrer"`. Hover and active change border and glow only — do not translate or scale the card; the page is mandatory scroll-snap.
+Brand feature cards are controls. Offline and size call `MarketingPage`'s `onSelectPanel`, which uses `scrollToPanel` (stage, then download). The open-source card is an anchor to `SOURCE_REPO_URL[locale]` (`en` → GitHub, `zh` → Gitee) with `target="_blank"` and `rel="noopener noreferrer"`. Hover and active change border and glow only — do not translate or scale the card; the page is mandatory scroll-snap.
