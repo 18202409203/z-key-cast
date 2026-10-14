@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Svelte 5 props, $lib/components placement, and settings-window control patterns"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Settings controls belong in src/lib/components, not panels or hud-view"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Local Props typing for the new slider component"}

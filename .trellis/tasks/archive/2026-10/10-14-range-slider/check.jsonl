@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Verify the slider matches settings-control composition, a11y, and token usage"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Verify the component lives in src/lib/components and panels only consume it"}
