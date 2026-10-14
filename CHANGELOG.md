@@ -215,3 +215,15 @@
 
   - emit CapsLock as a primary key
 
+
+## 1.6.1 (2026-10-14)
+
+### Features
+
+  - show slider value while dragging
+  - link brand cards to panels and source
+
+### Other
+
+  - docs(website): point READMEs and OSS card at dual remotes
+
