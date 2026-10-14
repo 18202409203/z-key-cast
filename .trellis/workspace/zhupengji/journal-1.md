@@ -1013,3 +1013,37 @@ Selling-point cards jump to the demo and download, and the open-source card open
 ### Next Steps
 
 - None - task complete
+
+
+## Session 27: Range slider live value
+
+**Date**: 2026-10-14
+**Task**: Range slider live value
+**Branch**: `main`
+
+### Summary
+
+Extracted RangeSlider for HUD font size, timeline length, and background opacity. Thumb bubble shows the current value while dragging or keyboard-focused; settings still save on release. Spec records the pointer-capture and drag-end write-back pitfalls.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `31a082c` | (see git log) |
+| `2c1b057` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
