@@ -43,7 +43,7 @@ src/
 │   ├── overlay/+page.svelte      # Overlay bootstrap + Tauri listen + compose HudView
 │   └── ripple/+page.svelte       # Click-ripple overlay
 ├── lib/
-│   ├── components/               # Settings-window UI only (Tabs, Form*, ChoiceCard…)
+│   ├── components/               # Settings-window UI only (Tabs, Form*, ChoiceCard, RangeSlider)
 │   ├── panels/                   # Main-window tab bodies
 │   ├── cast.ts                   # Tauri channels + invoke; re-exports chip API from package
 │   ├── settings.ts               # Persist/IPC; re-exports HUD style API from package

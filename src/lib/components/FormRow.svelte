@@ -128,7 +128,8 @@
   .form-row-control :global(select),
   .form-row-control :global(input[type="number"]),
   .form-row-control :global(input[type="color"]),
-  .form-row-control :global(input[type="range"]) {
+  .form-row-control :global(input[type="range"]),
+  .form-row-control :global(.range-slider) {
     box-sizing: border-box;
     width: 100%;
     max-width: 100%;
@@ -146,7 +147,10 @@
     :global(input[type="color"]),
   .form-row:not(.form-row--stack):not(.form-row--label-only)
     .form-row-control
-    :global(input[type="range"]) {
+    :global(input[type="range"]),
+  .form-row:not(.form-row--stack):not(.form-row--label-only)
+    .form-row-control
+    :global(.range-slider) {
     width: auto;
     min-width: 140px;
     max-width: 220px;
@@ -154,7 +158,10 @@
 
   .form-row:not(.form-row--stack):not(.form-row--label-only)
     .form-row-control
-    :global(input[type="range"]) {
+    :global(input[type="range"]),
+  .form-row:not(.form-row--stack):not(.form-row--label-only)
+    .form-row-control
+    :global(.range-slider) {
     min-width: 120px;
     max-width: 180px;
   }

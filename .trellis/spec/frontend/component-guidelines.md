@@ -9,7 +9,7 @@
 Three layers:
 
 - **`z-key-cast-hud-view`** — HUD presentation: `HudView`, `KeyCard`, `KeyboardMap`, `MouseSchematic`, `createHudSlots` (no `@tauri-apps`)
-- **`$lib/components/`** — settings-window reusable controls (`Tabs`, `SegmentedControl`, `ChoiceCardGroup`, Form*)
+- **`$lib/components/`** — settings-window reusable controls (`Tabs`, `SegmentedControl`, `ChoiceCardGroup`, `RangeSlider`, Form*)
 - **`$lib/panels/`** — main-window tab bodies that own their settings get/set and panel-local listeners
 
 Overlay route (`routes/overlay/+page.svelte`) keeps Tauri `listen` / place drag and composes package `HudView`. Website owns DOM→`HudChip` adapters. Do not reinvent HUD primitives under `$lib` or put overlay orchestration in `panels/`.
@@ -48,6 +48,7 @@ Overlay route (`routes/overlay/+page.svelte`) keeps Tauri `listen` / place drag 
 - Panels: `role="tabpanel"`, `aria-labelledby="tab-{id}"`, inactive → `hidden` + `inert`
 - `SegmentedControl`: `role="radiogroup"` with `aria-labelledby` when a field label exists
 - `ChoiceCardGroup`: radiogroup for visual choices (HUD preset, key/mouse layout, window appearance). **Default `layout="fill"`**: 4:3 framed preview (`max-width: 96px`), label below outside, selection via **outline** (not border). Appearance schematics are full-bleed fixed swatches; HUD/layout icons keep inner padding. `layout="compact"` is legacy inset cards. Do not wire live HUD theme colors into schematics.
+- `RangeSlider`: settings numeric slider (`input[type=range]`). Bubble text is `format(value)` — the same `{n}` as the row label, units stay in the label — and shows only while pointer-dragging or keyboard-focused (`:focus-visible`, or Arrow/Home/End/Page). Idle and `disabled` hide the bubble (`aria-hidden`). Parents persist in `onChange` (`change` / commit only), not on `input`.
 
 ---
 
@@ -60,3 +61,4 @@ Overlay route (`routes/overlay/+page.svelte`) keeps Tauri `listen` / place drag 
 - Saving locale / appearance from both shell and Appearance (double-persist) — Appearance owns persist; shell mirrors via callback / channel
 - **`timelineOut` with `position: fixed` + viewport coords** — breaks when any ancestor keeps a CSS `transform` (e.g. marketing page entrance). Pin outro with `position: absolute` against a `position: relative` `.timeline` using rect deltas vs the timeline box
 - **Website Lite + desk Full** — one `createHudSlots` cannot drive both: non-`full` presets clear `activeKeyIds`. Fan-out the same `HudChip` stream into lite + full slot instances
+- **`RangeSlider` pointer capture / drag-end write-back** — `setPointerCapture` on the range swallows the native gesture, so the value never updates. Do not copy the saved prop back into the thumb when a drag ends: `pointerup` clears the drag flag before `change`, and that write drops the gesture.

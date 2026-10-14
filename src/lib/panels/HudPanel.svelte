@@ -4,6 +4,7 @@
   import ChoiceCardGroup from "$lib/components/ChoiceCardGroup.svelte";
   import FormRow from "$lib/components/FormRow.svelte";
   import FormSection from "$lib/components/FormSection.svelte";
+  import RangeSlider from "$lib/components/RangeSlider.svelte";
   import {
     DEFAULT_HUD_POSITION,
     DEFAULT_HUD_STYLE,
@@ -160,8 +161,7 @@
     void persistHud({ ...hudStyle, ...partial }, previous);
   }
 
-  function onFontSizeChange(event: Event) {
-    const value = Number((event.currentTarget as HTMLInputElement).value);
+  function onFontSizeChange(value: number) {
     if (!Number.isFinite(value)) return;
     patchHud({ fontSizePx: clampHudFontSizePx(value) });
   }
@@ -172,8 +172,7 @@
     patchHud({ dwellMs: value });
   }
 
-  function onTimelineMaxChange(event: Event) {
-    const value = Number((event.currentTarget as HTMLInputElement).value);
+  function onTimelineMaxChange(value: number) {
     if (!Number.isFinite(value)) return;
     patchHud({ timelineMax: Math.max(1, Math.min(10, Math.round(value))) });
   }
@@ -204,8 +203,7 @@
     });
   }
 
-  function onBackgroundOpacityChange(event: Event) {
-    const value = Number((event.currentTarget as HTMLInputElement).value);
+  function onBackgroundOpacityChange(value: number) {
     if (!Number.isFinite(value)) return;
     patchHud({ backgroundOpacity: value });
   }
@@ -502,16 +500,16 @@
         })}
         labelId="hud-font-size-label"
       >
-        <input
+        <RangeSlider
           id="hud-font-size"
-          type="range"
           min={HUD_FONT_SIZE_PX_MIN}
           max={HUD_FONT_SIZE_PX_MAX}
           step="1"
           value={hudStyle.fontSizePx}
           disabled={!hudReady || placeUiLocked}
-          aria-labelledby="hud-font-size-label"
-          onchange={onFontSizeChange}
+          labelledBy="hud-font-size-label"
+          format={(n) => String(Math.round(n))}
+          onChange={onFontSizeChange}
         />
       </FormRow>
     {/if}
@@ -546,18 +544,18 @@
         hint={t("settings.timelineMaxHint", locale)}
         hintId="hud-timeline-max-hint"
       >
-        <input
+        <RangeSlider
           id="hud-timeline-max"
-          type="range"
-          min="1"
-          max="10"
+          min={1}
+          max={10}
           step="1"
           value={hudStyle.timelineMax ?? 5}
           disabled={!hudReady || placeUiLocked}
-          aria-labelledby="hud-timeline-max-label"
-          aria-describedby="hud-timeline-max-hint"
+          labelledBy="hud-timeline-max-label"
+          describedBy="hud-timeline-max-hint"
           title={t("settings.timelineMaxHint", locale)}
-          onchange={onTimelineMaxChange}
+          format={(n) => String(Math.round(n))}
+          onChange={onTimelineMaxChange}
         />
       </FormRow>
     {/if}
@@ -612,16 +610,16 @@
       })}
       labelId="hud-bg-opacity-label"
     >
-      <input
+      <RangeSlider
         id="hud-bg-opacity"
-        type="range"
-        min="0"
-        max="1"
+        min={0}
+        max={1}
         step="0.01"
         value={hudStyle.backgroundOpacity}
         disabled={!hudReady || placeUiLocked}
-        aria-labelledby="hud-bg-opacity-label"
-        onchange={onBackgroundOpacityChange}
+        labelledBy="hud-bg-opacity-label"
+        format={(n) => n.toFixed(2)}
+        onChange={onBackgroundOpacityChange}
       />
     </FormRow>
   </FormSection>
